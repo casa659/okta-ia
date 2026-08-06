@@ -343,7 +343,8 @@ a:hover { color: var(--oi-accent-light); }
 
 /* ---------- Empresas (cards) ---------- */
 .oi-company-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 11px; }
-.oi-company-card { background: var(--oi-panel); border: 1px solid var(--oi-border); border-radius: 10px; padding: 14px 15px; }
+.oi-company-card { display: block; background: var(--oi-panel); border: 1px solid var(--oi-border); border-radius: 10px; padding: 14px 15px; text-decoration: none; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+.oi-company-card:hover { border-color: var(--oi-border-2); background: #0D131B; }
 .oi-company-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 11px; }
 .oi-company-name { font-size: 13px; font-weight: 600; color: var(--oi-text); }
 .oi-company-meta { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--oi-muted-2); margin-top: 2px; }

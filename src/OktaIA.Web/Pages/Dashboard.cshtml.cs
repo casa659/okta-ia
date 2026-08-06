@@ -53,11 +53,31 @@ public class DashboardModel : PageModel
         var variacaoEventos = eventos24a48h > 0 ? (decimal)(eventos24h.Count - eventos24a48h) / eventos24a48h * 100 : 0;
 
         // KPIs abaixo vêm dos contadores da própria empresa (não somados de todo o portfólio) —
-        // é o que muda de verdade ao trocar de organização no seletor do header.
-        var incidentesAbertos = tenantAtual?.IncidentesCount ?? 0;
-        var vulnsCriticas = tenantAtual?.VulnsCount ?? 0;
-        var ativosMonitorados = tenantAtual?.AtivosCount ?? 0;
-        var disponibilidade = tenantAtual?.UptimePercentual ?? 0;
+        // é o que muda de verdade ao trocar de organização no seletor do header. Empresa seed
+        // (demo) usa Company.IncidentesCount/VulnsCount/AtivosCount/UptimePercentual, preenchidos
+        // no seed. Empresa REAL nunca tem esses contadores atualizados (mesmo gap já corrigido em
+        // /Empresas) — pra ela, calcula ao vivo a partir de Asset/Vulnerability/Incident.
+        int incidentesAbertos;
+        int vulnsCriticas;
+        int ativosMonitorados;
+        decimal disponibilidade;
+
+        var temAtivoReal = tenantId.HasValue && await _db.Assets.AnyAsync(a => a.CompanyId == tenantId && a.Real);
+        if (temAtivoReal)
+        {
+            var ativosDaEmpresa = await _db.Assets.Where(a => a.CompanyId == tenantId).ToListAsync();
+            vulnsCriticas = await _db.Vulnerabilities.CountAsync(v => v.CompanyId == tenantId && v.FonteScan);
+            incidentesAbertos = await _db.Incidents.CountAsync(i => i.CompanyId == tenantId);
+            ativosMonitorados = ativosDaEmpresa.Count;
+            disponibilidade = ativosDaEmpresa.Count > 0 ? ativosDaEmpresa.Average(a => a.UptimePercentual) : 100m;
+        }
+        else
+        {
+            incidentesAbertos = tenantAtual?.IncidentesCount ?? 0;
+            vulnsCriticas = tenantAtual?.VulnsCount ?? 0;
+            ativosMonitorados = tenantAtual?.AtivosCount ?? 0;
+            disponibilidade = tenantAtual?.UptimePercentual ?? 0;
+        }
 
         var accent = "#00E0A4";
         Kpis =

@@ -15,7 +15,7 @@
     <div class="oi-company-grid">
         @foreach (var c in Model.Empresas)
         {
-            <div class="oi-company-card">
+            <a asp-page="/Vulnerabilidades" asp-route-empresa="@c.Id" class="oi-company-card">
                 <div class="oi-company-head">
                     <div>
                         <div class="oi-company-name">@c.Nome</div>
@@ -36,7 +36,7 @@
                         </div>
                     }
                 </div>
-            </div>
+            </a>
         }
     </div>
 </div>

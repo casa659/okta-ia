@@ -19,7 +19,7 @@ public class EmpresasModel : PageModel
     }
 
     public record StatView(string Valor, string Rotulo, string Cor);
-    public record CompanyView(string Nome, string Setor, string Plano, int Risco, string RiscoCor, List<StatView> Stats);
+    public record CompanyView(int Id, string Nome, string Setor, string Plano, int Risco, string RiscoCor, List<StatView> Stats);
 
     public List<CompanyView> Empresas { get; private set; } = [];
 
@@ -54,7 +54,7 @@ public class EmpresasModel : PageModel
                 var uptimeMedio = ativosDaEmpresa.Count > 0 ? ativosDaEmpresa.Average(a => a.UptimePercentual) : 100m;
 
                 Empresas.Add(new CompanyView(
-                    c.Nome, lang == "pt" ? c.SetorPt : c.SetorEn, c.Plano,
+                    c.Id, c.Nome, lang == "pt" ? c.SetorPt : c.SetorEn, c.Plano,
                     risco, risco > 70 ? "#FF3B5C" : risco > 45 ? "#FF8A3D" : accent,
                     [
                         new(ativosDaEmpresa.Count.ToString("N0"), lang == "pt" ? "ativos" : "assets", "#D4DDEA"),
@@ -66,7 +66,7 @@ public class EmpresasModel : PageModel
             else
             {
                 Empresas.Add(new CompanyView(
-                    c.Nome, lang == "pt" ? c.SetorPt : c.SetorEn, c.Plano,
+                    c.Id, c.Nome, lang == "pt" ? c.SetorPt : c.SetorEn, c.Plano,
                     c.ScoreRisco, c.ScoreRisco > 70 ? "#FF3B5C" : c.ScoreRisco > 45 ? "#FF8A3D" : accent,
                     [
                         new(c.AtivosCount.ToString("N0"), lang == "pt" ? "ativos" : "assets", "#D4DDEA"),
