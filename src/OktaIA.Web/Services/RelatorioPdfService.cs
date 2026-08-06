@@ -19,7 +19,7 @@ public class RelatorioPdfService
     // técnico de remediação, que só faz sentido pra quem vai executar a correção (Admin/equipe
     // interna) ou pra consultoria vendida à parte; o relatório que vai pro cliente final mostra o
     // achado e o risco de negócio, mas não entrega de graça o "como resolver" que é justamente o
-    // que a Okta IA vende como serviço. Risco e Recomendação (1 linha) continuam visíveis nos dois.
+    // que a L'okta IA vende como serviço. Risco e Recomendação (1 linha) continuam visíveis nos dois.
     public byte[] Gerar(string empresaNome, List<Vulnerability> achados, List<(string Nome, string Ip, DateTimeOffset? UltimoScan)> ativosEscaneados, string lang, bool paraCliente = false)
     {
         var pt = lang != "en";

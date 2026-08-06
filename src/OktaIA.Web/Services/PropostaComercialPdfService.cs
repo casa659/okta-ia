@@ -6,7 +6,7 @@ using QuestPDF.Infrastructure;
 namespace OktaIA.Web.Services;
 
 // Gera a "Proposta Consultoria" — documento comercial de venda (não o relatório técnico de
-// RelatorioPdfService), no molde do PDF de referência que o usuário trouxe pronto (Okta IA ·
+// RelatorioPdfService), no molde do PDF de referência que o usuário trouxe pronto (L'okta IA ·
 // Proposta Comercial · iAgrow, ago/2026): capa escura, sumário executivo, diagnóstico REAL da
 // empresa, catálogo dos 15 módulos em 4 camadas (Discover/Protect/Analyze/Govern), comparativo,
 // ROI, cronograma de 90 dias, investimento, termos comerciais e anexos. Só a seção 02 (diagnóstico)
@@ -15,9 +15,16 @@ namespace OktaIA.Web.Services;
 // app, que é bilíngue).
 public class PropostaComercialPdfService
 {
+    private readonly byte[] _iconMono;
+
     static PropostaComercialPdfService()
     {
         QuestPDF.Settings.License = LicenseType.Community;
+    }
+
+    public PropostaComercialPdfService(IWebHostEnvironment env)
+    {
+        _iconMono = File.ReadAllBytes(Path.Combine(env.WebRootPath, "img", "brand", "simbolo-mono.png"));
     }
 
     private const string BrandBg = "#0B1220";
@@ -66,12 +73,12 @@ public class PropostaComercialPdfService
                     col.Item().Row(row =>
                     {
                         row.AutoItem().Width(30).Height(30).Background(BrandBlue).AlignMiddle().AlignCenter()
-                            .Text("O").FontSize(15).Bold().FontColor(BrandBg);
+                            .Padding(6).Image(_iconMono);
                         row.RelativeItem().PaddingLeft(10).Column(brand =>
                         {
                             brand.Item().Text(t =>
                             {
-                                t.Span("Okta").FontSize(15).Bold().FontColor(Colors.White);
+                                t.Span("L'okta ").FontSize(15).Bold().FontColor(Colors.White);
                                 t.Span("IA").FontSize(15).Bold().FontColor(BrandBlue);
                             });
                             brand.Item().Text("SEGURANÇA CONTÍNUA").FontSize(7).FontColor(TextMuted).LetterSpacing(0.15f);
@@ -106,7 +113,7 @@ public class PropostaComercialPdfService
                 capa.Footer().Background(BrandBg).PaddingHorizontal(46).PaddingVertical(14).Row(row =>
                 {
                     row.RelativeItem().Text("DOCUMENTO CONFIDENCIAL — USO RESTRITO").FontSize(7).FontColor(TextMuted2);
-                    row.AutoItem().Text("OKTA-IA").FontSize(7).FontColor(TextMuted2);
+                    row.AutoItem().Text("L'OKTA IA").FontSize(7).FontColor(TextMuted2);
                 });
             });
 
@@ -119,7 +126,7 @@ public class PropostaComercialPdfService
 
                 page.Header().Row(row =>
                 {
-                    row.RelativeItem().Text("OKTA IA").FontSize(7.5f).Bold().FontColor(TextMuted2).LetterSpacing(0.1f);
+                    row.RelativeItem().Text("L'OKTA IA").FontSize(7.5f).Bold().FontColor(TextMuted2).LetterSpacing(0.1f);
                     row.AutoItem().Text($"PROPOSTA COMERCIAL · {empresa.Nome.ToUpperInvariant()} · {geradoEm:MMM yyyy}".ToUpperInvariant())
                         .FontSize(7.5f).FontColor(TextMuted2).LetterSpacing(0.06f);
                 });
@@ -132,7 +139,7 @@ public class PropostaComercialPdfService
                         row.RelativeItem().Text("DOCUMENTO CONFIDENCIAL — USO RESTRITO").FontSize(6.5f).FontColor(TextMuted2);
                         row.AutoItem().Text(x =>
                         {
-                            x.Span("OKTA-IA · ").FontSize(6.5f).FontColor(TextMuted2);
+                            x.Span("L'OKTA IA · ").FontSize(6.5f).FontColor(TextMuted2);
                             x.CurrentPageNumber().FontSize(6.5f).FontColor(TextMuted2);
                             x.Span(" / ").FontSize(6.5f).FontColor(TextMuted2);
                             x.TotalPages().FontSize(6.5f).FontColor(TextMuted2);
@@ -158,7 +165,7 @@ public class PropostaComercialPdfService
                         .FontSize(10).LineHeight(1.6f);
                     body.Item().PaddingTop(6).Text(t =>
                     {
-                        t.Span("A Okta IA não substitui nenhuma dessas ferramentas. Ela ").FontSize(10).LineHeight(1.6f);
+                        t.Span("A L'okta IA não substitui nenhuma dessas ferramentas. Ela ").FontSize(10).LineHeight(1.6f);
                         t.Span("orquestra").FontSize(10).Bold().LineHeight(1.6f);
                         t.Span(" todas. É a camada de inteligência que fica acima do parque instalado, consolida o que cada sistema já sabe, " +
                                "prioriza riscos com IA e traduz tudo em uma linguagem que o conselho entende: risco, custo, prazo e responsável.")
@@ -259,7 +266,7 @@ public class PropostaComercialPdfService
 
                     body.Item().PaddingTop(8).Text(
                         "O que esse diagnóstico mostra é apenas a superfície externa. É o primeiro dos quinze módulos da plataforma, e o único que roda " +
-                        "sem nenhuma integração. Os outros catorze só aparecem quando a Okta IA se conecta ao que a empresa já tem instalado.")
+                        "sem nenhuma integração. Os outros catorze só aparecem quando a L'okta IA se conecta ao que a empresa já tem instalado.")
                         .FontSize(9).FontColor(TextMuted).LineHeight(1.6f);
 
                     // 03 — O diretor não quer saber de porta 445
@@ -277,7 +284,7 @@ public class PropostaComercialPdfService
                     {
                         c.Item().Row(r =>
                         {
-                            r.RelativeItem().Text("Com a Okta IA, a resposta cabe em uma tela").FontSize(12).Bold().FontColor(Colors.White);
+                            r.RelativeItem().Text("Com a L'okta IA, a resposta cabe em uma tela").FontSize(12).Bold().FontColor(Colors.White);
                             r.AutoItem().Text("EXEMPLO DE PAINEL (ILUSTRATIVO)").FontSize(6.5f).FontColor(TextMuted2);
                         });
                         c.Item().PaddingTop(12).Row(r =>
@@ -320,7 +327,7 @@ public class PropostaComercialPdfService
                     body.Item().PaddingTop(20);
                     SectionTitle(body, "04", "Não é mais uma ferramenta. É a camada acima delas.");
                     body.Item().PaddingTop(6).Text(
-                        "Enquanto o firewall protege o perímetro, o EDR protege os endpoints e o SIEM correlaciona eventos, a Okta IA conecta tudo isso, " +
+                        "Enquanto o firewall protege o perímetro, o EDR protege os endpoints e o SIEM correlaciona eventos, a L'okta IA conecta tudo isso, " +
                         "prioriza riscos com inteligência artificial, gera relatórios executivos, mede conformidade e orienta a tomada de decisão.")
                         .FontSize(9.5f).LineHeight(1.6f);
                     body.Item().PaddingTop(10).BorderLeft(3).BorderColor(BrandBlue).Background("#F0F5FF").Padding(12)
@@ -443,7 +450,7 @@ public class PropostaComercialPdfService
                         void Head(string t) => table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Darken1).PaddingBottom(4).Text(t).FontSize(7.5f).Bold().FontColor(TextMuted2).LetterSpacing(0.06f);
                         Head("SITUAÇÃO");
                         Head("HOJE, SEM A PLATAFORMA");
-                        Head("COM A OKTA IA");
+                        Head("COM A L'OKTA IA");
 
                         (string Sit, string Antes, string Depois)[] linhas =
                         [
@@ -467,7 +474,7 @@ public class PropostaComercialPdfService
                     SectionTitle(body, "08", "Por que não existe conflito com o que a empresa já usa");
                     body.Item().PaddingTop(6).Text(
                         "Fabricantes de perímetro e endpoint resolvem controle. SIEMs resolvem correlação de eventos. Nenhum dos dois grupos resolve gestão. " +
-                        "É exatamente esse espaço que a Okta IA ocupa.")
+                        "É exatamente esse espaço que a L'okta IA ocupa.")
                         .FontSize(9.5f).LineHeight(1.6f);
 
                     body.Item().PaddingTop(10).Table(table =>
@@ -485,7 +492,7 @@ public class PropostaComercialPdfService
                         Head("NECESSIDADE");
                         Head("FABRICANTES DE PONTO");
                         Head("SIEM");
-                        Head("OKTA IA", true);
+                        Head("L'OKTA IA", true);
 
                         (string Necessidade, string Fab, string Siem, string Okta)[] linhas =
                         [
@@ -511,7 +518,7 @@ public class PropostaComercialPdfService
                     body.Item().PaddingTop(18);
                     SectionTitle(body, "09", "Retorno sobre o investimento");
                     body.Item().PaddingTop(6).Text(
-                        "O retorno da Okta IA vem de quatro frentes mensuráveis. Os valores são preenchidos com os números reais da empresa a partir da Fase 1 " +
+                        "O retorno da L'okta IA vem de quatro frentes mensuráveis. Os valores são preenchidos com os números reais da empresa a partir da Fase 1 " +
                         "e o cálculo passa a ser acompanhado no próprio painel, no módulo de Gestão Financeira.")
                         .FontSize(9.5f).FontColor(TextMuted).LineHeight(1.6f);
 
@@ -707,8 +714,8 @@ public class PropostaComercialPdfService
                         row.ConstantItem(160).Column(c =>
                         {
                             c.Item().Text("CONTATO COMERCIAL").FontSize(6.5f).FontColor(TextMuted2).LetterSpacing(0.08f);
-                            c.Item().PaddingTop(3).Text("Okta IA").FontSize(9.5f).Bold().FontColor(Colors.White);
-                            c.Item().Text("comercial@okta-ia.com").FontSize(8.5f).FontColor(BrandBlue);
+                            c.Item().PaddingTop(3).Text("L'okta IA").FontSize(9.5f).Bold().FontColor(Colors.White);
+                            c.Item().Text("comercial@loktaia.com").FontSize(8.5f).FontColor(BrandBlue);
                         });
                     });
 

@@ -12,7 +12,7 @@ namespace OktaIA.Web.Pages;
 [Authorize]
 public class AutenticadorModel : PageModel
 {
-    private const string Issuer = "okta-ia.com";
+    private const string Issuer = "loktaia.com";
 
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;

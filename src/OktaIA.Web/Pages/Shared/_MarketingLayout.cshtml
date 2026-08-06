@@ -21,23 +21,23 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@(ViewData["Title"] is not null ? $"{ViewData["Title"]} — Okta-IA" : "Okta-IA · Segurança gerenciada para empresas que não podem parar")</title>
+    <title>@(ViewData["Title"] is not null ? $"{ViewData["Title"]} — L'okta IA" : "L'okta IA · Segurança gerenciada para empresas que não podem parar")</title>
     @{
-        var mkDescricao = ViewData["Description"] as string ?? "Okta-IA: SOC as a Service (MSSP) — monitoramento, resposta, relatórios, consultoria e gestão de segurança com tecnologias integradas de parceiros.";
-        var mkTitulo = ViewData["Title"] is not null ? $"{ViewData["Title"]} — Okta-IA" : "Okta-IA · Cyber Security & AI";
+        var mkDescricao = ViewData["Description"] as string ?? "L'okta IA: SOC as a Service (MSSP) — monitoramento, resposta, relatórios, consultoria e gestão de segurança com tecnologias integradas de parceiros.";
+        var mkTitulo = ViewData["Title"] is not null ? $"{ViewData["Title"]} — L'okta IA" : "L'okta IA · Cyber Security & AI";
     }
     <meta name="description" content="@mkDescricao" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="okta-ia.com" />
+    <meta property="og:site_name" content="loktaia.com" />
     <meta property="og:title" content="@mkTitulo" />
     <meta property="og:description" content="@mkDescricao" />
-    <meta property="og:image" content="https://okta-ia.com/img/brand/lockup-horizontal.png" />
-    <meta property="og:url" content="https://okta-ia.com@Context.Request.Path" />
+    <meta property="og:image" content="https://loktaia.com/img/brand/lockup-horizontal.png" />
+    <meta property="og:url" content="https://loktaia.com@Context.Request.Path" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="@mkTitulo" />
     <meta name="twitter:description" content="@mkDescricao" />
-    <meta name="twitter:image" content="https://okta-ia.com/img/brand/lockup-horizontal.png" />
+    <meta name="twitter:image" content="https://loktaia.com/img/brand/lockup-horizontal.png" />
 
     <link rel="icon" type="image/png" sizes="32x32" href="~/img/brand/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="64x64" href="~/img/brand/favicon-64.png" />
@@ -59,9 +59,9 @@
     <header class="mk-header">
         <div class="mk-header-inner">
             <a href="/" class="mk-brand">
-                <div class="mk-brand-mark">O</div>
+                <img src="~/img/brand/simbolo-solido-branco.svg" alt="L'okta IA" class="mk-brand-mark" />
                 <div>
-                    <div class="mk-brand-word">okta-ia<span>.com</span></div>
+                    <div class="mk-brand-word">L'okta IA</div>
                     <div class="mk-brand-tag">SOC as a Service · MSSP</div>
                 </div>
             </a>
@@ -104,13 +104,13 @@
             <div class="mk-share-head">
                 <div style="flex:1;">
                     <div class="mk-share-title">Compartilhar</div>
-                    <div class="mk-share-sub">Envie a okta-ia para quem decide segurança na sua rede.</div>
+                    <div class="mk-share-sub">Envie a L'okta IA para quem decide segurança na sua rede.</div>
                 </div>
                 <button type="button" class="mk-share-close" data-mk-share-close aria-label="Fechar">✕</button>
             </div>
 
             <div class="mk-share-link-row">
-                <span class="mk-share-link-text" data-mk-share-url>okta-ia.com</span>
+                <span class="mk-share-link-text" data-mk-share-url>loktaia.com</span>
                 <button type="button" class="mk-share-copy-btn" data-mk-share-copy>Copiar</button>
             </div>
 
@@ -121,7 +121,7 @@
 
             <div class="mk-share-msg-wrap">
                 <div class="mk-share-label">MENSAGEM SUGERIDA</div>
-                <p class="mk-share-msg">Conheça a okta-ia: SOC as a Service (MSSP) com monitoramento, resposta, relatórios, consultoria e gestão de segurança, agregando tecnologias de parceiros. Assessment gratuito em 48 horas.</p>
+                <p class="mk-share-msg">Conheça a L'okta IA: SOC as a Service (MSSP) com monitoramento, resposta, relatórios, consultoria e gestão de segurança, agregando tecnologias de parceiros. Assessment gratuito em 48 horas.</p>
             </div>
         </div>
     </div>
@@ -134,8 +134,8 @@
         <div class="mk-footer-top">
             <div>
                 <a href="/" class="mk-brand" style="margin-bottom:14px;">
-                    <div class="mk-brand-mark">O</div>
-                    <div class="mk-brand-word">okta-ia<span>.com</span></div>
+                    <img src="~/img/brand/simbolo-solido-branco.svg" alt="L'okta IA" class="mk-brand-mark" />
+                    <div class="mk-brand-word">L'okta IA</div>
                 </a>
                 <p class="mk-footer-desc">SOC as a Service (MSSP) para empresas que não podem parar. Monitoramento, resposta, relatórios, consultoria e gestão em uma operação só.</p>
                 <div class="mk-footer-social">
@@ -155,7 +155,7 @@
         </div>
         <div class="mk-footer-bottom">
             <div class="mk-footer-bottom-inner">
-                <span class="mk-footer-copy">© 2026 okta-ia · Todos os direitos reservados</span>
+                <span class="mk-footer-copy">© 2026 L'okta IA · Todos os direitos reservados</span>
                 <div class="mk-footer-legal">
                     <span>Política de Privacidade</span><span>Termos de Uso</span><span>Canal de Ética</span><span>Código de Conduta</span>
                 </div>

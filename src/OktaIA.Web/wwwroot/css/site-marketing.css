@@ -65,7 +65,7 @@
 }
 .mk-header-inner { max-width: 1280px; margin: 0 auto; padding: 0 clamp(14px, 3vw, 32px); height: 70px; display: flex; align-items: center; gap: 34px; }
 .mk-brand { display: flex; align-items: center; gap: 11px; color: var(--mk-text); flex: none; white-space: nowrap; }
-.mk-brand-mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(145deg, var(--mk-blue), #1B4FA8); display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 700; color: var(--mk-bg); box-shadow: 0 0 22px rgba(77, 155, 255, .42); }
+.mk-brand-mark { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
 .mk-brand-word { font-size: 16px; font-weight: 700; letter-spacing: -.3px; }
 .mk-brand-word span { color: var(--mk-muted-4); font-weight: 500; }
 .mk-brand-tag { font-family: 'IBM Plex Mono', monospace; font-size: 8px; color: var(--mk-muted-4); letter-spacing: .16em; text-transform: uppercase; }

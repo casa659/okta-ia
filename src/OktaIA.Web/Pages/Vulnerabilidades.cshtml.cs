@@ -243,7 +243,7 @@ public class VulnerabilidadesModel : PageModel
         var pdf = _propostaPdf.Gerar(empresaAtual, achadosReais, ativosReais.Count, ativos.Count,
             ultimaVarredura == default ? null : ultimaVarredura);
 
-        var nomeArquivo = $"proposta-comercial-okta-ia-{empresaAtual.Nome.Replace(" ", "-").ToLowerInvariant()}.pdf";
+        var nomeArquivo = $"proposta-comercial-lokta-ia-{empresaAtual.Nome.Replace(" ", "-").ToLowerInvariant()}.pdf";
         return File(pdf, "application/pdf", nomeArquivo);
     }
 

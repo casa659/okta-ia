@@ -58,8 +58,7 @@ a:hover { color: var(--oi-accent-light); }
   border-right: 1px solid var(--oi-border); height: 100%;
 }
 .oi-brand-mark {
-  width: 24px; height: 24px; border-radius: 6px;
-  background: linear-gradient(150deg, var(--oi-accent), var(--oi-accent-dark));
+  width: 24px; height: 24px;
   display: flex; align-items: center; justify-content: center;
   font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 700; color: var(--oi-bg);
 }

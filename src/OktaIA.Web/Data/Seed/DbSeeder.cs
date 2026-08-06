@@ -30,6 +30,20 @@ public static class DbSeeder
         await SeedContactChannelsAsync(db);
         await SeedRolePermissionsAsync(db, roleManager);
         await BackfillDigitalTwinPermissionAsync(db);
+        await BackfillRebrandLoktaiaAsync(db);
+    }
+
+    // Rebranding Okta-IA → L'okta IA (loktaia.com): SeedContactChannelsAsync só roda uma vez, então
+    // o e-mail antigo já gravado em produção nunca seria atualizado sozinho. Só troca se o valor
+    // ainda for exatamente o default antigo — nunca sobrescreve edição manual feita via /Contato.
+    private static async Task BackfillRebrandLoktaiaAsync(ApplicationDbContext db)
+    {
+        var canal = await db.ContactChannels.FirstOrDefaultAsync(c => c.Chave == "COMERCIAL" && c.Valor == "info@okta-ia.com");
+        if (canal is not null)
+        {
+            canal.Valor = "info@loktaia.com";
+            await db.SaveChangesAsync();
+        }
     }
 
     // Dá aos perfis nativos exatamente o acesso que eles já tinham via [Authorize(Roles="...")]
@@ -102,7 +116,7 @@ public static class DbSeeder
 
         (string Chave, string Cor, string Valor, string Descricao)[] dados =
         [
-            ("COMERCIAL", "#4D9BFF", "info@okta-ia.com", "Propostas, demonstrações e parcerias"),
+            ("COMERCIAL", "#4D9BFF", "info@loktaia.com", "Propostas, demonstrações e parcerias"),
             ("TELEFONE", "#00E0A4", "+55 11 3042-9392", "Segunda a sexta, 8h às 18h"),
             ("WHATSAPP", "#00E0A4", "+55 34 9 9677-8585", "Atendimento comercial e suporte"),
             ("ENDEREÇO", "#8A7BFF", "Av. Paulista, 2006, cj 1314, Bela Vista, São Paulo-SP, CEP 01.310-926", "Atendimento presencial mediante agendamento"),

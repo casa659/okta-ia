@@ -111,7 +111,7 @@ public class AtivosModel : PageModel
     {
         var empresa = await _db.Companies.FirstOrDefaultAsync(c => c.Id == empresaId);
         var pdf = _termoPdf.Gerar(empresa?.Nome ?? "—", dominio ?? "");
-        return File(pdf, "application/pdf", "termo-autorizacao-okta-ia.pdf");
+        return File(pdf, "application/pdf", "termo-autorizacao-lokta-ia.pdf");
     }
 
     public async Task<IActionResult> OnPostScanAsync(int id, int? empresa)

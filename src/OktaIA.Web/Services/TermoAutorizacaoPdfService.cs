@@ -11,9 +11,16 @@ namespace OktaIA.Web.Services;
 // entidades já persistidas.
 public class TermoAutorizacaoPdfService
 {
+    private readonly byte[] _iconMonoBranco;
+
     static TermoAutorizacaoPdfService()
     {
         QuestPDF.Settings.License = LicenseType.Community;
+    }
+
+    public TermoAutorizacaoPdfService(IWebHostEnvironment env)
+    {
+        _iconMonoBranco = File.ReadAllBytes(Path.Combine(env.WebRootPath, "img", "brand", "simbolo-mono-branco.png"));
     }
 
     private const string Muted = "#5A7191";
@@ -37,10 +44,10 @@ public class TermoAutorizacaoPdfService
                     col.Item().Row(row =>
                     {
                         row.AutoItem().Width(26).Height(26).Background("#0B1220").AlignMiddle().AlignCenter()
-                            .Text("O").FontSize(13).Bold().FontColor(Colors.White);
+                            .Padding(5).Image(_iconMonoBranco);
                         row.RelativeItem().PaddingLeft(9).AlignMiddle().Text(t =>
                         {
-                            t.Span("Okta").FontSize(13).Bold().FontColor("#0B1220");
+                            t.Span("L'okta ").FontSize(13).Bold().FontColor("#0B1220");
                             t.Span("IA").FontSize(13).Bold().FontColor("#4D9BFF");
                         });
                         row.AutoItem().AlignMiddle().Text($"Gerado em {geradoEm:dd/MM/yyyy HH:mm}").FontSize(8).FontColor(Muted);
@@ -67,12 +74,12 @@ public class TermoAutorizacaoPdfService
 
                         Campo("EMPRESA AUTORIZANTE", empresaNome);
                         Campo("DOMÍNIO/ATIVO AUTORIZADO", dominioExibicao);
-                        Campo("PRESTADOR AUTORIZADO", "Okta IA — comercial@okta-ia.com");
+                        Campo("PRESTADOR AUTORIZADO", "L'okta IA — comercial@loktaia.com");
                     });
 
                     col.Item().PaddingTop(20).Text(
                         $"Eu, na qualidade de representante ou responsável técnico pela empresa acima identificada, declaro que sou responsável " +
-                        $"pelo domínio {dominioExibicao} — ou possuo autorização expressa de quem é — e, nessa condição, autorizo a Okta IA a " +
+                        $"pelo domínio {dominioExibicao} — ou possuo autorização expressa de quem é — e, nessa condição, autorizo a L'okta IA a " +
                         "executar verificações técnicas de segurança sobre esse domínio, com a finalidade exclusiva de identificar vulnerabilidades " +
                         "e apoiar a melhoria da postura de segurança da empresa.")
                         .FontSize(9.5f).LineHeight(1.65f);
@@ -104,8 +111,8 @@ public class TermoAutorizacaoPdfService
                     col.Item().PaddingTop(14).Text(
                         "As verificações são passivas e não intrusivas — não incluem tentativa de exploração de vulnerabilidade, ataque de negação " +
                         "de serviço ou acesso não autorizado a dados. Esta autorização é válida enquanto o ativo permanecer cadastrado como " +
-                        "autorizado na plataforma Okta IA, podendo ser revogada a qualquer momento mediante solicitação por escrito ao e-mail " +
-                        "comercial@okta-ia.com.")
+                        "autorizado na plataforma L'okta IA, podendo ser revogada a qualquer momento mediante solicitação por escrito ao e-mail " +
+                        "comercial@loktaia.com.")
                         .FontSize(9).FontColor(Muted).LineHeight(1.6f);
 
                     col.Item().PaddingTop(30).Row(row =>
@@ -129,7 +136,7 @@ public class TermoAutorizacaoPdfService
                 {
                     col.Item().LineHorizontal(0.7f).LineColor(Colors.Grey.Lighten2);
                     col.Item().PaddingTop(6).Text(
-                        $"Documento gerado eletronicamente pela plataforma Okta IA em {geradoEm:dd/MM/yyyy HH:mm}. " +
+                        $"Documento gerado eletronicamente pela plataforma L'okta IA em {geradoEm:dd/MM/yyyy HH:mm}. " +
                         "Válido como registro de autorização informada, mantido como evidência de conformidade (LGPD, art. 46).")
                         .FontSize(7.5f).FontColor(Muted);
                 });

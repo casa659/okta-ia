@@ -97,9 +97,9 @@ public static class AdminCatalog
         new ConnectorItem("Wazuh", "wazuh", "1.2.8", "HIDS / SIEM", "Wazuh Inc.", "apikey", new[] { "alerts", "assets", "vulns", "events" }, "degraded", 82, "4 min", "11.7k", "ativo"),
         new ConnectorItem("Fortinet FortiGate", "fortigate", "1.6.1", "Firewall / NGFW", "Fortinet", "cert", new[] { "alerts", "assets", "events" }, "healthy", 97, "2 min", "19.3k", "ativo"),
         new ConnectorItem("CrowdStrike Falcon", "crowdstrike", "1.3.4", "EDR", "CrowdStrike", "oauth2", new[] { "alerts", "assets", "incidents", "vulns" }, "healthy", 99, "1 min", "6.2k", "ativo"),
-        new ConnectorItem("AWS Security Hub", "aws-hub", "1.1.0", "Cloud Security", "okta-ia", "iam", new[] { "alerts", "assets", "vulns" }, "healthy", 96, "5 min", "3.8k", "ativo"),
+        new ConnectorItem("AWS Security Hub", "aws-hub", "1.1.0", "Cloud Security", "L'okta IA", "iam", new[] { "alerts", "assets", "vulns" }, "healthy", 96, "5 min", "3.8k", "ativo"),
         new ConnectorItem("Tenable Nessus", "tenable", "0.9.3", "Vulnerability Mgmt", "Comunidade", "apikey", new[] { "vulns", "assets" }, "error", 0, "—", "0", "erro"),
-        new ConnectorItem("Cloudflare", "cloudflare", "1.0.7", "WAF / CDN", "okta-ia", "apikey", new[] { "alerts", "events" }, "healthy", 99, "1 min", "41.2k", "ativo"),
+        new ConnectorItem("Cloudflare", "cloudflare", "1.0.7", "WAF / CDN", "L'okta IA", "apikey", new[] { "alerts", "events" }, "healthy", 99, "1 min", "41.2k", "ativo"),
     };
 
     // ---------- Cofre de credenciais ----------
@@ -240,11 +240,11 @@ public static class AdminCatalog
 
     public static readonly IReadOnlyList<SdkStep> SdkSteps = new[]
     {
-        new SdkStep("01", "Instalar o SDK", "dotnet add package OktaIa.Connector.Sdk — ou npm i @okta-ia/connector-sdk para conectores em TypeScript."),
+        new SdkStep("01", "Instalar o SDK", "dotnet add package LoktaIa.Connector.Sdk — ou npm i @loktaia/connector-sdk para conectores em TypeScript."),
         new SdkStep("02", "Implementar a interface", "Herde de ConnectorBase e implemente os seis métodos do contrato. O núcleo cuida de retry, cursor, cota e cofre."),
         new SdkStep("03", "Declarar capacidades", "Em getCapabilities() diga quais entidades você entrega, em qual direção e com qual granularidade."),
         new SdkStep("04", "Mapear para o esquema", "Traduza o payload do fornecedor para ok.alert.v2, ok.asset.v2 e demais esquemas versionados."),
-        new SdkStep("05", "Testar no sandbox", "okta-ia connector test executa o conjunto de conformidade: 84 asserções de contrato, idempotência e retomada."),
+        new SdkStep("05", "Testar no sandbox", "loktaia connector test executa o conjunto de conformidade: 84 asserções de contrato, idempotência e retomada."),
         new SdkStep("06", "Publicar", "Assine o pacote e submeta ao marketplace. Revisão de segurança em até 5 dias úteis para selo verificado."),
     };
 

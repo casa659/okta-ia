@@ -54,7 +54,7 @@
     var shareCopyBtn = shareBackdrop.querySelector('[data-mk-share-copy]');
     var shareNativeBtn = shareBackdrop.querySelector('[data-mk-share-native]');
     var shareChannelsEl = shareBackdrop.querySelector('[data-mk-share-channels]');
-    var shareMsg = 'Conheça a okta-ia: SOC as a Service (MSSP) com monitoramento, resposta, relatórios, consultoria e gestão de segurança, agregando tecnologias de parceiros. Assessment gratuito em 48 horas.';
+    var shareMsg = 'Conheça a L\'okta IA: SOC as a Service (MSSP) com monitoramento, resposta, relatórios, consultoria e gestão de segurança, agregando tecnologias de parceiros. Assessment gratuito em 48 horas.';
 
     function openShare() {
       var url = location.href;
@@ -76,7 +76,7 @@
       if (typeof navigator !== 'undefined' && navigator.share) {
         shareNativeBtn.classList.add('mk-show');
         shareNativeBtn.addEventListener('click', function () {
-          navigator.share({ title: 'okta-ia · Cyber Security & AI', text: shareMsg, url: location.href }).catch(function () {});
+          navigator.share({ title: "L'okta IA · Cyber Security & AI", text: shareMsg, url: location.href }).catch(function () {});
         });
       }
     }
@@ -104,7 +104,7 @@
         { n: 'LinkedIn', c: '#0A66C2', href: 'https://www.linkedin.com/sharing/share-offsite/?url=' + u },
         { n: 'X', c: '#C4D3E6', href: 'https://twitter.com/intent/tweet?text=' + t + '&url=' + u },
         { n: 'Telegram', c: '#2AABEE', href: 'https://t.me/share/url?url=' + u + '&text=' + t },
-        { n: 'E-mail', c: '#FF8A3D', href: 'mailto:?subject=' + encodeURIComponent('okta-ia · Cyber Security & AI') + '&body=' + t + '%0A%0A' + u },
+        { n: 'E-mail', c: '#FF8A3D', href: 'mailto:?subject=' + encodeURIComponent("L'okta IA · Cyber Security & AI") + '&body=' + t + '%0A%0A' + u },
         { n: 'Teams', c: '#6264A7', href: 'https://teams.microsoft.com/share?href=' + u + '&msgText=' + t }
       ];
       shareChannelsEl.innerHTML = '';

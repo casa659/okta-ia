@@ -28,7 +28,7 @@ builder.Services.AddSingleton<TermoAutorizacaoPdfService>();
 builder.Services.AddHttpClient<SecurityScanService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("okta-ia-scanner/1.0");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("loktaia-scanner/1.0");
 });
 
 builder.Services

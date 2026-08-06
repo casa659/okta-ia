@@ -8,7 +8,7 @@ public class ContactChannel
 
     public required string Chave { get; set; }     // rótulo curto, ex. "COMERCIAL"
     public required string Cor { get; set; }        // hex, ex. "#4D9BFF"
-    public required string Valor { get; set; }       // ex. "info@okta-ia.com"
+    public required string Valor { get; set; }       // ex. "info@loktaia.com"
     public required string Descricao { get; set; }   // ex. "Propostas, demonstrações e parcerias"
     public int Ordem { get; set; }
 }
