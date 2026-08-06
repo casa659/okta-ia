@@ -1,0 +1,45 @@
+@page
+@model OktaIA.Web.Pages.Admin.MarketplaceModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Marketplace";
+    var instalados = AdminCatalog.Market.Count(m => m.Status == "instalado");
+    var atualizar = AdminCatalog.Market.Count(m => m.Status == "atualizar");
+    var disponiveis = AdminCatalog.Market.Count(m => m.Status is "disponível" or "beta");
+}
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:16px; flex-wrap:wrap;">
+    <div class="adm-page-head" style="margin-bottom:0;">
+        <h1>Marketplace de integrações</h1>
+        <p>Instale, atualize e remova conectores sem tocar no núcleo da plataforma</p>
+    </div>
+    <div style="display:flex; gap:9px;">
+        <span class="adm-pill" style="color:#00E0A4; background:#00E0A41A;">@instalados INSTALADOS</span>
+        <span class="adm-pill" style="color:#FF8A3D; background:#FF8A3D1A;">@atualizar ATUALIZAÇÃO</span>
+        <span class="adm-pill" style="color:#7A8FAB; background:rgba(120,170,255,.07);">@disponiveis DISPONÍVEIS</span>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(236px,100%),1fr)); gap:11px;">
+    @foreach (var m in AdminCatalog.Market)
+    {
+        var statusColor = m.Status switch { "instalado" => "#00E0A4", "atualizar" => "#FF8A3D", "beta" => "#8A7BFF", _ => "#7A8FAB" };
+        var trustColor = m.Trust switch { "oficial" => "#00E0A4", "verificado" => "#4D9BFF", _ => "#7A8FAB" };
+        <div class="adm-card" style="padding:16px 17px; display:flex; flex-direction:column;">
+            <div style="display:flex; align-items:flex-start; gap:11px; margin-bottom:11px;">
+                <span style="width:32px; height:32px; border-radius:8px; background:rgba(77,155,255,.11); border:1px solid rgba(120,170,255,.16); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#8FC0FF; flex:0 0 32px;">@m.Ini</span>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:13px; font-weight:600; letter-spacing:-.012em; line-height:1.3;">@m.N</div>
+                    <div class="oi-mono" style="font-size:9px; color:#4A5D78; margin-top:3px;">@m.Cat</div>
+                </div>
+                <span class="adm-pill" style="color:@statusColor; background:@(statusColor)1F; font-size:8.5px;">@m.Status.ToUpperInvariant()</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:11px; flex-wrap:wrap;">
+                <span class="adm-pill" style="color:@trustColor; background:@(trustColor)1F; font-size:8.5px;">@m.Trust.ToUpperInvariant()</span>
+                <span class="oi-mono" style="font-size:9px; color:#5A7191;">v@m.Ver</span>
+                <span class="oi-mono" style="font-size:9px; color:#FFC93C;">★ @m.Rating.ToString("0.0")</span>
+            </div>
+            <div class="oi-mono" style="font-size:9px; color:#4A5D78; margin-top:auto;">@m.Vendor · @m.Installs instalações</div>
+        </div>
+    }
+</div>

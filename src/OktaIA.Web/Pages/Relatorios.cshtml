@@ -1,0 +1,55 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model RelatoriosModel
+@{
+    ViewData["Title"] = I18n.T("nav.rep");
+}
+
+<div class="oi-content">
+    <div style="margin-bottom:14px;">
+        <h1 class="oi-dash-title">@I18n.T("repTitle")</h1>
+        <p class="oi-dash-sub">@I18n.T("repSub")</p>
+    </div>
+
+    <div class="oi-reports-grid">
+        <div class="oi-report-cards">
+            @foreach (var r in Model.Reports)
+            {
+                <div class="oi-report-card">
+                    <div class="oi-report-top">
+                        <span class="oi-report-fmt" style="color:@r.CorFormato;border-color:@r.CorFormato;background:@r.FundoFormato">@r.Formato</span>
+                        <span class="oi-report-freq">@r.Frequencia</span>
+                    </div>
+                    <div class="oi-report-name">@r.Nome</div>
+                    <p class="oi-report-desc">@r.Descricao</p>
+                    <div class="oi-report-foot">
+                        <span class="oi-report-last">@r.Ultimo</span>
+                        <span class="oi-report-gen">@I18n.T("generate") →</span>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="oi-exec-card">
+            <div class="oi-panel-head">
+                <span class="oi-brief-badge">AI</span>
+                <span class="oi-panel-title" style="margin:0 0 0 8px">@I18n.T("execPreview")</span>
+            </div>
+            <div class="oi-exec-body">
+                <div class="oi-exec-period">@I18n.T("period")</div>
+                <h3 class="oi-exec-head">@I18n.T("execHead")</h3>
+                <p class="oi-exec-text">@I18n.T("execBody")</p>
+                <div class="oi-exec-stats">
+                    @foreach (var e in Model.ExecStats)
+                    {
+                        <div class="oi-exec-stat">
+                            <div class="oi-exec-stat-k">@e.Chave</div>
+                            <div class="oi-exec-stat-v" style="color:@e.Cor">@e.Valor</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

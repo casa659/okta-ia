@@ -1,0 +1,151 @@
+@page
+@model ContatoModel
+@using OktaIA.Web.Services
+@{
+    Layout = "_MarketingLayout";
+    ViewData["Title"] = "Contato";
+}
+
+<section style="max-width:1280px; margin:0 auto; padding:clamp(44px,6vw,80px) clamp(16px,4vw,32px) clamp(44px,5vw,72px);">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr)); gap:56px;">
+    <div>
+      <span class="mk-kicker">Contato</span>
+      <h1 class="mk-h1" style="font-size:clamp(30px,3.6vw,46px); line-height:1.1;">Vamos avaliar sua exposição juntos</h1>
+      <p class="mk-lead" style="margin-bottom:34px; max-width:480px;">Retornamos em até 4 horas úteis. Para incidentes em andamento, use o canal de emergência — atendimento imediato, 24 horas por dia.</p>
+
+      <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:14px;">
+        @foreach (var ch in Model.Channels)
+        {
+          <div style="display:flex; align-items:center; gap:16px; background:rgba(255,255,255,.028); border:1px solid rgba(120,170,255,.11); border-radius:12px; padding:16px 18px;">
+            <span class="mk-mono" style="font-size:9.5px; color:@ch.Cor; letter-spacing:.12em; width:82px; flex:0 0 82px;">@ch.Chave</span>
+            <div style="flex:1;">
+              <div style="font-size:14.5px; font-weight:600; letter-spacing:-.01em;">@ch.Valor</div>
+              <div style="font-size:12px; color:#7A8FAB; margin-top:2px;">@ch.Descricao</div>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (User.IsInRole("Admin"))
+      {
+        <button type="button" class="mk-admin-btn-secondary" style="margin-bottom:20px;" data-adm-open-dialog="adm-dialog-canais">Editar canais de contato</button>
+
+        <dialog id="adm-dialog-canais" class="mk-admin-dialog">
+          <h2>Canais de contato</h2>
+          @foreach (var ch in Model.Channels)
+          {
+            <div class="mk-admin-card">
+              <form method="post" asp-page-handler="SalvarCanal">
+                <input type="hidden" name="CanalInput.Id" value="@ch.Id" />
+                <div class="mk-admin-row-2">
+                  <input name="CanalInput.Chave" value="@ch.Chave" placeholder="Rótulo (ex. COMERCIAL)" />
+                  <input name="CanalInput.Cor" value="@ch.Cor" placeholder="#4D9BFF" />
+                </div>
+                <input name="CanalInput.Valor" value="@ch.Valor" placeholder="Valor exibido" />
+                <input name="CanalInput.Descricao" value="@ch.Descricao" placeholder="Descrição" />
+                <div class="mk-admin-card-actions">
+                  <button type="submit" formaction="?handler=ExcluirCanal&id=@ch.Id" data-adm-confirm="Excluir o canal @ch.Chave? Isso some da página de Contato imediatamente." class="mk-admin-btn-del">Excluir</button>
+                  <button type="submit" class="mk-admin-btn-add">Salvar</button>
+                </div>
+              </form>
+            </div>
+          }
+
+          <div class="mk-admin-card">
+            <div class="mk-admin-new-label">+ NOVO CANAL</div>
+            <form method="post" asp-page-handler="SalvarCanal">
+              <div class="mk-admin-row-2">
+                <input name="CanalInput.Chave" placeholder="Rótulo (ex. SUPORTE)" />
+                <input name="CanalInput.Cor" placeholder="#4D9BFF" />
+              </div>
+              <input name="CanalInput.Valor" placeholder="Valor exibido" />
+              <input name="CanalInput.Descricao" placeholder="Descrição" />
+              <div class="mk-admin-card-actions" style="justify-content:flex-end;">
+                <button type="submit" class="mk-admin-btn-add">Adicionar</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="mk-admin-dialog-actions">
+            <button type="button" class="mk-admin-btn-secondary" data-adm-dialog-close>Fechar</button>
+          </div>
+        </dialog>
+      }
+
+      <div style="background:rgba(255,59,92,.05); border:1px solid rgba(255,59,92,.24); border-radius:12px; padding:18px 20px; display:flex; align-items:center; gap:14px;">
+        <span style="width:8px; height:8px; border-radius:50%; background:#FF3B5C; flex:0 0 8px;"></span>
+        <div>
+          <div style="font-size:14px; font-weight:600; color:#FFB3C0;">Incidente em andamento?</div>
+          <div class="mk-mono" style="font-size:13px; color:#FF8098; margin-top:3px;">0800 000 0000 · resposta 24×7</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.012)); border:1px solid rgba(120,170,255,.16); border-radius:18px; padding:32px 30px; backdrop-filter:blur(12px);">
+      <div style="font-size:18px; font-weight:600; margin-bottom:6px; letter-spacing:-.018em;">Agendar demonstração</div>
+      <div style="font-size:13px; color:#7A8FAB; margin-bottom:26px;">45 minutos, ambiente real, sem apresentação de slides.</div>
+
+      @if (Model.Enviado)
+      {
+        <div style="background:rgba(0,224,164,.08); border:1px solid rgba(0,224,164,.3); border-radius:10px; padding:18px; text-align:center;">
+          <div style="font-size:15px; font-weight:600; color:#4FD9B0; margin-bottom:6px;">Solicitação recebida</div>
+          <div style="font-size:13px; color:#8296B0;">Nosso time retorna em até 4 horas úteis.</div>
+        </div>
+      }
+      else
+      {
+        <form method="post">
+          <div asp-validation-summary="All" style="color:#FF8098; font-size:12.5px; margin-bottom:10px;"></div>
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div>
+              <div class="mk-mono" style="font-size:9.5px; color:#5A7191; letter-spacing:.12em; text-transform:uppercase; margin-bottom:7px;">Nome completo</div>
+              <input asp-for="Input.NomeCompleto" placeholder="Como devemos chamar você" style="width:100%; background:rgba(5,10,18,.6); border:1px solid rgba(120,170,255,.14); border-radius:9px; padding:12px 14px; font-family:inherit; font-size:13.5px; color:#EAF0F8;" />
+            </div>
+            <div>
+              <div class="mk-mono" style="font-size:9.5px; color:#5A7191; letter-spacing:.12em; text-transform:uppercase; margin-bottom:7px;">E-mail corporativo</div>
+              <input asp-for="Input.Email" type="email" placeholder="nome@suaempresa.com.br" style="width:100%; background:rgba(5,10,18,.6); border:1px solid rgba(120,170,255,.14); border-radius:9px; padding:12px 14px; font-family:inherit; font-size:13.5px; color:#EAF0F8;" />
+            </div>
+            <div>
+              <div class="mk-mono" style="font-size:9.5px; color:#5A7191; letter-spacing:.12em; text-transform:uppercase; margin-bottom:7px;">Empresa</div>
+              <input asp-for="Input.Empresa" placeholder="Razão social ou nome fantasia" style="width:100%; background:rgba(5,10,18,.6); border:1px solid rgba(120,170,255,.14); border-radius:9px; padding:12px 14px; font-family:inherit; font-size:13.5px; color:#EAF0F8;" />
+            </div>
+            <div>
+              <div class="mk-mono" style="font-size:9.5px; color:#5A7191; letter-spacing:.12em; text-transform:uppercase; margin-bottom:7px;">Telefone</div>
+              <input asp-for="Input.Telefone" placeholder="(11) 90000-0000" style="width:100%; background:rgba(5,10,18,.6); border:1px solid rgba(120,170,255,.14); border-radius:9px; padding:12px 14px; font-family:inherit; font-size:13.5px; color:#EAF0F8;" />
+            </div>
+            <div>
+              <div class="mk-mono" style="font-size:9.5px; color:#5A7191; letter-spacing:.12em; text-transform:uppercase; margin-bottom:7px;">Quantidade de ativos</div>
+              <input asp-for="Input.QuantidadeAtivos" placeholder="Servidores, sites e APIs aproximados" style="width:100%; background:rgba(5,10,18,.6); border:1px solid rgba(120,170,255,.14); border-radius:9px; padding:12px 14px; font-family:inherit; font-size:13.5px; color:#EAF0F8;" />
+            </div>
+            <div>
+              <div class="mk-mono" style="font-size:9.5px; color:#5A7191; letter-spacing:.12em; text-transform:uppercase; margin-bottom:7px;">Como podemos ajudar</div>
+              <textarea asp-for="Input.Mensagem" placeholder="Descreva brevemente seu cenário e sua urgência" rows="3" style="width:100%; background:rgba(5,10,18,.6); border:1px solid rgba(120,170,255,.14); border-radius:9px; padding:12px 14px; font-family:inherit; font-size:13.5px; color:#EAF0F8; resize:vertical;"></textarea>
+            </div>
+            <button type="submit" style="margin-top:8px; background:linear-gradient(135deg,#4D9BFF,#2A6FD6); border:none; border-radius:10px; padding:14px; font-family:inherit; font-size:14px; font-weight:600; color:#04101F; cursor:pointer; box-shadow:0 8px 28px rgba(77,155,255,.28);">Enviar solicitação</button>
+            <div style="font-size:11.5px; line-height:1.6; color:#5A7191; text-align:center;">Ao enviar, você concorda com o tratamento dos seus dados conforme a nossa Política de Privacidade e a LGPD.</div>
+          </div>
+        </form>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="mk-section-shaded">
+  <div style="max-width:1280px; margin:0 auto; padding:clamp(44px,6vw,80px) clamp(16px,4vw,32px);">
+    <div class="mk-lede-block" style="max-width:620px;">
+      <span class="mk-kicker">FAQ</span>
+      <h2 class="mk-h2">Perguntas frequentes</h2>
+    </div>
+    <div style="max-width:880px; display:flex; flex-direction:column; gap:9px;">
+      @foreach (var f in MarketingContent.Faqs)
+      {
+        <div class="mk-faq" data-mk-faq>
+          <button type="button" class="mk-faq-q" data-mk-faq-q>
+            <span>@f.Q</span><span class="mk-faq-icon">+</span>
+          </button>
+          <div class="mk-faq-a">@f.A</div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

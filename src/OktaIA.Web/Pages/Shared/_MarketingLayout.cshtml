@@ -1,0 +1,171 @@
+@using OktaIA.Web.Services
+@{
+    var currentPage = (ViewContext.RouteData.Values["page"] as string) ?? "";
+    bool IsActive(string page) => currentPage.Equals(page, StringComparison.OrdinalIgnoreCase);
+    string NavClass(string page) => IsActive(page) ? "mk-active" : "";
+    var navItems = new (string Page, string Label)[]
+    {
+        ("/Index", "Home"),
+        ("/Empresa", "Empresa"),
+        ("/Servicos", "Serviços"),
+        ("/Plataforma", "Plataforma"),
+        ("/Planos", "Planos"),
+        ("/Lgpd", "LGPD"),
+        ("/Seguranca", "Segurança"),
+        ("/Blog", "Blog"),
+        ("/Contato", "Contato"),
+    };
+}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] is not null ? $"{ViewData["Title"]} — Okta-IA" : "Okta-IA · Segurança gerenciada para empresas que não podem parar")</title>
+    @{
+        var mkDescricao = ViewData["Description"] as string ?? "Okta-IA: SOC as a Service (MSSP) — monitoramento, resposta, relatórios, consultoria e gestão de segurança com tecnologias integradas de parceiros.";
+        var mkTitulo = ViewData["Title"] is not null ? $"{ViewData["Title"]} — Okta-IA" : "Okta-IA · Cyber Security & AI";
+    }
+    <meta name="description" content="@mkDescricao" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="okta-ia.com" />
+    <meta property="og:title" content="@mkTitulo" />
+    <meta property="og:description" content="@mkDescricao" />
+    <meta property="og:image" content="https://okta-ia.com/img/brand/lockup-horizontal.png" />
+    <meta property="og:url" content="https://okta-ia.com@Context.Request.Path" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@mkTitulo" />
+    <meta name="twitter:description" content="@mkDescricao" />
+    <meta name="twitter:image" content="https://okta-ia.com/img/brand/lockup-horizontal.png" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="~/img/brand/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="~/img/brand/favicon-64.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="~/img/brand/apple-touch-icon-180.png" />
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <meta name="theme-color" content="#050A12" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site-marketing.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="mk">
+<div class="mk-root">
+    <div class="mk-bg-glow"></div>
+    <div class="mk-bg-grid"></div>
+
+    <header class="mk-header">
+        <div class="mk-header-inner">
+            <a href="/" class="mk-brand">
+                <div class="mk-brand-mark">O</div>
+                <div>
+                    <div class="mk-brand-word">okta-ia<span>.com</span></div>
+                    <div class="mk-brand-tag">SOC as a Service · MSSP</div>
+                </div>
+            </a>
+
+            <nav class="mk-nav">
+                @foreach (var item in navItems)
+                {
+                    <a asp-page="@item.Page" class="@NavClass(item.Page)">@item.Label</a>
+                }
+            </nav>
+
+            <div class="mk-header-right">
+                <button type="button" class="mk-share-btn" data-mk-share-open aria-label="Compartilhar">
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#9AAEC8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="18" cy="5" r="2.6"></circle><circle cx="6" cy="12" r="2.6"></circle><circle cx="18" cy="19" r="2.6"></circle>
+                        <line x1="8.3" y1="10.8" x2="15.7" y2="6.4"></line><line x1="8.3" y1="13.2" x2="15.7" y2="17.6"></line>
+                    </svg>
+                </button>
+                <a href="/Login" class="mk-login-link mk-wide-only"><span class="mk-login-dot"></span>Entrar</a>
+                <a href="/Contato" class="mk-cta-btn mk-wide-only">Solicitar demonstração</a>
+                <button type="button" class="mk-menu-btn" data-mk-menu-toggle aria-label="Abrir menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+        <div class="mk-mobile-menu" data-mk-mobile-menu>
+            <div class="mk-mobile-menu-inner">
+                @foreach (var item in navItems)
+                {
+                    <a asp-page="@item.Page" class="@NavClass(item.Page)">@item.Label</a>
+                }
+                <a href="/Login" class="mk-mobile-entrar"><span class="mk-login-dot"></span>Entrar</a>
+                <a href="/Contato" class="mk-mobile-cta">Solicitar demonstração</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="mk-share-backdrop" data-mk-share-backdrop>
+        <div class="mk-share-panel" data-mk-share-panel>
+            <div class="mk-share-head">
+                <div style="flex:1;">
+                    <div class="mk-share-title">Compartilhar</div>
+                    <div class="mk-share-sub">Envie a okta-ia para quem decide segurança na sua rede.</div>
+                </div>
+                <button type="button" class="mk-share-close" data-mk-share-close aria-label="Fechar">✕</button>
+            </div>
+
+            <div class="mk-share-link-row">
+                <span class="mk-share-link-text" data-mk-share-url>okta-ia.com</span>
+                <button type="button" class="mk-share-copy-btn" data-mk-share-copy>Copiar</button>
+            </div>
+
+            <button type="button" class="mk-share-native-btn" data-mk-share-native>Compartilhar pelo dispositivo</button>
+
+            <div class="mk-share-label">CANAIS</div>
+            <div class="mk-share-channels" data-mk-share-channels></div>
+
+            <div class="mk-share-msg-wrap">
+                <div class="mk-share-label">MENSAGEM SUGERIDA</div>
+                <p class="mk-share-msg">Conheça a okta-ia: SOC as a Service (MSSP) com monitoramento, resposta, relatórios, consultoria e gestão de segurança, agregando tecnologias de parceiros. Assessment gratuito em 48 horas.</p>
+            </div>
+        </div>
+    </div>
+
+    <main class="mk-main">
+        @RenderBody()
+    </main>
+
+    <footer class="mk-footer">
+        <div class="mk-footer-top">
+            <div>
+                <a href="/" class="mk-brand" style="margin-bottom:14px;">
+                    <div class="mk-brand-mark">O</div>
+                    <div class="mk-brand-word">okta-ia<span>.com</span></div>
+                </a>
+                <p class="mk-footer-desc">SOC as a Service (MSSP) para empresas que não podem parar. Monitoramento, resposta, relatórios, consultoria e gestão em uma operação só.</p>
+                <div class="mk-footer-social">
+                    <span>LinkedIn</span><span>X</span><span>GitHub</span>
+                </div>
+            </div>
+            @foreach (var col in MarketingContent.FooterCols)
+            {
+                <div class="mk-footer-col">
+                    <div class="mk-footer-col-title">@col.T</div>
+                    @foreach (var item in col.Items)
+                    {
+                        <a asp-page="@item.Page">@item.T</a>
+                    }
+                </div>
+            }
+        </div>
+        <div class="mk-footer-bottom">
+            <div class="mk-footer-bottom-inner">
+                <span class="mk-footer-copy">© 2026 okta-ia · Todos os direitos reservados</span>
+                <div class="mk-footer-legal">
+                    <span>Política de Privacidade</span><span>Termos de Uso</span><span>Canal de Ética</span><span>Código de Conduta</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+
+<script src="~/js/site-marketing.js" asp-append-version="true"></script>
+<script src="~/js/sw-register.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

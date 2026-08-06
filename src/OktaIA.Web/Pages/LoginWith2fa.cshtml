@@ -1,0 +1,86 @@
+@page
+@model LoginWith2faModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Verificação em duas etapas";
+}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Verificação em duas etapas — okta-ia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/img/brand/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="~/img/brand/apple-touch-icon-180.png" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        html, body { margin:0; padding:0; background:#060B14; }
+        .okmfa-cell {
+            flex:1; height:52px; display:flex; align-items:center; justify-content:center;
+            font-family:'IBM Plex Mono',monospace; font-size:21px; font-weight:600; color:#EAF0F8;
+            background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:9px;
+        }
+        .okmfa-cell.okmfa-active { border-color:rgba(77,155,255,.55); box-shadow:0 0 0 3px rgba(77,155,255,.10); }
+        .okmfa-key {
+            background:rgba(255,255,255,.035); border:1px solid rgba(120,170,255,.13); border-radius:9px;
+            padding:12px 0; font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:500;
+            color:#C4D3E6; cursor:pointer;
+        }
+        .okmfa-key:hover { border-color:rgba(77,155,255,.4); }
+        .okmfa-key.okmfa-ok { background:rgba(0,224,164,.10); border-color:rgba(0,224,164,.28); color:#00E0A4; }
+        .okmfa-shake { animation:okmfa-shake .3s ease; }
+        @@keyframes okmfa-shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+        .okmfa-submit:disabled { opacity:.55; cursor:default; }
+    </style>
+</head>
+<body>
+    <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div style="width:100%; max-width:388px;">
+            <div style="display:flex; align-items:center; gap:9px; justify-content:center; margin-bottom:28px;">
+                <div class="oi-brand-mark" style="width:32px;height:32px;font-size:15px;">O</div>
+                <div style="font-size:17px;font-weight:700;letter-spacing:-.2px;color:#EAF0F8;">okta-ia<span style="color:var(--oi-muted-2);font-weight:500">.com</span></div>
+            </div>
+
+            <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(0,224,164,.07); border:1px solid rgba(0,224,164,.24); border-radius:100px; padding:5px 12px; margin-bottom:18px;">
+                <span style="width:5px; height:5px; border-radius:50%; background:#00E0A4;"></span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#4FD9B0; letter-spacing:.12em;">CREDENCIAIS VALIDADAS</span>
+            </div>
+            <h2 style="margin:0 0 7px; font-size:24px; font-weight:600; letter-spacing:-.024em; color:#EAF0F8;">Verificação em duas etapas</h2>
+            <p style="margin:0 0 26px; font-size:13.5px; line-height:1.65; color:#7A8FAB;">Digite o código de 6 dígitos do seu aplicativo autenticador para <strong style="color:#B4C4D8; font-weight:600;">@Model.Email</strong>.</p>
+
+            <form method="post" id="okmfa-form">
+                <input type="hidden" asp-for="RememberMe" />
+                <input type="hidden" name="Input.UsarCodigoRecuperacao" value="false" />
+                <input type="hidden" asp-for="Input.Codigo" id="okmfa-code" />
+
+                <div style="display:flex; gap:9px; margin-bottom:18px;" id="okmfa-cells"></div>
+
+                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px;" id="okmfa-keypad"></div>
+
+                @if (Model.Erro is not null)
+                {
+                    <div style="display:flex; align-items:center; gap:9px; background:rgba(255,59,92,.07); border:1px solid rgba(255,59,92,.26); border-radius:9px; padding:11px 13px; margin-bottom:16px;">
+                        <span style="width:6px; height:6px; border-radius:50%; background:#FF3B5C; flex:0 0 6px;"></span>
+                        <span style="font-size:12.5px; color:#FF8098;">@Model.Erro</span>
+                    </div>
+                }
+
+                <button type="submit" class="okmfa-submit" id="okmfa-submit" disabled style="width:100%; background:linear-gradient(135deg,#4D9BFF,#2A6FD6); border:none; border-radius:10px; padding:14px; font-family:inherit; font-size:14px; font-weight:600; color:#04101F; cursor:pointer; box-shadow:0 8px 28px rgba(77,155,255,.24);">Verificar e entrar</button>
+
+                <div style="display:flex; align-items:center; justify-content:center; margin-top:20px;">
+                    <a href="#" id="okmfa-recovery-toggle" style="font-size:12px; color:#5A7191;">Perdeu o acesso ao aplicativo? Usar código de recuperação</a>
+                </div>
+                <div id="okmfa-recovery-box" style="display:none; margin-top:12px;">
+                    <input id="okmfa-recovery-input" placeholder="Código de recuperação" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:9px; padding:12px 14px; color:#EAF0F8; font-family:'IBM Plex Mono',monospace; font-size:13px; margin-bottom:10px;" />
+                    <button type="button" id="okmfa-recovery-submit" style="width:100%; background:transparent; color:#EAF0F8; border:1px solid rgba(120,170,255,.2); border-radius:9px; padding:11px; font-weight:600; font-size:12.5px; cursor:pointer; font-family:inherit;">Entrar com código de recuperação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="~/js/login-2fa.js" asp-append-version="true"></script>
+</body>
+</html>

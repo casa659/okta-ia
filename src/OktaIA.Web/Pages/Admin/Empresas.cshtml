@@ -1,0 +1,128 @@
+@page
+@model OktaIA.Web.Pages.Admin.EmpresasModel
+@{
+    ViewData["Title"] = "Empresas";
+    var planColors = new Dictionary<string, string> { ["Enterprise+"] = "#8A7BFF", ["Enterprise"] = "#00E0A4", ["Business"] = "#4D9BFF", ["Gov"] = "#FF8A3D", ["MSP"] = "#FFC93C" };
+    var statusMap = new Dictionary<string, (string Label, string Color)> { ["ativa"] = ("ATIVA", "#00E0A4"), ["inadimplente"] = ("INADIMPL.", "#FF3B5C"), ["trial"] = ("TRIAL", "#FFC93C") };
+}
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; gap:16px; flex-wrap:wrap;">
+    <div class="adm-page-head" style="margin-bottom:0;">
+        <h1>Empresas</h1>
+        <p>Organizações provisionadas na plataforma multiempresa</p>
+    </div>
+    <button type="button" class="adm-btn-primary" data-adm-reveal="adm-nova-empresa">+ Nova empresa</button>
+</div>
+
+<div id="adm-nova-empresa" class="adm-card" style="display:@(Model.MostrarForm ? "block" : "none"); padding:18px 20px; margin-bottom:16px;">
+    <div asp-validation-summary="All" style="color:#FF8098; font-size:12.5px; margin-bottom:10px;"></div>
+    <form method="post" asp-page-handler="Cadastrar" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr)); gap:12px; align-items:end;">
+        <div>
+            <label style="display:block; font-size:11px; color:#5A7191; margin-bottom:6px;">Nome</label>
+            <input asp-for="Input.Nome" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:10px 12px; color:#EAF0F8; font-family:inherit;" />
+        </div>
+        <div>
+            <label style="display:block; font-size:11px; color:#5A7191; margin-bottom:6px;">Setor</label>
+            <input asp-for="Input.Setor" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:10px 12px; color:#EAF0F8; font-family:inherit;" />
+        </div>
+        <div>
+            <label style="display:block; font-size:11px; color:#5A7191; margin-bottom:6px;">Plano</label>
+            <select asp-for="Input.Plano" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:10px 12px; color:#EAF0F8; font-family:inherit;">
+                <option>Business</option>
+                <option>Enterprise</option>
+                <option>Enterprise+</option>
+                <option>Gov</option>
+                <option>MSP</option>
+            </select>
+        </div>
+        <div>
+            <label style="display:block; font-size:11px; color:#5A7191; margin-bottom:6px;">CNPJ (opcional)</label>
+            <input asp-for="Input.Cnpj" data-cnpj-mask placeholder="00.000.000/0000-00" maxlength="18" inputmode="numeric" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:10px 12px; color:#EAF0F8; font-family:inherit;" />
+            <span asp-validation-for="Input.Cnpj" style="display:block; color:#FF8098; font-size:11px; margin-top:5px;"></span>
+        </div>
+        <div>
+            <label style="display:block; font-size:11px; color:#5A7191; margin-bottom:6px;">Domínio (opcional)</label>
+            <input asp-for="Input.Dominio" placeholder="exemplo.com.br" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:10px 12px; color:#EAF0F8; font-family:inherit;" />
+        </div>
+        <button type="submit" class="adm-btn-primary" style="height:38px;">Provisionar</button>
+    </form>
+</div>
+
+<div class="adm-card">
+    <div class="adm-table-head" style="grid-template-columns:2fr 1fr 110px 96px 96px 96px 104px 96px 236px;">
+        <span>Organização</span><span>Setor</span><span>Plano</span><span>Ativos</span><span>Usuários</span><span>Risco</span><span>Contrato</span><span>Conta</span><span></span>
+    </div>
+    @foreach (var c in Model.Empresas)
+    {
+        var planColor = planColors.GetValueOrDefault(c.Plano, "#7A8FAB");
+        var (statusLabel, statusColor) = statusMap.GetValueOrDefault(c.StatusContrato, ("—", "#7A8FAB"));
+        var riskColor = c.ScoreRisco > 70 ? "#FF3B5C" : c.ScoreRisco > 45 ? "#FF8A3D" : "#00E0A4";
+        <div class="adm-table-row" style="grid-template-columns:2fr 1fr 110px 96px 96px 96px 104px 96px 236px;">
+            <div style="display:flex; align-items:center; gap:11px;">
+                <span style="width:28px; height:28px; border-radius:7px; background:rgba(77,155,255,.12); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600; color:#8FC0FF;">@string.Concat(c.Nome.Split(' ').Where(w => w.Length > 0).Select(w => w[0])).ToUpperInvariant()</span>
+                <div>
+                    <div style="font-size:13px; font-weight:500; color:#D4DFEC;">@c.Nome</div>
+                    <div class="oi-mono" style="font-size:9px; color:#4A5D78;">@(c.Cnpj ?? "—")</div>
+                </div>
+            </div>
+            <span style="font-size:12px; color:#8296B0;">@c.SetorPt</span>
+            <span class="adm-pill" style="color:@planColor; background:@(planColor)1F;">@c.Plano</span>
+            <span class="oi-mono" style="font-size:12px; color:#B4C4D8;">@c.AtivosCount</span>
+            <span class="oi-mono" style="font-size:12px; color:#B4C4D8;">@c.UsuariosCount</span>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="flex:1; height:4px; background:rgba(120,170,255,.09); border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:@(c.ScoreRisco)%; background:@riskColor; border-radius:3px;"></div>
+                </div>
+                <span class="oi-mono" style="font-size:10px; color:@riskColor;">@c.ScoreRisco</span>
+            </div>
+            <span class="adm-pill" style="color:@statusColor; background:@(statusColor)1F;">@statusLabel</span>
+            <span class="adm-pill" style="color:@(c.Ativo ? "#00E0A4" : "#FF3B5C"); background:@(c.Ativo ? "#00E0A41F" : "#FF3B5C1F");">@(c.Ativo ? "ATIVA" : "INATIVA")</span>
+            <div class="adm-row-actions">
+                <button type="button" class="adm-btn-ghost" data-adm-editar-empresa
+                        data-id="@c.Id" data-nome="@c.Nome" data-setor="@c.SetorPt" data-plano="@c.Plano" data-cnpj="@(c.Cnpj ?? "")" data-dominio="@(c.Dominio ?? "")">Editar</button>
+                @if (c.Ativo)
+                {
+                    <form method="post" asp-page-handler="Desativar" asp-route-id="@c.Id" data-adm-confirm="Desativar @(c.Nome)? A organização some do seletor do console SOC.">
+                        <button type="submit" class="adm-btn-ghost adm-danger">Desativar</button>
+                    </form>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Ativar" asp-route-id="@c.Id">
+                        <button type="submit" class="adm-btn-ghost adm-accent">Ativar</button>
+                    </form>
+                }
+                <form method="post" asp-page-handler="Excluir" asp-route-id="@c.Id" data-adm-confirm="Excluir @(c.Nome) permanentemente? Isso também apaga os ativos dessa organização. Não pode ser desfeito.">
+                    <button type="submit" class="adm-btn-ghost adm-danger">Excluir</button>
+                </form>
+            </div>
+        </div>
+    }
+</div>
+
+<dialog id="adm-dialog-editar-empresa" class="adm-dialog">
+    <h2>Editar organização</h2>
+    <form method="post" asp-page-handler="Editar">
+        <input type="hidden" asp-for="EditInput.Id" />
+        <label>Nome</label>
+        <input asp-for="EditInput.Nome" />
+        <label>Setor</label>
+        <input asp-for="EditInput.Setor" />
+        <label>Plano</label>
+        <select asp-for="EditInput.Plano">
+            <option>Business</option>
+            <option>Enterprise</option>
+            <option>Enterprise+</option>
+            <option>Gov</option>
+            <option>MSP</option>
+        </select>
+        <label>CNPJ (opcional)</label>
+        <input asp-for="EditInput.Cnpj" data-cnpj-mask placeholder="00.000.000/0000-00" maxlength="18" inputmode="numeric" />
+        <label>Domínio (opcional)</label>
+        <input asp-for="EditInput.Dominio" placeholder="exemplo.com.br" />
+        <div class="adm-dialog-actions">
+            <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
+            <button type="submit" class="adm-btn-primary">Salvar</button>
+        </div>
+    </form>
+</dialog>

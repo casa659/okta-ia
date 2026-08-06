@@ -1,0 +1,66 @@
+@page
+@model OktaIA.Web.Pages.Admin.ConectoresModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Conectores";
+}
+
+<div class="adm-page-head">
+    <h1>Conectores instalados</h1>
+    <p>Todo conector implementa o mesmo contrato · ciclo de vida gerenciado pelo núcleo</p>
+</div>
+
+<div class="adm-card" style="margin-bottom:14px;">
+    <div style="padding:13px 16px; border-bottom:1px solid rgba(120,170,255,.09); display:flex; align-items:center; gap:11px;">
+        <span style="font-size:13px; font-weight:600;">Contrato do conector</span>
+        <span class="oi-mono" style="font-size:9px; color:#8FC0FF; background:rgba(77,155,255,.10); border-radius:4px; padding:2px 7px;">IConnector v2</span>
+    </div>
+    @foreach (var i in AdminCatalog.ConnectorInterface)
+    {
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr)); gap:14px; padding:11px 16px; border-bottom:1px solid rgba(120,170,255,.055);">
+            <span class="oi-mono" style="font-size:11.5px; color:#00E0A4;">@i.M</span>
+            <span style="font-size:12.5px; color:#B4C4D8;">@i.D</span>
+            <span class="oi-mono" style="font-size:10px; color:#5A7191; text-align:right;">@i.R</span>
+        </div>
+    }
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr)); gap:11px;">
+    @foreach (var c in AdminCatalog.Connectors)
+    {
+        var healthColor = c.Health switch { "healthy" => "#00E0A4", "degraded" => "#FFC93C", _ => "#FF3B5C" };
+        var uptimeColor = c.Uptime >= 95 ? "#00E0A4" : c.Uptime > 0 ? "#FFC93C" : "#FF3B5C";
+        <div class="adm-card" style="padding:16px 17px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+                <span style="width:6px; height:6px; border-radius:50%; background:@healthColor; flex:0 0 6px;"></span>
+                <span style="font-size:13.5px; font-weight:600; letter-spacing:-.014em;">@c.N</span>
+                <span class="oi-mono" style="font-size:9px; color:#4A5D78;">v@c.Ver</span>
+                <span style="margin-left:auto;"><span class="adm-pill" style="color:@healthColor; background:@(healthColor)1F; font-size:8.5px;">@c.Health.ToUpperInvariant()</span></span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(78px,100%),1fr)); gap:10px; margin-bottom:12px;">
+                <div>
+                    <div class="oi-mono" style="font-size:8px; color:#4A5D78; letter-spacing:.1em; margin-bottom:4px;">UPTIME</div>
+                    <div class="oi-mono" style="font-size:13px; font-weight:600; color:@uptimeColor;">@(c.Uptime)%</div>
+                </div>
+                <div>
+                    <div class="oi-mono" style="font-size:8px; color:#4A5D78; letter-spacing:.1em; margin-bottom:4px;">SYNC</div>
+                    <div class="oi-mono" style="font-size:13px; color:#B4C4D8;">@c.Sync</div>
+                </div>
+                <div>
+                    <div class="oi-mono" style="font-size:8px; color:#4A5D78; letter-spacing:.1em; margin-bottom:4px;">VOLUME</div>
+                    <div class="oi-mono" style="font-size:13px; color:#B4C4D8;">@c.Vol</div>
+                </div>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px;">
+                @foreach (var cap in c.Caps)
+                {
+                    <span class="oi-mono" style="font-size:8.5px; color:#8FC0FF; background:rgba(77,155,255,.09); border:1px solid rgba(77,155,255,.20); border-radius:4px; padding:2px 7px;">@cap</span>
+                }
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding-top:11px; border-top:1px solid rgba(120,170,255,.07);">
+                <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@c.Auth</span>
+                <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@c.Vendor</span>
+            </div>
+        </div>
+    }
+</div>

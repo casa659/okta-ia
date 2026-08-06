@@ -1,0 +1,104 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model AtivosModel
+@{
+    ViewData["Title"] = I18n.T("nav.assets");
+}
+
+<div class="oi-content">
+    @if (Model.ScanDominio is not null)
+    {
+        <div class="oi-panel" style="padding:14px 18px; margin-bottom:14px; border-left:2px solid #00E0A4; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+            <span style="font-size:13px; color:#D4DFEC;"><strong style="color:#00E0A4;">@I18n.T("scanDonePrefix") @Model.ScanDominio</strong> — @Model.ScanAchados @I18n.T("findingsFound")</span>
+            <a asp-page="/Vulnerabilidades" style="font-size:12px; color:#4D9BFF; text-decoration:none;">@I18n.T("viewFindings") →</a>
+        </div>
+    }
+    @if (Model.AtivoAdicionadoEmpresa is not null)
+    {
+        <div class="oi-panel" style="padding:14px 18px; margin-bottom:14px; border-left:2px solid #00E0A4;">
+            <span style="font-size:13px; color:#D4DFEC;">✓ @I18n.T("assetAddedPrefix") <strong style="color:#00E0A4;">@Model.AtivoAdicionadoEmpresa</strong></span>
+        </div>
+    }
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:14px; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h1 class="oi-dash-title">@I18n.T("assetsTitle")</h1>
+            <p class="oi-dash-sub">@I18n.T("assetsSub")</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <form method="get">
+                <select name="empresa" data-oi-autosubmit style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+                    @foreach (var e in Model.EmpresasDisponiveis)
+                    {
+                        <option value="@e.Id" selected="@(e.Id == Model.EmpresaSelecionadaId)">@e.Nome</option>
+                    }
+                </select>
+            </form>
+            <button type="button" class="adm-btn-primary" data-adm-open-dialog="oi-dialog-add-ativo">@I18n.T("addRealAsset")</button>
+        </div>
+    </div>
+
+    <div class="oi-panel oi-table-scroll">
+        <div class="oi-asset-head oi-asset-grid-cols">
+            <span></span><span>@I18n.T("thAsset")</span><span>@I18n.T("thType")</span><span>@I18n.T("thStack")</span>
+            <span>@I18n.T("thUptime")</span><span>@I18n.T("thTls")</span><span>@I18n.T("thVulns")</span><span>@I18n.T("thHealth")</span><span>@I18n.T("thAction")</span>
+        </div>
+        @foreach (var a in Model.Ativos)
+        {
+            <div class="oi-asset-row oi-asset-grid-cols">
+                <span class="oi-asset-dot" style="background:@a.DotCor"></span>
+                <div>
+                    <div class="oi-asset-name">@a.Nome</div>
+                    <div class="oi-asset-ip">@a.Ip</div>
+                </div>
+                <span class="oi-asset-type">@a.Tipo</span>
+                <span class="oi-asset-stack">@a.Stack</span>
+                <span class="oi-asset-uptime" style="color:@a.UptimeCor">@a.Uptime</span>
+                <span class="oi-asset-tls" style="color:@a.TlsCor">@a.Tls</span>
+                <div class="oi-asset-vulns">
+                    @foreach (var v in a.Vulns)
+                    {
+                        <span class="oi-asset-vuln-badge" style="color:@v.Cor;background:@v.Fundo">@v.Numero</span>
+                    }
+                </div>
+                <div class="oi-asset-health-wrap">
+                    <div class="oi-asset-health-track"><div class="oi-asset-health-fill" style="width:@(a.Saude)%;background:@a.SaudeCor"></div></div>
+                    <span class="oi-asset-health-val" style="color:@a.SaudeCor">@a.Saude</span>
+                </div>
+                <div>
+                    @if (a.Real)
+                    {
+                        <form method="post" asp-page-handler="Scan" asp-route-id="@a.Id" asp-route-empresa="@Model.EmpresaSelecionadaId" data-oi-scan-confirm="@I18n.T("scanConfirm")">
+                            <button type="submit" class="adm-btn-ghost adm-accent" style="font-size:10px; padding:6px 9px;" data-oi-scan-label="@I18n.T("scanNow")" data-oi-scan-running-label="@I18n.T("scanRunning")">@I18n.T("scanNow")</button>
+                        </form>
+                        <div style="font-size:9.5px; color:#4A5D78; margin-top:4px;">@I18n.T("lastScan"): @(a.UltimoScan ?? I18n.T("neverScanned"))</div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<dialog id="oi-dialog-add-ativo" class="adm-dialog" data-oi-autoopen="@(Model.MostrarForm ? "true" : "false")">
+    <h2>@I18n.T("addRealAsset")</h2>
+    <div asp-validation-summary="All" style="color:#FF8098; font-size:12.5px; margin-bottom:10px;"></div>
+    <form method="post" asp-page-handler="Adicionar" asp-route-empresa="@Model.EmpresaSelecionadaId">
+        <label>@I18n.T("realAssetCompany")</label>
+        <select asp-for="Input.EmpresaId" data-oi-empresa-dominio-select>
+            @foreach (var e in Model.EmpresasDisponiveis)
+            {
+                <option value="@e.Id" data-dominio="@(e.Dominio ?? "")">@e.Nome</option>
+            }
+        </select>
+        <label>@I18n.T("realAssetDomain")</label>
+        <input asp-for="Input.Dominio" placeholder="exemplo.com.br" data-oi-dominio-input />
+        <label class="adm-checkbox-item" style="margin-bottom:14px;">
+            <input type="checkbox" asp-for="Input.AutorizoScan" />
+            <span>@I18n.T("realAssetAuthorize")</span>
+        </label>
+        <div class="adm-dialog-actions">
+            <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
+            <button type="submit" class="adm-btn-primary">@I18n.T("realAssetAdd")</button>
+        </div>
+    </form>
+</dialog>

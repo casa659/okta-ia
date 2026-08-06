@@ -1,0 +1,114 @@
+@page
+@model PlataformaModel
+@using OktaIA.Web.Services
+@{
+    Layout = "_MarketingLayout";
+    ViewData["Title"] = "Plataforma";
+}
+
+<section class="mk-section-tight" style="padding-top:80px; padding-bottom:48px;">
+  <span class="mk-kicker">A plataforma</span>
+  <h1 class="mk-h1" style="max-width:880px;">Um único console para toda a operação de segurança</h1>
+  <p class="mk-lead" style="max-width:700px; margin-bottom:30px;">Vinte e cinco módulos sobre a mesma base de dados, com isolamento total por organização. Disponível em nuvem, on-premises ou modelo híbrido — com white label para parceiros.</p>
+  <a asp-page="/Login" class="mk-btn-primary">
+    <span style="width:7px; height:7px; border-radius:50%; background:#04101F;"></span>Abrir demonstração ao vivo
+  </a>
+</section>
+
+<section style="max-width:1280px; margin:0 auto; padding:0 clamp(16px,4vw,32px) clamp(42px,5vw,72px);">
+  <div style="background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.012)); border:1px solid rgba(120,170,255,.16); border-radius:20px; padding:16px; backdrop-filter:blur(12px); box-shadow:0 40px 90px rgba(0,0,0,.5);">
+    <div style="background:#070C15; border:1px solid rgba(120,170,255,.10); border-radius:14px; overflow:hidden;">
+      <div style="display:flex; align-items:center; gap:14px; padding:11px 16px; border-bottom:1px solid rgba(120,170,255,.09);">
+        <span class="mk-mono" style="font-size:9.5px; color:#4D9BFF; letter-spacing:.14em;">DASHBOARD SOC</span>
+        <span class="mk-mono" style="font-size:9.5px; color:#5A7191;">Grupo Vector · 1.284 ativos</span>
+        <span style="margin-left:auto; display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#00E0A4;"><span style="width:5px;height:5px;border-radius:50%;background:#00E0A4;"></span>TEMPO REAL</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));">
+        <div class="mk-map-host" data-mk-map='@MarketingContent.MapDataJson()' data-mk-map-live style="height:340px;"></div>
+        <div style="border-left:1px solid rgba(120,170,255,.09);">
+          @foreach (var f in MarketingContent.PlatformFeed)
+          {
+            <div style="padding:9px 14px; border-bottom:1px solid rgba(120,170,255,.055);">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:3px;">
+                <span style="width:6px; height:6px; border-radius:50%; flex:0 0 6px; background:@f.Color;"></span>
+                <span style="font-size:11px; font-weight:600; color:#C4D3E6;">@f.Type</span>
+                <span class="mk-mono" style="margin-left:auto; font-size:9px; color:#43556F;">@f.Time</span>
+              </div>
+              <div class="mk-mono" style="font-size:9.5px; color:#5A7191;">@f.Ip <span style="color:#2B3D57;">→</span> @f.Target</div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mk-section-shaded">
+  <div style="max-width:1280px; margin:0 auto; padding:clamp(44px,6vw,80px) clamp(16px,4vw,32px);">
+    <div class="mk-lede-block" style="max-width:620px;">
+      <span class="mk-kicker">Módulos</span>
+      <h2 class="mk-h2">Tudo integrado, nada em planilha</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(196px,100%),1fr)); gap:10px;">
+      @for (var i = 0; i < MarketingContent.Modules.Count; i++)
+      {
+        <div style="display:flex; align-items:center; gap:9px; background:rgba(255,255,255,.026); border:1px solid rgba(120,170,255,.10); border-radius:9px; padding:12px 13px;">
+          <span class="mk-mono" style="font-size:9.5px; color:#3E5470;">@((i + 1).ToString("00"))</span>
+          <span style="font-size:13px; color:#B4C4D8;">@MarketingContent.Modules[i]</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="mk-section">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr)); gap:52px; align-items:center;">
+    <div>
+      <span class="mk-kicker" style="color:#00E0A4;">Inteligência Artificial</span>
+      <h2 class="mk-h2" style="font-size:clamp(26px,3vw,38px);">A IA não substitui o analista. Ela devolve o tempo dele.</h2>
+      <p class="mk-lead" style="margin-bottom:24px;">Noventa e três por cento dos alertas de um SOC tradicional são ruído. Nossos modelos classificam, suprimem e correlacionam antes que cheguem à fila humana — e explicam cada decisão com as evidências que a sustentam.</p>
+      <div style="display:flex; flex-direction:column; gap:11px;">
+        @foreach (var a in MarketingContent.AiPoints)
+        {
+          <div style="display:flex; gap:12px; align-items:flex-start;">
+            <span style="width:18px; height:18px; border-radius:5px; background:rgba(0,224,164,.13); border:1px solid rgba(0,224,164,.3); display:flex; align-items:center; justify-content:center; font-size:10px; color:#00E0A4; flex:0 0 18px; margin-top:2px;">✓</span>
+            <span style="font-size:14px; line-height:1.62; color:#B4C4D8;">@a.T</span>
+          </div>
+        }
+      </div>
+    </div>
+    <div style="background:linear-gradient(160deg,rgba(0,224,164,.07),rgba(255,255,255,.012)); border:1px solid rgba(0,224,164,.20); border-radius:18px; padding:24px; backdrop-filter:blur(12px);">
+      <div style="display:flex; align-items:center; gap:9px; margin-bottom:16px;">
+        <span class="mk-mono" style="font-size:9.5px; color:#04101F; background:#00E0A4; border-radius:5px; padding:3px 7px; font-weight:600;">AI</span>
+        <span style="font-size:13.5px; font-weight:600;">Copiloto de segurança</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="align-self:flex-end; background:rgba(255,255,255,.07); border-radius:10px 10px 3px 10px; padding:10px 13px; font-size:13px; color:#D4DFEC; max-width:84%;">O servidor vpn-sp01 está sob ataque?</div>
+        <div style="background:rgba(0,224,164,.07); border:1px solid rgba(0,224,164,.20); border-radius:10px 10px 10px 3px; padding:12px 14px; font-size:13px; line-height:1.62; color:#B4C4D8;">Sim. 3.418 tentativas de autenticação falhas nos últimos 41 minutos, originadas de 214 IPs em 3 ASNs. Nenhuma sessão foi estabelecida. Duas contas de serviço sem MFA foram alvo repetido — recomendo bloquear os ASNs e forçar MFA agora.</div>
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          <div style="display:flex; align-items:center; gap:9px; background:rgba(255,255,255,.03); border:1px solid rgba(120,170,255,.11); border-radius:7px; padding:8px 11px;">
+            <span style="width:5px; height:5px; border-radius:50%; background:#FF3B5C;"></span>
+            <span class="mk-mono" style="font-size:10.5px; color:#9DB0C8; flex:1;">tentativas / 41min</span>
+            <span class="mk-mono" style="font-size:10.5px; color:#FF3B5C;">3.418</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px; background:rgba(255,255,255,.03); border:1px solid rgba(120,170,255,.11); border-radius:7px; padding:8px 11px;">
+            <span style="width:5px; height:5px; border-radius:50%; background:#FF8A3D;"></span>
+            <span class="mk-mono" style="font-size:10.5px; color:#9DB0C8; flex:1;">IPs distintos</span>
+            <span class="mk-mono" style="font-size:10.5px; color:#FF8A3D;">214</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:9px; background:rgba(255,255,255,.03); border:1px solid rgba(120,170,255,.11); border-radius:7px; padding:8px 11px;">
+            <span style="width:5px; height:5px; border-radius:50%; background:#00E0A4;"></span>
+            <span class="mk-mono" style="font-size:10.5px; color:#9DB0C8; flex:1;">sessões estabelecidas</span>
+            <span class="mk-mono" style="font-size:10.5px; color:#00E0A4;">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+@section Scripts {
+    <script src="~/lib/d3/d3.min.js"></script>
+    <script src="~/lib/d3/topojson-client.min.js"></script>
+    <script src="~/js/marketing-map.js" asp-append-version="true"></script>
+}

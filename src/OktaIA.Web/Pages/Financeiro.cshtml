@@ -1,0 +1,46 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model FinanceiroModel
+@{
+    ViewData["Title"] = I18n.T("nav.fin");
+}
+
+<div class="oi-content">
+    <div style="margin-bottom:14px;">
+        <h1 class="oi-dash-title">@I18n.T("finTitle")</h1>
+        <p class="oi-dash-sub">@I18n.T("finSub")</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;">
+        <div class="oi-panel">
+            <div class="oi-panel-head"><span class="oi-panel-title" style="margin:0">@I18n.T("plans")</span></div>
+            @foreach (var p in Model.Plans)
+            {
+                <div class="oi-plan-row">
+                    <div class="oi-plan-top">
+                        <span class="oi-plan-name" style="color:@p.Cor">@p.Nome</span>
+                        <span class="oi-plan-price">@p.Preco</span>
+                    </div>
+                    <div class="oi-plan-inc">@p.Inclusos</div>
+                    <div class="oi-plan-bar-row">
+                        <div class="oi-plan-track"><div class="oi-plan-fill" style="width:@(p.Pct)%;background:@p.Cor"></div></div>
+                        <span class="oi-plan-cos">@p.Empresas</span>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="oi-panel">
+            <div class="oi-panel-head"><span class="oi-panel-title" style="margin:0">@I18n.T("invoices")</span></div>
+            @foreach (var i in Model.Invoices)
+            {
+                <div class="oi-invoice-row">
+                    <span class="oi-invoice-num">@i.Numero</span>
+                    <span class="oi-invoice-co">@i.Empresa</span>
+                    <span class="oi-invoice-amt">@i.Valor</span>
+                    <span class="oi-invoice-status" style="color:@i.StatusCor;background:@(i.StatusCor)1A">@i.Status</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>

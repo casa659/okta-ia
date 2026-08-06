@@ -1,0 +1,102 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model IncidentesModel
+@{
+    ViewData["Title"] = I18n.T("nav.inc");
+}
+
+<div class="oi-content">
+    <div style="margin-bottom:14px;">
+        <h1 class="oi-dash-title">@I18n.T("incTitle")</h1>
+        <p class="oi-dash-sub">@I18n.T("incSub")</p>
+    </div>
+
+    <div class="oi-inc-grid">
+        <div class="oi-panel">
+            <div class="oi-panel-head">
+                <span class="oi-panel-title" style="margin:0">@I18n.T("triageQueue")</span>
+                <span class="oi-queue-count">@Model.QueueCount @I18n.T("open")</span>
+            </div>
+            @foreach (var q in Model.Fila)
+            {
+                <a asp-page="/Incidentes" asp-route-id="@q.Id" class="oi-queue-item @(q.Selecionado ? "oi-active" : "")" style="border-left-color:@(q.Selecionado ? q.SevCor : "transparent")">
+                    <div class="oi-queue-top">
+                        <span class="oi-feed-chip" style="color:@q.SevCor;background:@q.SevBg;border-color:@(q.SevCor)40">@q.SevLabel</span>
+                        <span class="oi-queue-id">@q.Codigo</span>
+                        <span class="oi-queue-age">@q.Idade</span>
+                    </div>
+                    <div class="oi-queue-title">@q.Titulo</div>
+                    <div class="oi-queue-meta">
+                        <span>@q.Asset</span><span style="color:var(--oi-border-2)">·</span><span class="oi-queue-mitre">@q.Mitre</span>
+                    </div>
+                    <div class="oi-queue-ai">
+                        <span class="oi-queue-ai-label">AI</span>
+                        <span class="oi-queue-ai-text">@q.AiResumo</span>
+                        <span class="oi-queue-ai-conf">@q.AiConfianca</span>
+                    </div>
+                </a>
+            }
+        </div>
+
+        @if (Model.Detalhe is not null)
+        {
+            var d = Model.Detalhe;
+            <div class="oi-panel">
+                <div class="oi-detail-head">
+                    <div class="oi-detail-top">
+                        <span class="oi-feed-chip" style="color:@d.SevCor;background:@d.SevBg;border-color:@(d.SevCor)40">@d.SevLabel</span>
+                        <span class="oi-queue-id">@d.Codigo</span>
+                    </div>
+                    <h2 class="oi-detail-title">@d.Titulo</h2>
+                    <div class="oi-detail-meta">
+                        <span>@I18n.T("asset"): <b>@d.Asset</b></span>
+                        <span>MITRE: <b style="color:var(--oi-purple)">@d.Mitre</b></span>
+                        <span>@I18n.T("owner"): <b>@d.Analista</b></span>
+                        <span>@I18n.T("opened"): <b>@d.Aberto</b></span>
+                        <span>@I18n.T("events"): <b>@d.Eventos</b></span>
+                    </div>
+                </div>
+                <div class="oi-detail-body">
+                    <div class="oi-ai-card">
+                        <div class="oi-ai-card-head">
+                            <span class="oi-brief-badge">AI</span>
+                            <span class="oi-brief-title">@I18n.T("aiAnalysis")</span>
+                            <span class="oi-ai-conf-badge">@d.AiConfianca @I18n.T("confidence")</span>
+                        </div>
+                        <p class="oi-ai-narrative">@d.Narrativa</p>
+                    </div>
+
+                    <div>
+                        <div class="oi-gauge-title">@I18n.T("recommended")</div>
+                        <div class="oi-steps-list">
+                            @foreach (var s in d.Passos)
+                            {
+                                <div class="oi-step-row">
+                                    <span class="oi-step-num">@s.Numero</span>
+                                    <span class="oi-step-text">@s.Texto</span>
+                                    <span class="oi-step-cat">@s.Categoria</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="oi-gauge-title">@I18n.T("timeline")</div>
+                        <div class="oi-tl-list">
+                            @foreach (var t in d.Timeline)
+                            {
+                                <div class="oi-tl-row">
+                                    <span class="oi-tl-dot" style="background:@t.Cor"></span>
+                                    <span class="oi-tl-time">@t.Hora</span>
+                                    <span class="oi-tl-text">@t.Texto</span>
+                                    <span class="oi-tl-src">@t.Origem</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

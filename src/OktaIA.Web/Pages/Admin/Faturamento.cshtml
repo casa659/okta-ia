@@ -1,0 +1,61 @@
+@page
+@model OktaIA.Web.Pages.Admin.FaturamentoModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Faturamento";
+    var planColors = new Dictionary<string, string> { ["Enterprise+"] = "#8A7BFF", ["Enterprise"] = "#00E0A4", ["Business"] = "#4D9BFF", ["Gov"] = "#FF8A3D", ["MSP"] = "#FFC93C" };
+}
+
+<div class="adm-page-head">
+    <h1>Faturamento</h1>
+    <p>Assinaturas, licenças e emissão de notas fiscais</p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr)); gap:11px; margin-bottom:14px;">
+    @foreach (var k in AdminCatalog.BillingKpis)
+    {
+        <div class="adm-kpi" style="border-left:2px solid @k.C;">
+            <div class="adm-kpi-label">@k.L</div>
+            <div style="display:flex; align-items:baseline; gap:7px;">
+                <span class="adm-kpi-val" style="color:@k.C;">@k.V</span>
+                <span class="adm-kpi-delta">@k.D</span>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="adm-card" style="margin-bottom:14px;">
+    <div class="adm-card-head">Organizações por plano (dado real)</div>
+    <div class="adm-table-head" style="grid-template-columns:2fr 120px 110px;">
+        <span>Organização</span><span>Plano</span><span>Status</span>
+    </div>
+    @foreach (var c in Model.EmpresasPorPlano)
+    {
+        var color = planColors.GetValueOrDefault(c.Plano, "#7A8FAB");
+        <div class="adm-table-row" style="grid-template-columns:2fr 120px 110px;">
+            <span style="font-size:12.5px; color:#D4DFEC;">@c.Nome</span>
+            <span class="adm-pill" style="color:@color; background:@(color)1F;">@c.Plano</span>
+            <span style="font-size:11.5px; color:#8296B0; text-transform:capitalize;">@c.StatusContrato</span>
+        </div>
+    }
+</div>
+
+<div class="adm-card">
+    <div class="adm-card-head">Notas fiscais recentes</div>
+    <div class="adm-table-head" style="grid-template-columns:88px 1.6fr 90px 96px 96px 96px;">
+        <span>Número</span><span>Organização</span><span>Comp.</span><span>Venc.</span><span>Valor</span><span>Status</span>
+    </div>
+    @foreach (var i in AdminCatalog.Invoices)
+    {
+        var statusMap = new Dictionary<string, string> { ["paga"] = "#00E0A4", ["aberta"] = "#4D9BFF", ["vencida"] = "#FF3B5C" };
+        var color = statusMap[i.Status];
+        <div class="adm-table-row" style="grid-template-columns:88px 1.6fr 90px 96px 96px 96px;">
+            <span class="oi-mono" style="font-size:9.5px; color:#4A5D78;">@i.Num</span>
+            <span style="font-size:12px; color:#D4DFEC;">@i.Co</span>
+            <span class="oi-mono" style="font-size:10px; color:#8296B0;">@i.Comp</span>
+            <span class="oi-mono" style="font-size:10px; color:#8296B0;">@i.Due</span>
+            <span class="oi-mono" style="font-size:10.5px; color:#8FA3BC; text-align:right;">@i.Amt</span>
+            <span class="adm-pill" style="color:@color; background:@(color)1F;">@i.Status.ToUpperInvariant()</span>
+        </div>
+    }
+</div>

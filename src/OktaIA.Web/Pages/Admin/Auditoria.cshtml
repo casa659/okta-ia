@@ -1,0 +1,28 @@
+@page
+@model OktaIA.Web.Pages.Admin.AuditoriaModel
+
+@{
+    ViewData["Title"] = "Auditoria";
+}
+
+<div class="adm-page-head">
+    <h1>Trilha de auditoria</h1>
+    <p>Registro cronológico das ações administrativas · @Model.Linhas.Count evento(s)</p>
+</div>
+
+<div class="adm-card">
+    <div class="adm-table-head" style="grid-template-columns:130px 108px 1.5fr 1.4fr 130px;">
+        <span>Horário</span><span>Ação</span><span>Detalhe</span><span>Autor</span><span>Origem</span>
+    </div>
+    @foreach (var a in Model.Linhas)
+    {
+        var cor = OktaIA.Web.Pages.Admin.AuditoriaModel.CorAcao(a.Acao);
+        <div class="adm-table-row" style="grid-template-columns:130px 108px 1.5fr 1.4fr 130px; font-family:'IBM Plex Mono',monospace; font-size:10.5px;">
+            <span style="color:#4A5D78;">@a.CriadoEm.ToString("dd/MM HH:mm")</span>
+            <span style="font-size:9.5px; font-weight:600; letter-spacing:.06em; text-align:center; border-radius:4px; padding:3px 0; color:@cor; background:@(cor)1A;">@a.Acao</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif; font-size:12px; color:#C4D3E6; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@a.Detalhe</span>
+            <span style="color:#8296B0;">@a.Autor</span>
+            <span style="color:#5A7191;">@(a.OrigemIp ?? "—")</span>
+        </div>
+    }
+</div>

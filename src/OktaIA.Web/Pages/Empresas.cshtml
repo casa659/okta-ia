@@ -1,0 +1,42 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model EmpresasModel
+@{
+    ViewData["Title"] = I18n.T("nav.cos");
+}
+
+<div class="oi-content">
+    <div style="margin-bottom:14px;">
+        <h1 class="oi-dash-title">@I18n.T("cosTitle")</h1>
+        <p class="oi-dash-sub">@I18n.T("cosSub")</p>
+    </div>
+
+    <div class="oi-company-grid">
+        @foreach (var c in Model.Empresas)
+        {
+            <div class="oi-company-card">
+                <div class="oi-company-head">
+                    <div>
+                        <div class="oi-company-name">@c.Nome</div>
+                        <div class="oi-company-meta">@c.Setor · @c.Plano</div>
+                    </div>
+                    <div>
+                        <div class="oi-company-risk" style="color:@c.RiscoCor">@c.Risco</div>
+                        <div class="oi-company-risk-label">RISK</div>
+                    </div>
+                </div>
+                <div class="oi-risk-track"><div class="oi-risk-fill" style="width:@(c.Risco)%;background:@c.RiscoCor"></div></div>
+                <div class="oi-company-stats">
+                    @foreach (var s in c.Stats)
+                    {
+                        <div>
+                            <div class="oi-stat-value" style="color:@s.Cor">@s.Valor</div>
+                            <div class="oi-stat-label">@s.Rotulo</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

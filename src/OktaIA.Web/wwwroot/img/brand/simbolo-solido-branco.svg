@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="600" height="600">
+<title>Okta IA</title>
+<mask id="p" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+<rect width="100" height="100" fill="#fff"></rect>
+<path d="M25 50L36.5 50L42.5 35L50 66L56.5 45L61.5 50L75 50" fill="none" stroke="#000" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</mask>
+<path d="M93.42 67.99L67.99 93.42L32.01 93.42L6.58 67.99L6.58 32.01L32.01 6.58L67.99 6.58L93.42 32.01Z" fill="#FFFFFF" mask="url(#p)"></path>
+</svg>

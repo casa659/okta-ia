@@ -1,0 +1,39 @@
+@page
+@model TrocarSenhaModel
+@{
+    ViewData["Title"] = "Trocar senha";
+}
+
+<div class="oi-content">
+    <div style="margin-bottom:14px;">
+        <h1 class="oi-dash-title">Trocar senha</h1>
+        <p class="oi-dash-sub">Sua senha é pessoal e intransferível — troque com regularidade.</p>
+    </div>
+
+    <div class="oi-panel" style="max-width:420px;">
+        @if (Model.Sucesso)
+        {
+            <div style="background:rgba(0,224,164,.08);border:1px solid rgba(0,224,164,.3);color:var(--oi-accent);font-size:12.5px;padding:10px 12px;border-radius:7px;margin-bottom:16px;">Senha alterada com sucesso.</div>
+        }
+
+        @if (Model.Erro is not null)
+        {
+            <p style="background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.3);color:var(--oi-red-light);font-size:12.5px;padding:10px 12px;border-radius:7px;margin:0 0 16px;">@Model.Erro</p>
+        }
+
+        <form method="post">
+            <div asp-validation-summary="All" style="color:var(--oi-red-light); font-size:12.5px; margin-bottom:10px;"></div>
+
+            <label style="display:block;font-size:11px;color:var(--oi-muted);margin-bottom:6px;">Senha atual</label>
+            <input asp-for="Input.SenhaAtual" type="password" style="width:100%;background:var(--oi-header-input);border:1px solid var(--oi-border-2);border-radius:7px;padding:10px 12px;color:var(--oi-text);font-family:inherit;font-size:13px;margin-bottom:14px;" />
+
+            <label style="display:block;font-size:11px;color:var(--oi-muted);margin-bottom:6px;">Nova senha</label>
+            <input asp-for="Input.NovaSenha" type="password" style="width:100%;background:var(--oi-header-input);border:1px solid var(--oi-border-2);border-radius:7px;padding:10px 12px;color:var(--oi-text);font-family:inherit;font-size:13px;margin-bottom:14px;" />
+
+            <label style="display:block;font-size:11px;color:var(--oi-muted);margin-bottom:6px;">Confirmar nova senha</label>
+            <input asp-for="Input.ConfirmarSenha" type="password" style="width:100%;background:var(--oi-header-input);border:1px solid var(--oi-border-2);border-radius:7px;padding:10px 12px;color:var(--oi-text);font-family:inherit;font-size:13px;margin-bottom:20px;" />
+
+            <button type="submit" style="width:100%;background:var(--oi-accent);color:var(--oi-bg);border:none;border-radius:7px;padding:11px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;">Salvar nova senha</button>
+        </form>
+    </div>
+</div>

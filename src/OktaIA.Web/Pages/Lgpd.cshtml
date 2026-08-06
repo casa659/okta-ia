@@ -1,0 +1,58 @@
+@page
+@model LgpdModel
+@using OktaIA.Web.Services
+@{
+    Layout = "_MarketingLayout";
+    ViewData["Title"] = "LGPD";
+}
+
+<section class="mk-section-tight" style="padding-top:80px; padding-bottom:56px; border-bottom:1px solid rgba(120,170,255,.09);">
+  <span class="mk-kicker" style="color:#00E0A4;">LGPD e privacidade</span>
+  <h1 class="mk-h1">Conformidade sustentada por evidência técnica</h1>
+  <p class="mk-lead" style="max-width:740px;">Programas de privacidade falham quando a documentação envelhece. A plataforma mantém o inventário de ativos, os registros de acesso e as evidências de controle sempre atualizados — prontos para auditoria, para a ANPD ou para o cliente que pergunta.</p>
+</section>
+
+<section class="mk-section">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(288px,100%),1fr)); gap:16px;">
+    @foreach (var l in MarketingContent.LgpdCards)
+    {
+      <div style="background:linear-gradient(165deg,rgba(255,255,255,.04),rgba(255,255,255,.01)); border:1px solid rgba(120,170,255,.12); border-radius:15px; padding:26px 24px;">
+        <div class="mk-mono" style="font-size:10px; color:#00E0A4; letter-spacing:.14em; margin-bottom:14px;">@l.N</div>
+        <div style="font-size:16px; font-weight:600; margin-bottom:10px; letter-spacing:-.014em;">@l.T</div>
+        <p style="margin:0; font-size:13.5px; line-height:1.66; color:#8296B0;">@l.D</p>
+      </div>
+    }
+  </div>
+</section>
+
+<section style="max-width:1280px; margin:0 auto; padding:0 clamp(16px,4vw,32px) clamp(42px,5vw,72px);">
+  <div style="background:rgba(255,180,60,.05); border:1px solid rgba(255,180,60,.22); border-radius:15px; padding:26px 28px; display:flex; gap:18px; align-items:flex-start;">
+    <span class="mk-mono" style="font-size:10px; color:#FFC93C; border:1px solid rgba(255,201,60,.35); border-radius:5px; padding:3px 8px; flex:0 0 auto; margin-top:2px;">ESCOPO</span>
+    <p style="margin:0; font-size:14px; line-height:1.7; color:#C8B98F;">A okta-ia fornece tecnologia e apoio operacional para programas de privacidade e proteção de dados. <strong style="color:#EAD9A8; font-weight:600;">Não prestamos serviço jurídico e não substituímos o encarregado (DPO), o parecer legal ou a consultoria especializada em LGPD</strong> — atuamos ao lado desses profissionais, fornecendo a camada técnica de inventário, monitoramento e evidência que o trabalho deles exige.</p>
+  </div>
+</section>
+
+<section class="mk-section-shaded">
+  <div style="max-width:1280px; margin:0 auto; padding:clamp(44px,6vw,80px) clamp(16px,4vw,32px);">
+    <div class="mk-lede-block" style="max-width:620px;">
+      <span class="mk-kicker">Compliance</span>
+      <h2 class="mk-h2">Frameworks mapeados nativamente</h2>
+      <p class="mk-lead">Cada controle da plataforma é correlacionado aos frameworks abaixo. O relatório de conformidade mostra o que já está coberto, o que está parcial e o que exige ação — com a evidência anexada.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(196px,100%),1fr)); gap:12px;">
+      @foreach (var f in MarketingContent.Frameworks)
+      {
+        <div style="background:rgba(255,255,255,.028); border:1px solid rgba(120,170,255,.11); border-radius:12px; padding:20px 18px;">
+          <div style="font-size:15px; font-weight:600; margin-bottom:6px; letter-spacing:-.012em;">@f.T</div>
+          <div style="font-size:12px; line-height:1.55; color:#7A8FAB; margin-bottom:12px;">@f.D</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div style="flex:1; height:3px; background:rgba(120,170,255,.10); border-radius:2px; overflow:hidden;">
+              <div style="height:100%; width:@(f.P)%; background:@f.C; border-radius:2px;"></div>
+            </div>
+            <span class="mk-mono" style="font-size:9.5px; color:@f.C;">@(f.P)%</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

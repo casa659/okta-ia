@@ -1,0 +1,31 @@
+@page
+@model OktaIA.Web.Pages.Admin.NotificacoesModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Notificações";
+}
+
+<div class="adm-page-head">
+    <h1>Notificações</h1>
+    <p>Canais de entrega de alerta e escalonamento · a ingestão fica nos conectores (26 e 27)</p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(232px,100%),1fr)); gap:11px;">
+    @foreach (var n in AdminCatalog.NotifyChannels)
+    {
+        var statusColor = n.On ? "#00E0A4" : "#4A5D78";
+        var statusBg = n.On ? "rgba(0,224,164,.12)" : "rgba(120,170,255,.07)";
+        var syncText = n.On ? $"entrega {n.SyncInfo}" : "desativado";
+        <div class="adm-card" style="padding:16px 17px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:9px;">
+                <span style="font-size:13.5px; font-weight:600; letter-spacing:-.012em;">@n.N</span>
+                <span class="adm-pill" style="color:@statusColor; background:@statusBg; font-size:8.5px;">@(n.On ? "ATIVO" : "INATIVO")</span>
+            </div>
+            <div style="font-size:11.5px; line-height:1.55; color:#7A8FAB; margin-bottom:11px;">@n.D</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid rgba(120,170,255,.07);">
+                <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@n.Cat</span>
+                <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@syncText</span>
+            </div>
+        </div>
+    }
+</div>

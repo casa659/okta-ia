@@ -1,0 +1,59 @@
+@page
+@model OktaIA.Web.Pages.Admin.SdkModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "SDK";
+}
+
+<div class="adm-page-head">
+    <h1>SDK para desenvolvedores</h1>
+    <p>Parceiros criam conectores novos sem alterar uma linha do núcleo da plataforma</p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr)); gap:12px; align-items:start;">
+    <div style="display:flex; flex-direction:column; gap:11px;">
+        @foreach (var st in AdminCatalog.SdkSteps)
+        {
+            <div class="adm-card" style="display:flex; gap:14px; align-items:flex-start; padding:15px 17px;">
+                <span class="oi-mono" style="font-size:10px; color:#00E0A4; letter-spacing:.1em; flex:0 0 auto; margin-top:3px;">@st.N</span>
+                <div>
+                    <div style="font-size:13.5px; font-weight:600; margin-bottom:5px; letter-spacing:-.014em;">@st.T</div>
+                    <div style="font-size:12.5px; line-height:1.6; color:#8296B0;">@st.D</div>
+                </div>
+            </div>
+        }
+    </div>
+    <div style="display:flex; flex-direction:column; gap:11px;">
+        <div style="background:#05090F; border:1px solid rgba(120,170,255,.12); border-radius:12px; overflow:hidden;">
+            <div style="display:flex; align-items:center; gap:9px; padding:11px 15px; border-bottom:1px solid rgba(120,170,255,.09);">
+                <span style="width:7px; height:7px; border-radius:50%; background:#FF5F57;"></span>
+                <span style="width:7px; height:7px; border-radius:50%; background:#FEBC2E;"></span>
+                <span style="width:7px; height:7px; border-radius:50%; background:#28C840;"></span>
+                <span style="margin-left:8px;" class="oi-mono">
+                    <span style="font-size:9.5px; color:#4A5D78;">AcmeConnector.cs</span>
+                </span>
+            </div>
+            <div style="padding:15px 17px; overflow-x:auto;">
+                @foreach (var l in AdminCatalog.SdkCode)
+                {
+                    <div class="oi-mono" style="font-size:11px; line-height:1.72; color:#9DB8D4; white-space:pre;">@l</div>
+                }
+            </div>
+        </div>
+        <div class="adm-card" style="padding:17px 19px;">
+            <div style="font-size:13px; font-weight:600; margin-bottom:14px;">Regras do sandbox de plugin</div>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                @foreach (var r in AdminCatalog.SdkRules)
+                {
+                    <div style="display:flex; gap:11px; align-items:flex-start;">
+                        <span style="width:16px; height:16px; border-radius:5px; background:rgba(0,224,164,.13); border:1px solid rgba(0,224,164,.30); display:flex; align-items:center; justify-content:center; font-size:9px; color:#00E0A4; flex:0 0 16px; margin-top:2px;">✓</span>
+                        <div>
+                            <div style="font-size:13px; font-weight:600; margin-bottom:4px;">@r.T</div>
+                            <div style="font-size:12px; line-height:1.58; color:#7A8FAB;">@r.D</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

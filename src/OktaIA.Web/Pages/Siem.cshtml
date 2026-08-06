@@ -1,0 +1,64 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model SiemModel
+@{
+    ViewData["Title"] = I18n.T("nav.siem");
+}
+
+<div class="oi-content">
+    <div style="margin-bottom:12px;">
+        <h1 class="oi-dash-title">@I18n.T("siemTitle")</h1>
+        <p class="oi-dash-sub">@I18n.T("siemSub")</p>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <div class="oi-kql-bar">
+            <span class="oi-kql-label">KQL</span>
+            <span class="oi-kql-text">@Model.Query</span>
+            <span class="oi-kql-caret"></span>
+        </div>
+        <button type="button" class="oi-ask-ai-btn" data-ask-question
+                data-question="@Model.AskSiemPrompt.Pergunta"
+                data-answer="@Model.AskSiemPrompt.Resposta"
+                data-evidence="@System.Text.Json.JsonSerializer.Serialize(Model.AskSiemPrompt.Evidencias)">
+            <span class="oi-mono" style="font-size:9px">AI</span>@I18n.T("nlQuery")
+        </button>
+    </div>
+
+    <div class="oi-siem-grid">
+        <div class="oi-panel oi-panel-body">
+            @foreach (var f in Model.Facets)
+            {
+                <div class="oi-facet-group">
+                    <div class="oi-facet-name">@f.Nome</div>
+                    @foreach (var it in f.Itens)
+                    {
+                        <div class="oi-facet-item"><span>@it.Chave</span><span>@it.Valor</span></div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="oi-panel">
+            <div class="oi-histogram">
+                @foreach (var h in Model.Histograma)
+                {
+                    <div class="oi-histogram-bar" style="height:@(h.AlturaPct)%;background:@h.Cor"></div>
+                }
+            </div>
+            <div style="max-height:440px;overflow-y:auto;">
+                @foreach (var l in Model.Logs)
+                {
+                    <div class="oi-log-row">
+                        <span class="oi-log-time">@l.Hora</span>
+                        <span class="oi-log-lvl" style="color:@l.NivelCor">@l.Nivel</span>
+                        <span class="oi-log-src">@l.Origem</span>
+                        <span class="oi-log-msg">@l.Mensagem</span>
+                        <span class="oi-log-host">@l.Host</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,104 @@
+@page
+@model LoginModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Entrar";
+}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entrar — okta-ia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/img/brand/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="~/img/brand/apple-touch-icon-180.png" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+        html, body { margin:0; padding:0; background:#050A12; }
+        .oklog-grid { min-height:100vh; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr)); }
+        .oklog-hero {
+            position:relative; display:flex; flex-direction:column; justify-content:space-between;
+            padding:44px 48px; overflow:hidden; background:linear-gradient(160deg,#071120,#050A12 60%);
+        }
+        .oklog-hero-bg { position:absolute; inset:0; background:radial-gradient(700px 500px at 20% 12%, rgba(77,155,255,.15), transparent 62%), radial-gradient(600px 420px at 82% 88%, rgba(0,224,164,.09), transparent 60%); }
+        .oklog-hero-grid { position:absolute; inset:0; opacity:.4; background-image:linear-gradient(rgba(77,155,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(77,155,255,.05) 1px, transparent 1px); background-size:64px 64px; mask-image:radial-gradient(circle at 40% 40%, #000 0%, transparent 72%); }
+        .oklog-form-side { display:flex; align-items:center; justify-content:center; padding:44px 40px; background:#060B14; border-left:1px solid rgba(120,170,255,.09); }
+        @@media (max-width:900px) { .oklog-hero { min-height:280px; } .oklog-form-side { border-left:none; border-top:1px solid rgba(120,170,255,.09); } }
+    </style>
+</head>
+<body>
+    <div class="oklog-grid">
+        <div class="oklog-hero">
+            <div class="oklog-hero-bg"></div>
+            <div class="oklog-hero-grid"></div>
+
+            <a href="/" style="position:relative; display:flex; align-items:center; gap:11px; color:#EAF0F8; text-decoration:none;">
+                <span style="width:30px; height:30px; border-radius:8px; background:linear-gradient(145deg,#4D9BFF,#1B4FA8); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:700; color:#050A12; box-shadow:0 0 22px rgba(77,155,255,.42);">O</span>
+                <span style="display:flex; flex-direction:column; line-height:1.05;">
+                    <span style="font-size:16px; font-weight:700; letter-spacing:-.3px;">okta-ia<span style="color:#5A7191; font-weight:500;">.com</span></span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:8px; color:#5A7191; letter-spacing:.16em; text-transform:uppercase;">Cyber Security &amp; AI</span>
+                </span>
+            </a>
+
+            <div style="position:relative; max-width:460px;">
+                <h1 style="margin:0 0 18px; font-size:clamp(28px,3vw,40px); font-weight:700; letter-spacing:-.032em; line-height:1.12; color:#EAF0F8;">Sua operação de segurança, sempre acordada</h1>
+                <p style="margin:0 0 32px; font-size:15.5px; line-height:1.74; color:#8296B0;">Enquanto você esteve fora, a plataforma processou 2,4 milhões de eventos, bloqueou 11.842 tentativas hostis e conteve 2 incidentes automaticamente.</p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr)); gap:14px;">
+                    <div style="border-left:2px solid #4D9BFF; padding-left:13px;">
+                        <div style="font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; color:#EAF0F8;">2.437.812</div>
+                        <div style="font-size:11.5px; color:#6B7F9B; margin-top:3px;">eventos hoje</div>
+                    </div>
+                    <div style="border-left:2px solid #00E0A4; padding-left:13px;">
+                        <div style="font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; color:#EAF0F8;">99,98%</div>
+                        <div style="font-size:11.5px; color:#6B7F9B; margin-top:3px;">disponibilidade</div>
+                    </div>
+                    <div style="border-left:2px solid #FF8A3D; padding-left:13px;">
+                        <div style="font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; color:#EAF0F8;">5</div>
+                        <div style="font-size:11.5px; color:#6B7F9B; margin-top:3px;">incidentes abertos</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="position:relative; display:flex; align-items:center; gap:18px; flex-wrap:wrap; font-family:'IBM Plex Mono',monospace; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase; color:#43556F;">
+                <span>ISO 27001</span><span style="color:#1E2E45;">·</span><span>ISO 27701</span><span style="color:#1E2E45;">·</span><span>NIST CSF</span><span style="color:#1E2E45;">·</span><span>LGPD</span><span style="color:#1E2E45;">·</span><span>TLS 1.3</span>
+            </div>
+        </div>
+
+        <div class="oklog-form-side">
+            <div style="width:100%; max-width:388px;">
+                <h2 style="margin:0 0 7px; font-size:24px; font-weight:600; letter-spacing:-.024em; color:#EAF0F8;">Acessar a plataforma</h2>
+                <p style="margin:0 0 30px; font-size:13.5px; color:#7A8FAB;">Use suas credenciais corporativas.</p>
+
+                @if (Model.Erro is not null)
+                {
+                    <div style="display:flex; align-items:center; gap:9px; background:rgba(255,59,92,.07); border:1px solid rgba(255,59,92,.26); border-radius:9px; padding:11px 13px; margin-bottom:16px;">
+                        <span style="width:6px; height:6px; border-radius:50%; background:#FF3B5C; flex:0 0 6px;"></span>
+                        <span style="font-size:12.5px; color:#FF8098;">@Model.Erro</span>
+                    </div>
+                }
+
+                <form method="post">
+                    <div style="display:flex; flex-direction:column; gap:16px;">
+                        <div>
+                            <div style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#5A7191; letter-spacing:.12em; text-transform:uppercase; margin-bottom:7px;">E-mail corporativo</div>
+                            <input asp-for="Input.Email" type="email" placeholder="nome@suaempresa.com.br" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:9px; padding:13px 15px; font-size:14px; color:#EAF0F8;" />
+                        </div>
+                        <div>
+                            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px;">
+                                <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#5A7191; letter-spacing:.12em; text-transform:uppercase;">Senha</span>
+                            </div>
+                            <input asp-for="Input.Senha" type="password" placeholder="••••••••••••" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:9px; padding:13px 15px; font-size:14px; color:#EAF0F8;" />
+                        </div>
+                        <button type="submit" style="display:flex; align-items:center; justify-content:center; gap:9px; width:100%; margin-top:6px; background:linear-gradient(135deg,#4D9BFF,#2A6FD6); border:none; border-radius:10px; padding:14px; font-family:inherit; font-size:14px; font-weight:600; color:#04101F; cursor:pointer; box-shadow:0 8px 28px rgba(77,155,255,.26);">Continuar</button>
+                    </div>
+                </form>
+
+                <p style="margin:28px 0 0; font-size:12px; line-height:1.65; color:#5A7191; text-align:center;">Ainda não é cliente? <a asp-page="/Contato" style="color:#4D9BFF;">Solicite uma demonstração</a></p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,55 @@
+@page
+@model OktaIA.Web.Pages.Admin.CredenciaisModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Credenciais";
+}
+
+<div class="adm-page-head">
+    <h1>Cofre de credenciais</h1>
+    <p>Segredos cifrados em repouso · nenhum conector recebe a credencial em claro</p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(196px,100%),1fr)); gap:11px; margin-bottom:14px;">
+    <div class="adm-kpi" style="border-left:2px solid #00E0A4;">
+        <div class="adm-kpi-label">Cifragem</div>
+        <div class="oi-mono" style="font-size:15px; font-weight:600; color:#00E0A4;">AES-256-GCM</div>
+        <div style="font-size:11px; color:#6B7F9B; margin-top:4px;">chave mestra em HSM</div>
+    </div>
+    <div class="adm-kpi" style="border-left:2px solid #4D9BFF;">
+        <div class="adm-kpi-label">Segredos</div>
+        <div class="oi-mono" style="font-size:15px; font-weight:600; color:#4D9BFF;">7 ativos</div>
+        <div style="font-size:11px; color:#6B7F9B; margin-top:4px;">1 revogada pelo fornecedor</div>
+    </div>
+    <div class="adm-kpi" style="border-left:2px solid #FFC93C;">
+        <div class="adm-kpi-label">Rotação</div>
+        <div class="oi-mono" style="font-size:15px; font-weight:600; color:#FFC93C;">1 pendente</div>
+        <div style="font-size:11px; color:#6B7F9B; margin-top:4px;">política de 90 dias</div>
+    </div>
+    <div class="adm-kpi" style="border-left:2px solid #8A7BFF;">
+        <div class="adm-kpi-label">Acessos hoje</div>
+        <div class="oi-mono" style="font-size:15px; font-weight:600; color:#8A7BFF;">4.128</div>
+        <div style="font-size:11px; color:#6B7F9B; margin-top:4px;">todos auditados</div>
+    </div>
+</div>
+
+<div class="adm-card">
+    <div class="adm-table-head" style="grid-template-columns:2fr 1.2fr 1.4fr 1.2fr 110px;">
+        <span>Credencial</span><span>Tipo</span><span>Proteção</span><span>Rotação</span><span>Status</span>
+    </div>
+    @foreach (var v in AdminCatalog.Vault)
+    {
+        var statusMap = new Dictionary<string, (string L, string C)> { ["ok"] = ("VÁLIDA", "#00E0A4"), ["atencao"] = ("ROTACIONAR", "#FFC93C"), ["erro"] = ("INVÁLIDA", "#FF3B5C") };
+        var (label, color) = statusMap[v.Status];
+        <div class="adm-table-row" style="grid-template-columns:2fr 1.2fr 1.4fr 1.2fr 110px;">
+            <div>
+                <div style="font-size:12.5px; color:#D4DFEC;">@v.N</div>
+                <div class="oi-mono" style="font-size:9px; color:#4A5D78; margin-top:2px;">@v.Slug</div>
+            </div>
+            <span class="oi-mono" style="font-size:10px; color:#8296B0;">@v.Kind</span>
+            <span class="oi-mono" style="font-size:10px; color:#00E0A4;">@v.Enc</span>
+            <span class="oi-mono" style="font-size:10px; color:#8296B0;">@v.Rot</span>
+            <span class="adm-pill" style="color:@color; background:@(color)1F;">@label</span>
+        </div>
+    }
+</div>

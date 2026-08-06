@@ -1,0 +1,16 @@
+@page
+@model OktaIA.Web.Pages.AcessoNegadoModel
+@{
+    ViewData["Title"] = "Acesso negado";
+}
+
+<div class="oi-content" style="display:flex; align-items:center; justify-content:center; min-height:60vh;">
+    <div style="text-align:center; max-width:420px;">
+        <div style="font-size:38px; margin-bottom:14px;">🔒</div>
+        <h1 style="font-size:19px; font-weight:600; margin-bottom:8px;">Acesso negado</h1>
+        <p style="font-size:13.5px; color:#7A8FAB; line-height:1.6; margin-bottom:24px;">
+            Seu perfil não tem permissão pra essa área. Se você acha que deveria ter acesso, fale com um administrador.
+        </p>
+        <a asp-page="/Dashboard" style="display:inline-block; background:linear-gradient(135deg,#4D9BFF,#2A6FD6); border-radius:9px; padding:11px 22px; font-size:13px; font-weight:600; color:#04101F; text-decoration:none;">Voltar ao início</a>
+    </div>
+</div>

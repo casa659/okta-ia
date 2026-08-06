@@ -1,0 +1,45 @@
+@page
+@model SegurancaModel
+@using OktaIA.Web.Services
+@{
+    Layout = "_MarketingLayout";
+    ViewData["Title"] = "Segurança";
+}
+
+<section class="mk-section-tight" style="padding-top:80px; padding-bottom:56px; border-bottom:1px solid rgba(120,170,255,.09);">
+  <span class="mk-kicker">Nossa segurança</span>
+  <h1 class="mk-h1">Aplicamos em casa o que vendemos</h1>
+  <p class="mk-lead">Uma plataforma de segurança é, por definição, um alvo de alto valor. Tratamos nossa própria infraestrutura com o rigor que exigimos de qualquer cliente em setor regulado.</p>
+</section>
+
+<section class="mk-section">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(288px,100%),1fr)); gap:16px;">
+    @foreach (var s in MarketingContent.SecCards)
+    {
+      <div style="background:linear-gradient(165deg,rgba(255,255,255,.04),rgba(255,255,255,.01)); border:1px solid rgba(120,170,255,.12); border-radius:15px; padding:26px 24px;">
+        <div class="mk-mono" style="font-size:10px; color:@s.C; letter-spacing:.14em; margin-bottom:14px;">@s.K</div>
+        <div style="font-size:16px; font-weight:600; margin-bottom:10px; letter-spacing:-.014em;">@s.T</div>
+        <p style="margin:0; font-size:13.5px; line-height:1.66; color:#8296B0;">@s.D</p>
+      </div>
+    }
+  </div>
+</section>
+
+<section class="mk-section-shaded">
+  <div style="max-width:1280px; margin:0 auto; padding:clamp(44px,6vw,80px) clamp(16px,4vw,32px);">
+    <div class="mk-lede-block" style="max-width:620px;">
+      <span class="mk-kicker">Arquitetura</span>
+      <h2 class="mk-h2">Construída para escalar sem perder isolamento</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(212px,100%),1fr)); gap:14px;">
+      @foreach (var a in MarketingContent.ArchLayers)
+      {
+        <div style="background:rgba(255,255,255,.028); border:1px solid rgba(120,170,255,.11); border-radius:13px; padding:22px 20px; border-left:2px solid @a.C;">
+          <div class="mk-mono" style="font-size:9.5px; color:@a.C; letter-spacing:.14em; margin-bottom:12px;">@a.K</div>
+          <div style="font-size:14.5px; font-weight:600; margin-bottom:9px;">@a.T</div>
+          <div style="font-size:12.5px; line-height:1.62; color:#7A8FAB;">@a.D</div>
+        </div>
+      }
+    </div>
+  </div>
+</section>

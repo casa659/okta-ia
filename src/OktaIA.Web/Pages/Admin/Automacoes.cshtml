@@ -1,0 +1,79 @@
+@page
+@model OktaIA.Web.Pages.Admin.AutomacoesModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Automações";
+}
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:16px; flex-wrap:wrap;">
+    <div class="adm-page-head" style="margin-bottom:0;">
+        <h1>Automações · Workflow Builder</h1>
+        <p>Playbooks visuais reagindo a tópicos do Event Bus · qualquer conector como origem ou ação</p>
+    </div>
+    <span class="adm-pill" style="color:#00E0A4; background:#00E0A41A;">ATIVO · 48 execuções/24h</span>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr)); gap:12px; align-items:start;">
+    <div class="adm-card" style="padding:18px 20px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+            <span style="font-size:13.5px; font-weight:600;">Contenção de endpoint por alerta crítico</span>
+            <span style="margin-left:auto;" class="oi-mono adm-pill" style="color:#00E0A4; background:#00E0A41A; font-size:9px;">v4</span>
+        </div>
+        @foreach (var f in AdminCatalog.SoarFlow)
+        {
+            <div style="background:rgba(255,255,255,.03); border:1px solid @(f.C)2E; border-left:2px solid @f.C; border-radius:10px; padding:13px 15px;">
+                <div style="display:flex; align-items:center; gap:9px; margin-bottom:5px;">
+                    <span class="oi-mono" style="font-size:8.5px; font-weight:600; letter-spacing:.1em; color:@f.C; background:@(f.C)1A; border:1px solid @(f.C)3D; border-radius:4px; padding:2px 7px;">@f.K</span>
+                    <span style="font-size:12.5px; font-weight:600; color:#D4DFEC;">@f.T</span>
+                </div>
+                <div style="font-size:11.5px; line-height:1.55; color:#7A8FAB;">@f.D</div>
+            </div>
+            @if (f.BranchAfter)
+            {
+                <div style="height:12px; display:flex; justify-content:center;"><span style="width:1px; height:100%; background:rgba(255,201,60,.4);"></span></div>
+                <div style="height:1px; margin:0 25%; background:rgba(255,201,60,.4);"></div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    @foreach (var b in AdminCatalog.SoarBranches)
+                    {
+                        <div style="display:flex; flex-direction:column;">
+                            <div style="height:12px; display:flex; justify-content:center;"><span style="width:1px; height:100%; background:rgba(255,201,60,.4);"></span></div>
+                            <div style="text-align:center; margin-bottom:7px;"><span class="oi-mono" style="font-size:8.5px; font-weight:600; letter-spacing:.1em; color:@b.Lc;">@b.Lbl</span></div>
+                            <div style="background:rgba(255,255,255,.03); border:1px solid @(b.C)2E; border-top:2px solid @b.Lc; border-radius:10px; padding:13px 15px; height:100%;">
+                                <div style="display:flex; align-items:center; gap:9px; margin-bottom:5px;">
+                                    <span class="oi-mono" style="font-size:8.5px; font-weight:600; letter-spacing:.1em; color:@b.C; background:@(b.C)1A; border:1px solid @(b.C)3D; border-radius:4px; padding:2px 7px;">@b.K</span>
+                                    <span style="font-size:12.5px; font-weight:600; color:#D4DFEC;">@b.T</span>
+                                </div>
+                                <div style="font-size:11.5px; line-height:1.55; color:#7A8FAB;">@b.D</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div style="height:12px; display:flex; justify-content:center;"><span style="width:1px; height:100%; background:rgba(255,201,60,.4);"></span></div>
+                <div style="height:1px; margin:0 25%; background:rgba(255,201,60,.4);"></div>
+            }
+            <div style="height:14px; display:flex; justify-content:center;"><span style="width:1px; height:100%; background:linear-gradient(180deg,rgba(120,170,255,.32),rgba(120,170,255,.12));"></span></div>
+        }
+        <div style="text-align:center; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#00E0A4; background:rgba(0,224,164,.07); border:1px solid rgba(0,224,164,.20); border-radius:8px; padding:9px;">FIM · tempo médio de execução 4,2 s</div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:11px;">
+        <div class="adm-card" style="padding:17px 19px;">
+            <div style="font-size:13px; font-weight:600; margin-bottom:14px;">Playbooks publicados</div>
+            @foreach (var p in AdminCatalog.Playbooks)
+            {
+                <div style="display:flex; align-items:center; gap:11px; padding-bottom:10px; border-bottom:1px solid rgba(120,170,255,.06); margin-bottom:10px;">
+                    <span style="width:6px; height:6px; border-radius:50%; background:@p.C; flex:0 0 6px;"></span>
+                    <span style="font-size:12.5px; color:#D4DFEC; flex:1;">@p.N</span>
+                    <span class="oi-mono" style="font-size:9.5px; color:#5A7191;">@p.Exec</span>
+                </div>
+            }
+        </div>
+        <div style="background:rgba(0,224,164,.05); border:1px solid rgba(0,224,164,.20); border-radius:12px; padding:17px 19px;">
+            <div style="display:flex; align-items:center; gap:9px; margin-bottom:10px;">
+                <span class="oi-mono" style="font-size:9px; color:#04101F; background:#00E0A4; border-radius:4px; padding:2px 6px; font-weight:600;">IA</span>
+                <span style="font-size:13px; font-weight:600;">Sugestão do motor</span>
+            </div>
+            <p style="margin:0; font-size:12.5px; line-height:1.62; color:#B4C4D8;">Dos 214 bloqueios de IP no último mês, 96% vieram de 3 ASNs recorrentes. Um passo de bloqueio preventivo por ASN reduziria o volume de execuções em cerca de 71% e a latência média de contenção em 2,8 s.</p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,151 @@
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using OktaIA.Web.Data
+@using OktaIA.Web.Models
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext Db
+@{
+    var lang = I18n.Lang;
+    var usuario = User.Identity?.IsAuthenticated == true ? await UserManager.GetUserAsync(User) : null;
+    // Ordem de Id preserva a ordem de seed (igual ao mockup — "Grupo Vector" é o tenant padrão,
+    // primeiro do array original, não ordenação alfabética).
+    var tenants = await Db.Companies.Where(c => c.Ativo).OrderBy(c => c.Id).ToListAsync();
+    var currentPage = (ViewContext.RouteData.Values["page"] as string) ?? "";
+    string NavClass(string page) => currentPage.Equals(page, StringComparison.OrdinalIgnoreCase) ? "oi-nav-btn oi-active" : "oi-nav-btn";
+
+    var tenantAtual = await TenantResolver.ResolverAtualAsync(Context, Db);
+}
+<!DOCTYPE html>
+<html lang="@lang">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] is not null ? $"{ViewData["Title"]} — okta-ia" : "okta-ia · Unified XDR / SOC")</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="~/img/brand/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="~/img/brand/favicon-64.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="~/img/brand/apple-touch-icon-180.png" />
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <meta name="theme-color" content="#06090E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="oi-app">
+        <header class="oi-header">
+            <button type="button" class="oi-menu-btn" data-oi-menu-toggle aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="oi-brand">
+                <div class="oi-brand-mark">O</div>
+                <div>
+                    <div class="oi-brand-name">okta-ia<span>.com</span></div>
+                    <div class="oi-brand-tag">Unified XDR / SOC</div>
+                </div>
+            </div>
+
+            <div class="oi-tenant-wrap">
+                <button type="button" class="oi-tenant-btn" data-tenant-open>
+                    <span class="oi-tenant-dot"></span>
+                    <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.15">
+                        <span class="oi-tenant-label">@I18n.T("tenant")</span>
+                        <span class="oi-tenant-name" id="oi-tenant-name">@(tenantAtual?.Nome ?? "—")</span>
+                    </span>
+                    <span style="font-size:9px;color:var(--oi-muted-2);margin-left:4px">▼</span>
+                </button>
+                <div class="oi-tenant-menu" data-tenant-menu>
+                    <div class="oi-tenant-menu-label">@tenants.Count organização(ões) na plataforma</div>
+                    @foreach (var t in tenants)
+                    {
+                        <button type="button" class="oi-tenant-item @(t.Id == tenantAtual?.Id ? "oi-active" : "")" data-tenant-id="@t.Id" data-tenant-name="@t.Nome">
+                            <span class="oi-tenant-item-name">@t.Nome</span>
+                            <span class="oi-tenant-item-sector">@t.SetorPt</span>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <div class="oi-search">
+                <span class="oi-search-icon">⌕</span>
+                <span class="oi-search-ph">@I18n.T("searchPh")</span>
+                <span class="oi-search-kbd">⌘K</span>
+            </div>
+
+            <div class="oi-header-right">
+                <div class="oi-live-badge">
+                    <span class="oi-live-dot"></span>
+                    <span class="oi-live-count" id="oi-live-count">47</span>
+                    <span class="oi-live-label">@I18n.T("liveNow")</span>
+                </div>
+                <div class="oi-lang-toggle">
+                    <a href="?lang=pt" class="@(lang == "pt" ? "oi-active" : "")" data-lang-link="pt">PT</a>
+                    <a href="?lang=en" class="@(lang == "en" ? "oi-active" : "")" data-lang-link="en">EN</a>
+                </div>
+                <button type="button" class="oi-ai-btn oi-active" data-ai-toggle>
+                    <span class="oi-mono">AI</span>
+                    <span style="font-size:11px;font-weight:600">@I18n.T("copilot")</span>
+                </button>
+                <a asp-page="/TrocarSenha" class="oi-header-link">Senha</a>
+                <a href="/" class="oi-header-link">Site</a>
+                <form method="post" asp-page="/Login" asp-page-handler="Logout" style="display:contents;">
+                    <button type="submit" class="oi-header-link">Sair</button>
+                </form>
+                @if (usuario is not null)
+                {
+                    <a asp-page="/Autenticador" class="oi-avatar" title="@($"{usuario.NomeCompleto} · Autenticação em duas etapas")" style="text-decoration:none;">@(usuario.Iniciais ?? "?")</a>
+                }
+            </div>
+        </header>
+
+        <div class="oi-body">
+            <nav class="oi-sidebar" data-oi-sidebar>
+                <div class="oi-nav-group-label">@I18n.T("opsGroup")</div>
+                <a asp-page="/Dashboard" class="@NavClass("/Dashboard")"><span class="oi-nav-num">01</span><span class="oi-nav-label">@I18n.T("nav.dash")</span></a>
+                <a asp-page="/Empresas" class="@NavClass("/Empresas")"><span class="oi-nav-num">02</span><span class="oi-nav-label">@I18n.T("nav.cos")</span></a>
+                <a asp-page="/Ativos" class="@NavClass("/Ativos")"><span class="oi-nav-num">03</span><span class="oi-nav-label">@I18n.T("nav.assets")</span></a>
+                <a asp-page="/DigitalTwin" class="@NavClass("/DigitalTwin")"><span class="oi-nav-num">04</span><span class="oi-nav-label">@I18n.T("nav.twin")</span></a>
+                <a asp-page="/Vulnerabilidades" class="@NavClass("/Vulnerabilidades")"><span class="oi-nav-num">05</span><span class="oi-nav-label">@I18n.T("nav.vuln")</span></a>
+                <a asp-page="/Incidentes" class="@NavClass("/Incidentes")"><span class="oi-nav-num">06</span><span class="oi-nav-label">@I18n.T("nav.inc")</span></a>
+                <a asp-page="/Siem" class="@NavClass("/Siem")"><span class="oi-nav-num">07</span><span class="oi-nav-label">@I18n.T("nav.siem")</span></a>
+
+                <div class="oi-nav-group-label oi-second">@I18n.T("bizGroup")</div>
+                <a asp-page="/Ia" class="@NavClass("/Ia")"><span class="oi-nav-num">08</span><span class="oi-nav-label">@I18n.T("nav.ai")</span></a>
+                <a asp-page="/Relatorios" class="@NavClass("/Relatorios")"><span class="oi-nav-num">09</span><span class="oi-nav-label">@I18n.T("nav.rep")</span></a>
+                <a asp-page="/Financeiro" class="@NavClass("/Financeiro")"><span class="oi-nav-num">10</span><span class="oi-nav-label">@I18n.T("nav.fin")</span></a>
+
+                <div class="oi-ingest">
+                    <div class="oi-ingest-label">@I18n.T("ingest")</div>
+                    <div class="oi-ingest-value">
+                        <span class="oi-ingest-eps" id="oi-eps-value">18.420</span>
+                        <span class="oi-ingest-unit">EPS</span>
+                    </div>
+                    <div class="oi-ingest-bar"><div class="oi-ingest-bar-fill" style="width:62%"></div></div>
+                </div>
+
+                <div class="oi-sidebar-mobile-links">
+                    <a asp-page="/Autenticador">Autenticador</a>
+                    <a asp-page="/TrocarSenha">Trocar senha</a>
+                    <a href="/">Site</a>
+                    <form method="post" asp-page="/Login" asp-page-handler="Logout">
+                        <button type="submit">Sair</button>
+                    </form>
+                </div>
+            </nav>
+
+            <main class="oi-main">
+                @RenderBody()
+            </main>
+
+            <partial name="_CopilotPanel" />
+        </div>
+    </div>
+
+    <form id="oi-antiforgery-form" style="display:none">@Html.AntiForgeryToken()</form>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

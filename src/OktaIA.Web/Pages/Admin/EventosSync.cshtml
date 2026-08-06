@@ -1,0 +1,52 @@
+@page
+@model OktaIA.Web.Pages.Admin.EventosSyncModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Eventos e sync";
+}
+
+<div class="adm-page-head">
+    <h1>Motor de eventos e agendador</h1>
+    <p>Conectores publicam em tópicos · nada na plataforma depende de um fornecedor específico</p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr)); gap:12px; align-items:start;">
+    <div class="adm-card">
+        <div style="padding:13px 16px; border-bottom:1px solid rgba(120,170,255,.09); display:flex; align-items:center; gap:10px;">
+            <span style="font-size:13px; font-weight:600;">Tópicos do Event Bus</span>
+            <span style="margin-left:auto;" class="oi-mono" style="font-size:9px; color:#00E0A4;">at-least-once · ordenado por chave</span>
+        </div>
+        @foreach (var t in AdminCatalog.BusTopics)
+        {
+            <div style="padding:12px 16px; border-bottom:1px solid rgba(120,170,255,.055);">
+                <div style="display:flex; align-items:center; gap:9px; margin-bottom:5px;">
+                    <span style="width:6px; height:6px; border-radius:50%; flex:0 0 6px; background:@t.C;"></span>
+                    <span class="oi-mono" style="font-size:11.5px; color:#8FC0FF;">@t.N</span>
+                    <span style="margin-left:auto;" class="oi-mono" style="font-size:10px; color:#B4C4D8;">@t.Rate</span>
+                </div>
+                <div style="display:flex; align-items:baseline; gap:9px; padding-left:15px;">
+                    <span style="font-size:11.5px; color:#7A8FAB; flex:1;">@t.D</span>
+                    <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@t.Subs assinantes</span>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="adm-card">
+        <div class="adm-card-head">Agendador de sincronização</div>
+        @foreach (var s in AdminCatalog.Schedules)
+        {
+            <div style="padding:12px 16px; border-bottom:1px solid rgba(120,170,255,.055);">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+                    <span style="font-size:12.5px; font-weight:500; color:#D4DFEC; flex:1;">@s.N</span>
+                    <span class="oi-mono" style="font-size:9.5px; color:#00E0A4;">@s.Ok</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;" class="oi-mono">
+                    <span style="font-size:9.5px; color:#5A7191;">@s.Freq</span>
+                    <span style="color:#2E3F58;">·</span>
+                    <span style="font-size:9.5px; color:#5A7191;">@s.Mode</span>
+                    <span style="margin-left:auto; font-size:9.5px; color:#4A5D78;">@s.Scope</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>

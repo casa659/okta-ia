@@ -1,0 +1,265 @@
+@page
+@model PlanosModel
+@using OktaIA.Web.Services
+@using System.Text.Json
+@{
+    Layout = "_MarketingLayout";
+    ViewData["Title"] = "Planos";
+    var calcPlansJson = JsonSerializer.Serialize(MarketingContent.Plans.Where(p => p.Mult > 0)
+        .Select(p => new { id = p.Id, n = p.N, rates = p.Rates }));
+}
+
+<section class="mk-section-tight" style="padding-top:80px; padding-bottom:44px; text-align:center;">
+  <span class="mk-kicker">Planos e contratação</span>
+  <h1 class="mk-h1" style="margin:0 auto 20px; max-width:840px;">Você não contrata um software. Contrata uma operação de segurança.</h1>
+  <p class="mk-lead" style="margin:0 auto 34px; max-width:660px;">Três níveis de serviço, do monitoramento essencial ao SOC as a Service com resposta prioritária em campo. Escolha o modelo de cobrança que faz sentido para o seu parque.</p>
+
+  <div style="display:inline-flex; background:rgba(255,255,255,.03); border:1px solid rgba(120,170,255,.14); border-radius:12px; overflow:hidden;">
+    <button type="button" class="mk-model-tab mk-active" data-mk-model-tab="porte">
+      <span class="mk-model-tab-title">Por porte</span><span class="mk-model-tab-sub">mensalidade fixa</span>
+    </button>
+    <button type="button" class="mk-model-tab" data-mk-model-tab="ativo">
+      <span class="mk-model-tab-title">Por ativo</span><span class="mk-model-tab-sub">estação, servidor, firewall</span>
+    </button>
+    <button type="button" class="mk-model-tab" data-mk-model-tab="user">
+      <span class="mk-model-tab-title">Por usuário</span><span class="mk-model-tab-sub">por conta ativa</span>
+    </button>
+  </div>
+</section>
+
+<section style="max-width:1280px; margin:0 auto; padding:20px clamp(16px,4vw,32px) clamp(48px,6vw,80px);">
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr)); gap:18px; align-items:start;">
+    @foreach (var pv in Model.Plans)
+    {
+      var pl = pv.Plan;
+      <div style="position:relative; display:flex; flex-direction:column; background:linear-gradient(165deg,rgba(255,255,255,@(pl.Best ? ".055" : ".035")),rgba(255,255,255,.012)); border:1px solid @(pl.Best ? "rgba(0,224,164,.34)" : "rgba(120,170,255,.13)"); border-radius:18px; padding:30px 28px 28px; backdrop-filter:blur(10px);@(pl.Best ? " box-shadow:0 20px 60px rgba(0,224,164,.10);" : "")">
+        @if (pl.Best)
+        {
+          <span style="position:absolute; top:-11px; left:50%; transform:translateX(-50%); font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:600; letter-spacing:.12em; color:#04101F; background:#00E0A4; border-radius:100px; padding:4px 13px; white-space:nowrap;">MAIS CONTRATADO</span>
+        }
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:9px;">
+          <span style="font-size:21px; font-weight:600; letter-spacing:-.022em; color:@pl.C;">@pl.N</span>
+          <span class="mk-mono" style="font-size:9.5px; color:#5A7191; letter-spacing:.06em; text-align:right;">@pl.Tag</span>
+        </div>
+        <p style="margin:0 0 22px; font-size:13.5px; line-height:1.62; color:#8296B0; min-height:66px;">@pl.Sub</p>
+        <div style="padding-bottom:20px; border-bottom:1px solid rgba(120,170,255,.10); margin-bottom:20px;">
+          @foreach (var pr in pv.Prices)
+          {
+            <div data-price-model="@pr.Model" style="display:@(pr.Model == "porte" ? "block" : "none");">
+              <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+                <span class="mk-mono" style="font-size:@(pr.Price.Length > 12 ? "26px" : "34px"); font-weight:600; letter-spacing:-.03em; color:#EAF0F8;">@pr.Price</span>
+                <span style="font-size:12.5px; color:#6B7F9B;">@pr.Unit</span>
+              </div>
+              <div class="mk-mono" style="font-size:11px; color:#8FA3BF; margin-top:8px; line-height:1.5;">@pr.Note</div>
+            </div>
+          }
+        </div>
+        <div style="display:flex; flex-direction:column; gap:9px;">
+          @foreach (var it in pl.Items)
+          {
+            <div style="display:flex; gap:10px; align-items:flex-start;">
+              <span style="width:15px; height:15px; border-radius:4px; background:@(pl.C)1F; border:1px solid @(pl.C)4D; display:flex; align-items:center; justify-content:center; font-size:8.5px; color:@pl.C; flex:0 0 15px; margin-top:2px;">✓</span>
+              <span style="font-size:13.5px; line-height:1.5; color:#B4C4D8;">@it</span>
+            </div>
+          }
+        </div>
+        @if (pl.Best)
+        {
+          <a asp-page="/Contato" style="text-align:center; width:100%; margin-top:24px; background:linear-gradient(135deg,#00E0A4,#0B9A76); border:none; border-radius:11px; padding:14px; font-family:inherit; font-size:14px; font-weight:600; color:#04101F; cursor:pointer; box-shadow:0 8px 28px rgba(0,224,164,.24); display:block;">Contratar @pl.N</a>
+        }
+        else
+        {
+          <a asp-page="/Contato" style="text-align:center; width:100%; margin-top:24px; background:rgba(255,255,255,.05); border:1px solid rgba(120,170,255,.22); border-radius:11px; padding:14px; font-family:inherit; font-size:14px; font-weight:600; color:#EAF0F8; cursor:pointer; display:block;">@(pl.Mult == 0 ? "Falar com especialista" : $"Contratar {pl.N}")</a>
+        }
+      </div>
+    }
+  </div>
+  <p style="margin:22px auto 0; max-width:760px; text-align:center; font-size:12.5px; line-height:1.7; color:#5A7191;">Valores de referência para contrato de 12 meses. O preço final depende da quantidade de ativos, da criticidade do ambiente e do nível de SLA acordado. Contratos anuais têm 15% de desconto.</p>
+</section>
+
+<section class="mk-section-shaded">
+  <div style="max-width:1280px; margin:0 auto; padding:clamp(44px,6vw,80px) clamp(16px,4vw,32px);">
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr)); gap:48px; align-items:start;">
+      <div>
+        <div style="display:inline-flex; align-items:center; gap:9px; border:1px solid rgba(0,224,164,.28); background:rgba(0,224,164,.07); border-radius:100px; padding:6px 14px; margin-bottom:22px;">
+          <span style="width:6px; height:6px; border-radius:50%; background:#00E0A4; box-shadow:0 0 10px #00E0A4;"></span>
+          <span class="mk-mono" style="font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:#4FD9B0;">Gratuito · sem compromisso</span>
+        </div>
+        <h2 class="mk-h2" style="font-size:clamp(26px,3vw,38px);">Security Assessment gratuito em 48 horas</h2>
+        <p class="mk-lead" style="margin-bottom:26px;">Antes de qualquer proposta, mapeamos sua superfície exposta e entregamos um relatório executivo com o que encontramos. Sem instalar nada no seu ambiente e sem custo. Você decide o que fazer com o resultado.</p>
+        <div style="display:flex; flex-direction:column; gap:11px; margin-bottom:28px;">
+          @foreach (var a in MarketingContent.AssessSteps)
+          {
+            <div style="display:flex; gap:14px; align-items:flex-start; background:rgba(255,255,255,.026); border:1px solid rgba(120,170,255,.10); border-radius:11px; padding:15px 17px;">
+              <span class="mk-mono" style="font-size:10px; color:#00E0A4; letter-spacing:.1em; flex:0 0 auto; margin-top:3px;">@a.N</span>
+              <div>
+                <div style="font-size:14.5px; font-weight:600; margin-bottom:5px; letter-spacing:-.012em;">@a.T</div>
+                <div style="font-size:13px; line-height:1.62; color:#8296B0;">@a.D</div>
+              </div>
+            </div>
+          }
+        </div>
+        <a asp-page="/Contato" class="mk-btn-green">Solicitar meu assessment gratuito</a>
+      </div>
+
+      <div style="background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.012)); border:1px solid rgba(120,170,255,.16); border-radius:18px; padding:28px 26px; backdrop-filter:blur(12px);">
+        <div class="mk-mono" style="font-size:10px; color:#4D9BFF; letter-spacing:.16em; text-transform:uppercase; margin-bottom:8px;">O relatório entrega</div>
+        <div style="font-size:17px; font-weight:600; margin-bottom:22px; letter-spacing:-.018em;">Seis seções, linguagem de negócio</div>
+        <div style="display:flex; flex-direction:column; gap:14px;">
+          @foreach (var d in MarketingContent.AssessDeliverItems)
+          {
+            <div style="padding-bottom:14px; border-bottom:1px solid rgba(120,170,255,.08);">
+              <div style="display:flex; gap:10px; align-items:baseline; margin-bottom:5px;">
+                <span style="width:5px; height:5px; border-radius:50%; background:#4D9BFF; flex:0 0 5px;"></span>
+                <span style="font-size:14px; font-weight:600; letter-spacing:-.012em;">@d.T</span>
+              </div>
+              <div style="font-size:12.5px; line-height:1.6; color:#7A8FAB; padding-left:15px;">@d.D</div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="mk-section">
+  <div class="mk-lede-block" style="max-width:640px;">
+    <span class="mk-kicker">Simulador</span>
+    <h2 class="mk-h2">Calcule pelo seu inventário</h2>
+    <p class="mk-lead">Modelo por ativo, útil quando o ambiente é desbalanceado. Ajuste as quantidades para ver a mensalidade estimada.</p>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr)); gap:16px; align-items:start;">
+    <div id="mk-calc" class="mk-card" data-mk-calc-plans='@calcPlansJson'>
+      <div style="display:flex; background:rgba(5,10,18,.6); border:1px solid rgba(120,170,255,.13); border-radius:9px; overflow:hidden; margin-bottom:24px;">
+        <button type="button" class="mk-calc-tab" data-mk-calc-plan="essential">Essential</button>
+        <button type="button" class="mk-calc-tab mk-active" data-mk-calc-plan="professional">Professional</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:18px;">
+        <div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px;">
+            <span style="font-size:13.5px; font-weight:500; color:#C4D3E6;">Estações de trabalho</span>
+            <span class="mk-mono" id="mk-rate-ws" style="font-size:10px; color:#4A5D78;"></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px;">
+            <button type="button" class="mk-stepper-btn" data-mk-dec="ws">−</button>
+            <div style="flex:1; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:#EAF0F8;" id="mk-val-ws"></div>
+            <button type="button" class="mk-stepper-btn" data-mk-inc="ws">+</button>
+            <span class="mk-mono" id="mk-sub-ws" style="font-size:11.5px; color:#6B7F9B; width:84px; text-align:right;"></span>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px;">
+            <span style="font-size:13.5px; font-weight:500; color:#C4D3E6;">Servidores</span>
+            <span class="mk-mono" id="mk-rate-srv" style="font-size:10px; color:#4A5D78;"></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px;">
+            <button type="button" class="mk-stepper-btn" data-mk-dec="srv">−</button>
+            <div style="flex:1; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:#EAF0F8;" id="mk-val-srv"></div>
+            <button type="button" class="mk-stepper-btn" data-mk-inc="srv">+</button>
+            <span class="mk-mono" id="mk-sub-srv" style="font-size:11.5px; color:#6B7F9B; width:84px; text-align:right;"></span>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px;">
+            <span style="font-size:13.5px; font-weight:500; color:#C4D3E6;">Firewalls e appliances</span>
+            <span class="mk-mono" id="mk-rate-fw" style="font-size:10px; color:#4A5D78;"></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:11px;">
+            <button type="button" class="mk-stepper-btn" data-mk-dec="fw">−</button>
+            <div style="flex:1; text-align:center; font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:#EAF0F8;" id="mk-val-fw"></div>
+            <button type="button" class="mk-stepper-btn" data-mk-inc="fw">+</button>
+            <span class="mk-mono" id="mk-sub-fw" style="font-size:11.5px; color:#6B7F9B; width:84px; text-align:right;"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:linear-gradient(160deg,rgba(77,155,255,.10),rgba(255,255,255,.012)); border:1px solid rgba(77,155,255,.24); border-radius:16px; padding:26px 24px;">
+      <div class="mk-mono" style="font-size:10px; color:#8FC0FF; letter-spacing:.16em; text-transform:uppercase; margin-bottom:16px;">Estimativa mensal</div>
+      <div class="mk-mono" id="mk-calc-total" style="font-size:clamp(32px,3.4vw,44px); font-weight:600; letter-spacing:-.034em; margin-bottom:6px;"></div>
+      <div style="font-size:13px; color:#8296B0; margin-bottom:24px;"><span id="mk-calc-assets"></span> ativos monitorados</div>
+      <div style="display:flex; flex-direction:column; gap:11px; padding-top:20px; border-top:1px solid rgba(120,170,255,.14);">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <span style="font-size:13px; color:#8296B0;">Contrato anual (−15%)</span>
+          <span class="mk-mono" id="mk-calc-year" style="font-size:14px; font-weight:600; color:#00E0A4;"></span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <span style="font-size:13px; color:#8296B0;">Implantação</span>
+          <span class="mk-mono" style="font-size:13px; color:#00E0A4;">Isenta</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <span style="font-size:13px; color:#8296B0;">Assessment inicial</span>
+          <span class="mk-mono" style="font-size:13px; color:#00E0A4;">Gratuito</span>
+        </div>
+      </div>
+      <a asp-page="/Contato" style="text-align:center; display:block; width:100%; margin-top:24px; background:linear-gradient(135deg,#4D9BFF,#2A6FD6); border:none; border-radius:11px; padding:14px; font-family:inherit; font-size:14px; font-weight:600; color:#04101F; cursor:pointer; box-shadow:0 8px 28px rgba(77,155,255,.26);">Receber proposta formal</a>
+      <p style="margin:14px 0 0; font-size:11.5px; line-height:1.6; color:#5A7191; text-align:center;">Estimativa referencial. A proposta final considera criticidade, volume de logs e SLA.</p>
+    </div>
+  </div>
+</section>
+
+<section class="mk-section-shaded">
+  <div style="max-width:1280px; margin:0 auto; padding:clamp(44px,6vw,80px) clamp(16px,4vw,32px);">
+    <div class="mk-lede-block" style="max-width:640px;">
+      <span class="mk-kicker">Comparativo</span>
+      <h2 class="mk-h2">O que está incluído em cada plano</h2>
+    </div>
+    <div style="background:rgba(255,255,255,.026); border:1px solid rgba(120,170,255,.12); border-radius:16px; overflow:hidden;">
+      <div style="display:grid; grid-template-columns:minmax(min(280px,44%),2.2fr) repeat(3,minmax(min(96px,100%),1fr)); gap:14px; padding:16px 24px; border-bottom:1px solid rgba(120,170,255,.12); background:rgba(5,10,18,.5);">
+        <span class="mk-mono" style="font-size:9px; color:#4A5D78; letter-spacing:.12em; text-transform:uppercase; align-self:center;">Recurso</span>
+        <span style="font-size:13.5px; font-weight:600; color:#4D9BFF; text-align:center;">Essential</span>
+        <span style="font-size:13.5px; font-weight:600; color:#00E0A4; text-align:center;">Professional</span>
+        <span style="font-size:13.5px; font-weight:600; color:#8A7BFF; text-align:center;">Enterprise</span>
+      </div>
+      @foreach (var g in MarketingContent.Matrix)
+      {
+        <div>
+          <div class="mk-mono" style="padding:14px 24px 10px; background:rgba(120,170,255,.035); border-bottom:1px solid rgba(120,170,255,.07); font-size:9.5px; color:#8FC0FF; letter-spacing:.14em; text-transform:uppercase;">@g.T</div>
+          @foreach (var r in g.Rows)
+          {
+            <div style="display:grid; grid-template-columns:minmax(min(280px,44%),2.2fr) repeat(3,minmax(min(96px,100%),1fr)); gap:14px; padding:11px 24px; border-bottom:1px solid rgba(120,170,255,.05); align-items:center;">
+              <span style="font-size:13.5px; color:#B4C4D8;">@r.T</span>
+              @foreach (var (val, color) in new[] { (r.Essential, "#4D9BFF"), (r.Professional, "#00E0A4"), (r.Enterprise, "#8A7BFF") })
+              {
+                @if (val == "T")
+                {
+                  <span style="font-size:13px; font-weight:600; text-align:center; color:@color;">✓</span>
+                }
+                else if (val == "—")
+                {
+                  <span style="font-size:12px; text-align:center; color:#2E3F58;">—</span>
+                }
+                else
+                {
+                  <span class="mk-mono" style="font-size:9.5px; font-weight:600; text-align:center; color:@color; opacity:.85;">@val</span>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="mk-section">
+  <div class="mk-lede-block" style="max-width:620px;">
+    <span class="mk-kicker">Dúvidas comerciais</span>
+    <h2 class="mk-h2">Antes de assinar</h2>
+  </div>
+  <div style="max-width:880px; display:flex; flex-direction:column; gap:9px;">
+    @foreach (var f in MarketingContent.PlanFaqs)
+    {
+      <div class="mk-faq" data-mk-faq>
+        <button type="button" class="mk-faq-q" data-mk-faq-q>
+          <span>@f.Q</span><span class="mk-faq-icon">+</span>
+        </button>
+        <div class="mk-faq-a">@f.A</div>
+      </div>
+    }
+  </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/planos.js" asp-append-version="true"></script>
+}

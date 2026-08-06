@@ -1,0 +1,129 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model DashboardModel
+@{
+    ViewData["Title"] = I18n.T("nav.dash");
+}
+
+<div class="oi-content">
+    <div class="oi-dash-head">
+        <div>
+            <h1 class="oi-dash-title">@I18n.T("socTitle")</h1>
+            <p class="oi-dash-sub">@I18n.T("socSub")</p>
+        </div>
+    </div>
+
+    <div class="oi-kpi-grid">
+        @foreach (var k in Model.Kpis)
+        {
+            <div class="oi-kpi-card" style="--oi-kpi-color:@k.Cor">
+                <div class="oi-kpi-label">@k.Label</div>
+                <div class="oi-kpi-value-row">
+                    <span class="oi-kpi-value">@k.Valor</span>
+                    @if (!string.IsNullOrEmpty(k.Delta))
+                    {
+                        <span class="oi-kpi-delta" style="color:@k.DeltaCor">@k.Delta</span>
+                    }
+                </div>
+                <svg viewBox="0 0 100 22" preserveAspectRatio="none" class="oi-kpi-spark">
+                    <path d="@k.Spark" fill="none" stroke="@k.Cor" stroke-width="1.4" opacity=".55"></path>
+                </svg>
+            </div>
+        }
+    </div>
+
+    <div class="oi-dash-grid">
+        <div class="oi-dash-col">
+            <div class="oi-panel">
+                <div class="oi-panel-head">
+                    <div class="oi-panel-title">
+                        <span class="oi-live-dot-title"></span>
+                        <span>@I18n.T("mapTitle")</span>
+                        <span class="oi-map-badge">NATURAL EARTH · 110m</span>
+                    </div>
+                    <div class="oi-legend">
+                        <span><span class="oi-legend-dot" style="background:var(--oi-red)"></span>@I18n.T("origin")</span>
+                        <span><span class="oi-legend-dot" style="background:var(--oi-accent)"></span>@I18n.T("dc")</span>
+                    </div>
+                </div>
+                <div class="oi-map-host" id="oi-map-host" data-mapa="@Model.MapaJson"></div>
+            </div>
+
+            <div class="oi-two-col">
+                <div class="oi-panel oi-panel-body">
+                    <div class="oi-gauge-title">@I18n.T("infra")</div>
+                    @foreach (var g in Model.Gauges)
+                    {
+                        <div class="oi-gauge-row">
+                            <div class="oi-gauge-labels"><span>@g.Label</span><span style="color:@g.Cor">@g.Texto</span></div>
+                            <div class="oi-gauge-track"><div class="oi-gauge-fill" style="width:@(g.Valor)%;background:@g.Cor"></div></div>
+                        </div>
+                    }
+                </div>
+                <div class="oi-panel oi-panel-body">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;">
+                        <span class="oi-gauge-title" style="margin:0">@I18n.T("topOrigins")</span>
+                        <span class="oi-mono" style="font-size:9px;color:var(--oi-muted-2)">24H</span>
+                    </div>
+                    @if (Model.TopOrigens.Count == 0)
+                    {
+                        <p style="font-size:11px;color:var(--oi-muted-2)">—</p>
+                    }
+                    @foreach (var o in Model.TopOrigens)
+                    {
+                        <div class="oi-origin-row">
+                            <span class="oi-origin-cc">@o.Codigo</span>
+                            <span class="oi-origin-name">@o.Nome</span>
+                            <div class="oi-origin-track"><div class="oi-origin-fill" style="width:@(o.Pct)%"></div></div>
+                            <span class="oi-origin-count">@o.Contagem</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="oi-dash-col">
+            <div class="oi-panel">
+                <div class="oi-panel-head">
+                    <span class="oi-panel-title" style="margin:0">@I18n.T("liveFeed")</span>
+                    <span class="oi-stream-badge"><span class="oi-stream-dot"></span>STREAM</span>
+                </div>
+                <div style="max-height:330px;overflow-y:auto;">
+                    @foreach (var f in Model.Feed)
+                    {
+                        <div class="oi-feed-item">
+                            <div class="oi-feed-top">
+                                <span class="oi-feed-chip" style="color:@f.SevCor;background:@f.SevBg;border-color:@(f.SevCor)40">@f.SevLabel</span>
+                                <span class="oi-feed-type">@f.Tipo</span>
+                                <span class="oi-feed-time">@f.Hora</span>
+                            </div>
+                            <div class="oi-feed-meta">
+                                <span class="oi-ip">@f.Ip</span>
+                                <span class="oi-cc">@f.Cc</span>
+                                <span>→</span>
+                                <span class="oi-ip">@f.Alvo</span>
+                                <span class="oi-action" style="color:@f.AcaoCor">@f.Acao</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="oi-brief-card">
+                <div class="oi-brief-head">
+                    <span class="oi-brief-badge">AI</span>
+                    <span class="oi-brief-title">@I18n.T("aiBrief")</span>
+                </div>
+                <p class="oi-brief-body">@Model.AiBriefBody</p>
+                <button type="button" class="oi-brief-btn" data-ai-toggle>@I18n.T("investigate")</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/d3/d3.min.js"></script>
+    <script src="~/lib/d3/topojson-client.min.js"></script>
+    <script src="~/js/dashboard-map.js" asp-append-version="true"></script>
+}

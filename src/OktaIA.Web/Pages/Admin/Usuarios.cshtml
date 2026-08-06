@@ -1,0 +1,123 @@
+@page
+@model OktaIA.Web.Pages.Admin.UsuariosModel
+
+@{
+    ViewData["Title"] = "Usuários";
+}
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; gap:16px; flex-wrap:wrap;">
+    <div class="adm-page-head" style="margin-bottom:0;">
+        <h1>Usuários</h1>
+        <p>@Model.Usuarios.Count conta(s) · MFA disponível via Google/Microsoft Authenticator</p>
+    </div>
+    <button type="button" class="adm-btn-primary" data-adm-reveal="adm-convidar">+ Convidar usuário</button>
+</div>
+
+@if (Model.SenhaTemporaria is not null)
+{
+    <div class="adm-card" style="padding:16px 18px; margin-bottom:16px; border-left:2px solid #00E0A4;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:6px;">Usuário criado — senha temporária (só aparece uma vez)</div>
+        <div class="oi-mono" style="font-size:15px; color:#00E0A4;">@Model.SenhaTemporaria</div>
+        <div style="font-size:11.5px; color:#6B7F9B; margin-top:6px;">Comunique essa senha ao usuário por um canal seguro. Ele deve trocá-la e ativar o autenticador no primeiro acesso.</div>
+    </div>
+}
+
+<div id="adm-convidar" class="adm-card" style="display:@(Model.MostrarForm ? "block" : "none"); padding:18px 20px; margin-bottom:16px;">
+    <div asp-validation-summary="All" style="color:#FF8098; font-size:12.5px; margin-bottom:10px;"></div>
+    <form method="post" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr)); gap:12px; align-items:end;">
+        <div>
+            <label style="display:block; font-size:11px; color:#5A7191; margin-bottom:6px;">Nome completo</label>
+            <input asp-for="Input.NomeCompleto" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:10px 12px; color:#EAF0F8; font-family:inherit;" />
+        </div>
+        <div>
+            <label style="display:block; font-size:11px; color:#5A7191; margin-bottom:6px;">E-mail</label>
+            <input asp-for="Input.Email" type="email" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:10px 12px; color:#EAF0F8; font-family:inherit;" />
+        </div>
+        <div style="flex:1 0 100%;">
+            <label style="display:block; font-size:11px; color:#5A7191; margin-bottom:6px;">Perfis</label>
+            <div class="adm-checkbox-group">
+                @foreach (var p in Model.PapeisDisponiveis)
+                {
+                    <label class="adm-checkbox-item">
+                        <input type="checkbox" name="Input.Papeis" value="@p" checked="@(p == "Analista")" />
+                        <span>@p</span>
+                    </label>
+                }
+            </div>
+        </div>
+        <button type="submit" class="adm-btn-primary" style="height:38px;">Convidar</button>
+    </form>
+</div>
+
+<div class="adm-card">
+    <div class="adm-table-head" style="grid-template-columns:2fr 1fr 110px 100px 260px;">
+        <span>Usuário</span><span>Perfil</span><span>MFA</span><span>Status</span><span></span>
+    </div>
+    @foreach (var (usuario, papeis, ativo) in Model.Usuarios)
+    {
+        string CorPapel(string p) => p == "Admin" ? "#8A7BFF" : p == "Analista" ? "#4D9BFF" : "#00E0A4";
+        var mfaOn = usuario.TwoFactorEnabled;
+        var souEu = usuario.Id == Model.UsuarioAtualId;
+        <div class="adm-table-row" style="grid-template-columns:2fr 1fr 110px 100px 260px;">
+            <div style="display:flex; align-items:center; gap:11px;">
+                <span style="width:28px; height:28px; border-radius:50%; background:#1F3350; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:600; color:#8FC0FF;">@(usuario.Iniciais ?? "?")</span>
+                <div>
+                    <div style="font-size:12.5px; font-weight:500; color:#D4DFEC;">@(usuario.NomeCompleto ?? usuario.Email)</div>
+                    <div class="oi-mono" style="font-size:9px; color:#4A5D78;">@usuario.Email</div>
+                </div>
+            </div>
+            <div class="adm-pill-group">
+                @foreach (var p in papeis)
+                {
+                    <span class="adm-pill" style="color:@CorPapel(p); background:@(CorPapel(p))1F;">@p</span>
+                }
+            </div>
+            <span class="adm-pill" style="color:@(mfaOn ? "#00E0A4" : "#FF3B5C"); background:@(mfaOn ? "#00E0A41F" : "#FF3B5C1F");">@(mfaOn ? "ATIVO" : "INATIVO")</span>
+            <span class="adm-pill" style="color:@(ativo ? "#00E0A4" : "#FF3B5C"); background:@(ativo ? "#00E0A41F" : "#FF3B5C1F");">@(ativo ? "ATIVO" : "INATIVO")</span>
+            <div class="adm-row-actions">
+                <button type="button" class="adm-btn-ghost" data-adm-editar-usuario
+                        data-id="@usuario.Id" data-nome="@(usuario.NomeCompleto ?? "")" data-email="@usuario.Email" data-papeis="@string.Join(",", papeis)">Editar</button>
+                @if (ativo)
+                {
+                    <form method="post" asp-page-handler="Desativar" asp-route-id="@usuario.Id" data-adm-confirm="Desativar @(usuario.NomeCompleto ?? usuario.Email)? A pessoa não vai mais conseguir entrar.">
+                        <button type="submit" class="adm-btn-ghost adm-danger" disabled="@souEu">Desativar</button>
+                    </form>
+                }
+                else
+                {
+                    <form method="post" asp-page-handler="Ativar" asp-route-id="@usuario.Id">
+                        <button type="submit" class="adm-btn-ghost adm-accent">Ativar</button>
+                    </form>
+                }
+                <form method="post" asp-page-handler="Excluir" asp-route-id="@usuario.Id" data-adm-confirm="Excluir @(usuario.NomeCompleto ?? usuario.Email) permanentemente? Essa ação não pode ser desfeita.">
+                    <button type="submit" class="adm-btn-ghost adm-danger" disabled="@souEu">Excluir</button>
+                </form>
+            </div>
+        </div>
+    }
+</div>
+
+<dialog id="adm-dialog-editar-usuario" class="adm-dialog">
+    <h2>Editar usuário</h2>
+    <form method="post" asp-page-handler="Editar">
+        <input type="hidden" asp-for="EditInput.Id" />
+        <label>Nome completo</label>
+        <input asp-for="EditInput.NomeCompleto" />
+        <label>E-mail</label>
+        <input asp-for="EditInput.Email" type="email" />
+        <label>Perfis</label>
+        <div class="adm-checkbox-group" data-adm-editar-usuario-papeis>
+            @foreach (var p in Model.PapeisDisponiveis)
+            {
+                <label class="adm-checkbox-item">
+                    <input type="checkbox" name="EditInput.Papeis" value="@p" />
+                    <span>@p</span>
+                </label>
+            }
+        </div>
+        <div class="adm-dialog-actions">
+            <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
+            <button type="submit" class="adm-btn-primary">Salvar</button>
+        </div>
+    </form>
+</dialog>

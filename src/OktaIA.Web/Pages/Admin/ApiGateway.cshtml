@@ -1,0 +1,40 @@
+@page
+@model OktaIA.Web.Pages.Admin.ApiGatewayModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "API Gateway";
+}
+
+<div class="adm-page-head">
+    <h1>API Gateway</h1>
+    <p>Autenticação, auditoria, rate limiting e versionamento centralizados em um só ponto</p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(288px,100%),1fr)); gap:11px; margin-bottom:14px;">
+    @foreach (var g in AdminCatalog.GatewayPolicies)
+    {
+        <div class="adm-kpi" style="border-left:2px solid @g.C; padding:16px 18px;">
+            <div style="font-size:13.5px; font-weight:600; margin-bottom:7px; letter-spacing:-.014em;">@g.N</div>
+            <div style="font-size:12px; line-height:1.6; color:#7A8FAB;">@g.D</div>
+        </div>
+    }
+</div>
+
+<div class="adm-card">
+    <div class="adm-card-head">Chaves de API emitidas</div>
+    <div class="adm-table-head" style="grid-template-columns:1.5fr 1.4fr 1.2fr 1fr 110px;">
+        <span>Chave</span><span>Organização</span><span>Escopo</span><span>Cota</span><span>Status</span>
+    </div>
+    @foreach (var k in AdminCatalog.GatewayKeys)
+    {
+        var statusMap = new Dictionary<string, string> { ["ativa"] = "#00E0A4", ["sandbox"] = "#4D9BFF", ["revogada"] = "#FF3B5C" };
+        var color = statusMap[k.Status];
+        <div class="adm-table-row" style="grid-template-columns:1.5fr 1.4fr 1.2fr 1fr 110px;">
+            <span class="oi-mono" style="font-size:11px; color:#8FC0FF;">@k.Key</span>
+            <span style="font-size:12px; color:#D4DFEC;">@k.Org</span>
+            <span class="oi-mono" style="font-size:10px; color:#8296B0;">@k.Scope</span>
+            <span class="oi-mono" style="font-size:10px; color:#8296B0;">@k.Quota</span>
+            <span class="adm-pill" style="color:@color; background:@(color)1F;">@k.Status.ToUpperInvariant()</span>
+        </div>
+    }
+</div>

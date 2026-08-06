@@ -1,0 +1,46 @@
+@page
+@model OktaIA.Web.Pages.Admin.ObservabilidadeModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Observabilidade";
+}
+
+<div class="adm-page-head">
+    <h1>Observabilidade dos conectores</h1>
+    <p>Métricas, saúde e alertas de falha · o pipeline de integração é monitorado como produto</p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr)); gap:12px; align-items:start;">
+    <div class="adm-card" style="padding:17px 19px;">
+        <div style="font-size:13px; font-weight:600; margin-bottom:16px;">Métricas do pipeline</div>
+        @foreach (var m in AdminCatalog.ObsMetrics)
+        {
+            <div style="margin-bottom:14px;">
+                <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+                    <span style="color:#9DB0C8;">@m.L</span>
+                    <span class="oi-mono" style="color:@m.C; font-weight:600;">@m.V</span>
+                </div>
+                <div style="height:4px; background:rgba(120,170,255,.09); border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:@(m.P)%; background:@m.C; border-radius:3px;"></div>
+                </div>
+            </div>
+        }
+    </div>
+    <div class="adm-card">
+        <div class="adm-card-head">Alertas de falha</div>
+        @foreach (var i in AdminCatalog.ObsIncidents)
+        {
+            <div style="padding:12px 16px; border-bottom:1px solid rgba(120,170,255,.055);">
+                <div style="display:flex; align-items:center; gap:9px; margin-bottom:6px;">
+                    <span class="oi-mono" style="font-size:9.5px; color:#4A5D78;">@i.T</span>
+                    <span class="oi-mono" style="font-size:10px; color:#8FC0FF;">@i.Slug</span>
+                    <span style="margin-left:auto; display:flex; gap:6px;">
+                        <span class="adm-pill" style="color:@i.SevColor; background:@(i.SevColor)1F; font-size:8.5px;">@i.Sev</span>
+                        <span class="adm-pill" style="color:@i.StatusColor; background:@(i.StatusColor)1F; font-size:8.5px;">@i.Status</span>
+                    </span>
+                </div>
+                <div style="font-size:12px; line-height:1.55; color:#8296B0;">@i.D</div>
+            </div>
+        }
+    </div>
+</div>

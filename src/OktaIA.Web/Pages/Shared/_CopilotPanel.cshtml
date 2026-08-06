@@ -1,0 +1,40 @@
+@using OktaIA.Web.Data
+@using OktaIA.Web.Services
+@using Microsoft.EntityFrameworkCore
+@inject I18nService I18n
+@inject ApplicationDbContext Db
+@{
+    var lang = I18n.Lang;
+    var tenantNome = (await Db.Companies.Where(c => c.Ativo).OrderBy(c => c.Id).FirstOrDefaultAsync())?.Nome ?? "—";
+    var prompts = CopilotPrompts.For(lang);
+}
+<aside class="oi-copilot" id="oi-copilot-panel" data-greet="@I18n.T("greet")">
+    <div class="oi-copilot-head">
+        <div class="oi-copilot-mark">AI</div>
+        <div>
+            <div class="oi-copilot-title">@I18n.T("copilotTitle")</div>
+            <div class="oi-copilot-ctx">@I18n.T("copilotCtx") @tenantNome</div>
+        </div>
+        <button type="button" class="oi-copilot-close" data-ai-toggle>✕</button>
+    </div>
+
+    <div class="oi-copilot-chat" id="oi-copilot-chat">
+        <div class="oi-msg-wrap-ai"><div class="oi-bubble oi-bubble-ai">@I18n.T("greet")</div></div>
+    </div>
+
+    <div class="oi-copilot-footer">
+        <div class="oi-suggested-label">@I18n.T("suggested")</div>
+        <div class="oi-suggested-list">
+            @foreach (var p in prompts)
+            {
+                <button type="button" class="oi-suggested-btn" data-ask-question
+                        data-question="@p.Pergunta" data-answer="@p.Resposta"
+                        data-evidence="@System.Text.Json.JsonSerializer.Serialize(p.Evidencias)">@p.Pergunta</button>
+            }
+        </div>
+        <div class="oi-copilot-input-row">
+            <input type="text" class="oi-copilot-input" id="oi-copilot-input" placeholder="@I18n.T("askPh")" autocomplete="off" />
+            <span class="oi-copilot-enter">↵</span>
+        </div>
+    </div>
+</aside>

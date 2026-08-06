@@ -1,0 +1,130 @@
+@page
+@model OktaIA.Web.Pages.Admin.PerfisModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Perfis e permissões";
+}
+
+<div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; gap:16px; flex-wrap:wrap;">
+    <div class="adm-page-head" style="margin-bottom:0;">
+        <h1>Perfis e permissões</h1>
+        <p>@Model.Perfis.Count perfil(is) cadastrado(s) na plataforma</p>
+    </div>
+    <button type="button" class="adm-btn-primary" data-adm-reveal="adm-novo-perfil">+ Novo perfil</button>
+</div>
+
+<div id="adm-novo-perfil" class="adm-card" style="display:@(Model.MostrarForm ? "block" : "none"); padding:18px 20px; margin-bottom:16px;">
+    <div asp-validation-summary="All" style="color:#FF8098; font-size:12.5px; margin-bottom:10px;"></div>
+    <form method="post" asp-page-handler="Criar" style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
+        <div style="flex:1; min-width:220px;">
+            <label style="display:block; font-size:11px; color:#5A7191; margin-bottom:6px;">Nome do perfil</label>
+            <input asp-for="Input.Nome" placeholder="ex. Cliente, Fornecedor, Financeiro" style="width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:10px 12px; color:#EAF0F8; font-family:inherit;" />
+            <span asp-validation-for="Input.Nome" style="display:block; color:#FF8098; font-size:11px; margin-top:5px;"></span>
+        </div>
+        <button type="submit" class="adm-btn-primary" style="height:38px;">Criar perfil</button>
+    </form>
+</div>
+
+<div class="adm-card" style="margin-bottom:16px;">
+    <div class="adm-table-head" style="grid-template-columns:2fr 120px 220px;">
+        <span>Perfil</span><span>Usuários</span><span></span>
+    </div>
+    @foreach (var p in Model.Perfis)
+    {
+        <div class="adm-table-row" style="grid-template-columns:2fr 120px 220px;">
+            <span class="adm-pill" style="color:@(p.Nome == "Admin" ? "#8A7BFF" : p.Nome == "Analista" ? "#4D9BFF" : "#00E0A4"); background:@(p.Nome == "Admin" ? "#8A7BFF1F" : p.Nome == "Analista" ? "#4D9BFF1F" : "#00E0A41F"); width:fit-content;">@p.Nome</span>
+            <span class="oi-mono" style="font-size:12px; color:#B4C4D8;">@p.UsuariosCount</span>
+            <div class="adm-row-actions">
+                @if (p.Protegido)
+                {
+                    <span style="font-size:10.5px; color:#4A5D78;">perfil do sistema</span>
+                }
+                else
+                {
+                    <button type="button" class="adm-btn-ghost" data-adm-editar-perfil data-id="@p.Id" data-nome="@p.Nome">Editar</button>
+                    <form method="post" asp-page-handler="Excluir" asp-route-id="@p.Id" data-adm-confirm="Excluir o perfil @(p.Nome)? @(p.UsuariosCount) usuário(s) perdem esse perfil.">
+                        <button type="submit" class="adm-btn-ghost adm-danger">Excluir</button>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<dialog id="adm-dialog-editar-perfil" class="adm-dialog">
+    <h2>Editar perfil</h2>
+    <form method="post" asp-page-handler="Editar">
+        <input type="hidden" asp-for="EditInput.Id" />
+        <label>Nome</label>
+        <input asp-for="EditInput.Nome" />
+        <div class="adm-dialog-actions">
+            <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
+            <button type="submit" class="adm-btn-primary">Salvar</button>
+        </div>
+    </form>
+</dialog>
+
+@{
+    // Admin sempre por primeiro (coluna só-leitura), depois Analista, depois perfis custom em
+    // ordem alfabética — mesma ordem visual de sempre, só que agora com N colunas dinâmicas.
+    var papeisOrdenados = Model.Perfis
+        .OrderBy(p => p.Nome == "Admin" ? 0 : p.Nome == "Analista" ? 1 : 2)
+        .ThenBy(p => p.Nome)
+        .ToList();
+    var gridCols = $"1.8fr repeat({papeisOrdenados.Count}, 90px)";
+
+    string CorPerfil(string nome) => nome == "Admin" ? "#8A7BFF" : nome == "Analista" ? "#4D9BFF" : "#00E0A4";
+
+    void LinhaArea(OktaIA.Web.Services.AreaCatalog.Area area)
+    {
+        <div class="adm-table-row" style="grid-template-columns:@gridCols;">
+            <div style="display:flex; align-items:center; gap:9px;"><span style="font-size:12.5px; color:#C4D3E6;">@area.Label</span></div>
+            @foreach (var p in papeisOrdenados)
+            {
+                if (p.Nome == "Admin")
+                {
+                    <span style="font-size:13px; font-weight:600; text-align:center; color:#00E0A4;">✓</span>
+                }
+                else
+                {
+                    var marcado = Model.PermissoesAtuais.Contains(OktaIA.Web.Pages.Admin.PerfisModel.ChaveGrade(p.Id, area.Key));
+                    <label style="display:flex; align-items:center; justify-content:center;">
+                        <input type="checkbox" name="selecionados" value="@(p.Id)|@(area.Key)" checked="@marcado" style="accent-color:#4D9BFF;" />
+                    </label>
+                }
+            }
+        </div>
+    }
+}
+
+<div class="adm-page-head">
+    <p>Marque quais áreas cada perfil pode acessar e clique em Salvar — vale de verdade (bloqueia/libera a página). "Admin" sempre tem acesso total, não é editável aqui (proteção contra se autobloquear do próprio painel de permissões).</p>
+</div>
+
+<form method="post" asp-page-handler="SalvarPermissoes">
+<div class="adm-card">
+    <div class="adm-table-head" style="grid-template-columns:@gridCols;">
+        <span>Área</span>
+        @foreach (var p in papeisOrdenados)
+        {
+            <span style="color:@CorPerfil(p.Nome); text-align:center; font-size:8.5px;">@p.Nome.ToUpperInvariant()</span>
+        }
+    </div>
+    <div style="padding:12px 16px 8px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60; letter-spacing:.12em;">CENTRO DE OPERAÇÕES · SOC</div>
+    @foreach (var area in AreaCatalog.Soc)
+    {
+        LinhaArea(area);
+    }
+    @foreach (var group in AdminCatalog.NavGroups)
+    {
+        <div style="padding:12px 16px 8px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60; letter-spacing:.12em;">@group.Title</div>
+        @foreach (var item in group.Items)
+        {
+            LinhaArea(AreaCatalog.PorChave[$"admin.{item.Id}"]);
+        }
+    }
+</div>
+<div style="margin-top:14px;">
+    <button type="submit" class="adm-btn-primary">Salvar permissões</button>
+</div>
+</form>

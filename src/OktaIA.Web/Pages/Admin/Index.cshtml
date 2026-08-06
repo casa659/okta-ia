@@ -1,0 +1,56 @@
+@page
+@model OktaIA.Web.Pages.Admin.IndexModel
+@using OktaIA.Web.Services
+@{
+    ViewData["Title"] = "Visão geral";
+}
+
+<div class="adm-page-head">
+    <h1>Visão geral da operação</h1>
+    <p>8 organizações · 6.788 ativos licenciados · 42 usuários ativos</p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr)); gap:11px; margin-bottom:14px;">
+    @foreach (var k in AdminCatalog.OverviewKpis)
+    {
+        <div class="adm-kpi" style="border-left:2px solid @k.C;">
+            <div class="adm-kpi-label">@k.L</div>
+            <div style="display:flex; align-items:baseline; gap:7px;">
+                <span class="adm-kpi-val" style="color:@k.C;">@k.V</span>
+                <span class="adm-kpi-delta">@k.D</span>
+            </div>
+        </div>
+    }
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr)); gap:12px;">
+    <div class="adm-card">
+        <div class="adm-card-head">Atividade administrativa recente</div>
+        @foreach (var a in AdminCatalog.RecentActivities)
+        {
+            <div style="display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid rgba(120,170,255,.055);">
+                <span style="width:6px; height:6px; border-radius:50%; background:@a.C; flex:0 0 6px;"></span>
+                <span style="font-size:12.5px; color:#C4D3E6; flex:1;">@a.T</span>
+                <span class="oi-mono" style="font-size:9.5px; color:#4A5D78;">@a.Who</span>
+                <span class="oi-mono" style="font-size:9.5px; color:#3C4C60; width:44px; text-align:right;">@a.When</span>
+            </div>
+        }
+    </div>
+    <div class="adm-card">
+        <div class="adm-card-head">Saúde da plataforma</div>
+        <div style="padding:16px;">
+            @foreach (var h in AdminCatalog.PlatformHealth)
+            {
+                <div style="margin-bottom:13px;">
+                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
+                        <span style="color:#9DB0C8;">@h.L</span>
+                        <span class="oi-mono" style="color:@h.C; font-weight:600;">@h.V</span>
+                    </div>
+                    <div style="height:4px; background:rgba(120,170,255,.09); border-radius:3px; overflow:hidden;">
+                        <div style="height:100%; width:@(h.P)%; background:@h.C; border-radius:3px;"></div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

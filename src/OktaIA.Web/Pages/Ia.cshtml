@@ -1,0 +1,62 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model IaModel
+@{
+    ViewData["Title"] = I18n.T("nav.ai");
+    string ConfCor(string conf) => int.Parse(conf.TrimEnd('%')) switch { > 85 => "#FF3B5C", > 70 => "#FF8A3D", _ => "#FFC93C" };
+}
+
+<div class="oi-content">
+    <div style="margin-bottom:14px;">
+        <h1 class="oi-dash-title">@I18n.T("aiTitle")</h1>
+        <p class="oi-dash-sub">@I18n.T("aiSub")</p>
+    </div>
+
+    <div class="oi-ai-kpi-grid">
+        @foreach (var k in Model.Kpis)
+        {
+            <div class="oi-ai-kpi" style="--oi-kpi-color:@k.Cor">
+                <div class="oi-vuln-kpi-label">@k.Label</div>
+                <div class="oi-vuln-kpi-value" style="color:@k.Cor">@k.Valor</div>
+                <div class="oi-ai-kpi-sub">@k.Sub</div>
+            </div>
+        }
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start;">
+        <div class="oi-panel">
+            <div class="oi-panel-head"><span class="oi-panel-title" style="margin:0">@I18n.T("aiDetections")</span></div>
+            @foreach (var d in Model.Deteccoes)
+            {
+                <div class="oi-detection-row">
+                    <div class="oi-detection-top">
+                        <span class="oi-detection-chip">@d.Tipo</span>
+                        <span class="oi-detection-title">@d.Titulo</span>
+                        <span class="oi-detection-conf" style="color:@ConfCor(d.Confianca)">@d.Confianca</span>
+                    </div>
+                    <p class="oi-detection-body">@d.Corpo</p>
+                    <div class="oi-detection-tags">
+                        @foreach (var t in d.Tags)
+                        {
+                            <span class="oi-detection-tag">@t</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="oi-panel oi-panel-body">
+            <div class="oi-gauge-title">@I18n.T("models")</div>
+            @foreach (var m in Model.Modelos)
+            {
+                <div class="oi-model-row">
+                    <div class="oi-model-top">
+                        <span class="oi-model-name">@m.Nome</span>
+                        <span class="oi-model-acc" style="color:@m.Cor">@m.Precisao</span>
+                    </div>
+                    <div class="oi-model-track"><div class="oi-model-fill" style="width:@(m.Pct)%;background:@m.Cor"></div></div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

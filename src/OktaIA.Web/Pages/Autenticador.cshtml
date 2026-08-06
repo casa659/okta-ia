@@ -1,0 +1,57 @@
+@page
+@model AutenticadorModel
+@{
+    ViewData["Title"] = "Autenticador";
+}
+
+<div class="oi-content">
+    <div style="margin-bottom:14px;">
+        <h1 class="oi-dash-title">Autenticação em duas etapas</h1>
+        <p class="oi-dash-sub">Proteja sua conta com um código gerado pelo Google Authenticator ou Microsoft Authenticator.</p>
+    </div>
+
+    <div class="oi-panel" style="max-width:520px;">
+        @if (Model.RecoveryCodes is not null)
+        {
+            <div style="background:rgba(0,224,164,.08);border:1px solid rgba(0,224,164,.3);color:var(--oi-accent);font-size:12.5px;padding:10px 12px;border-radius:7px;margin-bottom:16px;">Autenticador ativado com sucesso.</div>
+            <p style="font-size:13px;color:var(--oi-muted);margin-bottom:12px;"><strong style="color:var(--oi-text)">Guarde estes códigos de recuperação</strong> em um lugar seguro. Cada um só pode ser usado uma vez, caso você perca o acesso ao aplicativo autenticador.</p>
+            <div style="background:var(--oi-header-input);border:1px solid var(--oi-border-2);border-radius:7px;padding:14px;font-family:'IBM Plex Mono',monospace;font-size:13px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+                @foreach (var codigo in Model.RecoveryCodes)
+                {
+                    <span>@codigo</span>
+                }
+            </div>
+            <a asp-page="/Dashboard" class="oi-header-link" style="display:inline-block;">Concluir</a>
+        }
+        else if (Model.JaAtivado)
+        {
+            <div style="background:rgba(0,224,164,.08);border:1px solid rgba(0,224,164,.3);color:var(--oi-accent);font-size:12.5px;padding:10px 12px;border-radius:7px;margin-bottom:18px;">A autenticação em duas etapas já está ativa nesta conta.</div>
+            <form method="post" asp-page-handler="Desativar">
+                <button type="submit" class="oi-header-link">Desativar autenticador</button>
+            </form>
+        }
+        else
+        {
+            <p style="font-size:13px;color:var(--oi-muted);margin-bottom:16px;line-height:1.6;">
+                No aplicativo <strong style="color:var(--oi-text)">Google Authenticator</strong> ou <strong style="color:var(--oi-text)">Microsoft Authenticator</strong>, escolha "Adicionar conta" → "Inserir chave de configuração" e digite a chave abaixo (o nome da conta pode ser "okta-ia.com").
+            </p>
+
+            <label style="display:block;font-size:11px;color:var(--oi-muted);margin-bottom:6px;">Chave (digitação manual)</label>
+            <input value="@Model.SharedKey" readonly style="width:100%;background:var(--oi-header-input);border:1px solid var(--oi-border-2);border-radius:7px;padding:10px 12px;color:var(--oi-text);font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.05em;margin-bottom:14px;" />
+
+            <p style="font-size:11.5px;color:var(--oi-muted-2);margin-bottom:18px;">Em um celular com o app já instalado, este link abre o cadastro automaticamente: <a href="@Model.AuthenticatorUri">abrir no autenticador</a>.</p>
+
+            @if (Model.Erro is not null)
+            {
+                <p style="background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.3);color:var(--oi-red-light);font-size:12.5px;padding:10px 12px;border-radius:7px;margin:0 0 16px;">@Model.Erro</p>
+            }
+
+            <form method="post" asp-page-handler="Ativar">
+                <label style="display:block;font-size:11px;color:var(--oi-muted);margin-bottom:6px;">Código gerado pelo app</label>
+                <input asp-for="Input.Codigo" inputmode="numeric" autocomplete="one-time-code" placeholder="000000" autofocus
+                       style="width:100%;background:var(--oi-header-input);border:1px solid var(--oi-border-2);border-radius:7px;padding:10px 12px;color:var(--oi-text);font-family:'IBM Plex Mono',monospace;font-size:16px;letter-spacing:.15em;text-align:center;margin-bottom:16px;" />
+                <button type="submit" style="width:100%;background:var(--oi-accent);color:var(--oi-bg);border:none;border-radius:7px;padding:11px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;">Ativar</button>
+            </form>
+        }
+    </div>
+</div>

@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
+<style>
+  html, body { margin:0; padding:0; background:#06090E; }
+  * { box-sizing:border-box; }
+  a { color:#00E0A4; text-decoration:none; }
+  a:hover { color:#5BFFD1; }
+  ::-webkit-scrollbar { width:9px; height:9px; }
+  ::-webkit-scrollbar-track { background:#0A0F16; }
+  ::-webkit-scrollbar-thumb { background:#1E2A38; border-radius:6px; }
+  ::-webkit-scrollbar-thumb:hover { background:#2C3C4E; }
+  @keyframes okpulse { 0%{transform:scale(.6);opacity:.9} 70%{transform:scale(2.6);opacity:0} 100%{opacity:0} }
+  @keyframes okblink { 0%,100%{opacity:1} 50%{opacity:.25} }
+  @keyframes okslide { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes okscan { from{transform:translateX(-100%)} to{transform:translateX(320%)} }
+  @keyframes okspin { to{transform:rotate(360deg)} }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',system-ui,sans-serif; background:#06090E; color:#E8EDF5; height:100vh; min-width:1440px; display:flex; flex-direction:column; overflow:hidden; -webkit-font-smoothing:antialiased;">
+
+  <header style="height:54px; flex:0 0 54px; border-bottom:1px solid #16202C; background:#080C12; display:flex; align-items:center; gap:20px; padding:0 16px;">
+    <div style="display:flex; align-items:center; gap:9px; padding-right:18px; border-right:1px solid #16202C; height:100%;">
+      <div style="width:24px; height:24px; border-radius:6px; background:linear-gradient(150deg,#00E0A4,#0B7A5E); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; color:#06090E;">O</div>
+      <div style="display:flex; flex-direction:column; line-height:1.05;">
+        <span style="font-size:13.5px; font-weight:700; letter-spacing:-.2px;">okta-ia<span style="color:#4A5A70; font-weight:500;">.com</span></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#4A5A70; letter-spacing:.14em; text-transform:uppercase;">Unified XDR / SOC</span>
+      </div>
+    </div>
+
+    <button onClick="{{ cycleTenant }}" style="display:flex; align-items:center; gap:10px; background:#0E141D; border:1px solid #1C2836; border-radius:7px; padding:6px 11px; cursor:pointer; color:#E8EDF5; font-family:inherit;" style-hover="border-color:#2C4356; background:#111926;">
+      <span style="width:6px; height:6px; border-radius:50%; background:{{ tenantDot }};"></span>
+      <span style="display:flex; flex-direction:column; align-items:flex-start; line-height:1.15;">
+        <span style="font-size:8px; color:#4A5A70; font-family:'IBM Plex Mono',monospace; letter-spacing:.1em;">{{ L.tenant }}</span>
+        <span style="font-size:12px; font-weight:600;">{{ tenantName }}</span>
+      </span>
+      <span style="font-size:9px; color:#4A5A70; margin-left:4px;">▼</span>
+    </button>
+
+    <div style="flex:1; max-width:440px; display:flex; align-items:center; gap:8px; background:#0B1017; border:1px solid #16202C; border-radius:7px; padding:7px 11px;">
+      <span style="color:#3C4C60; font-size:12px;">⌕</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#5A6B82;">{{ L.searchPh }}</span>
+      <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60; border:1px solid #1C2836; border-radius:4px; padding:1px 5px;">⌘K</span>
+    </div>
+
+    <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+      <div style="display:flex; align-items:center; gap:7px; background:#0E141D; border:1px solid #1C2836; border-radius:7px; padding:6px 10px;">
+        <span style="width:6px; height:6px; border-radius:50%; background:#FF3B5C; animation:okblink 1.1s infinite;"></span>
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:#FF6B84;">{{ liveAttacks }}</span>
+        <span style="font-size:10px; color:#5A6B82;">{{ L.liveNow }}</span>
+      </div>
+      <div style="display:flex; background:#0B1017; border:1px solid #1C2836; border-radius:7px; overflow:hidden;">
+        <button onClick="{{ setPt }}" style="{{ ptBtn }}">PT</button>
+        <button onClick="{{ setEn }}" style="{{ enBtn }}">EN</button>
+      </div>
+      <button onClick="{{ toggleAi }}" style="{{ aiBtn }}">
+        <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.08em;">AI</span>
+        <span style="font-size:11px; font-weight:600;">{{ L.copilot }}</span>
+      </button>
+      <div style="width:30px; height:30px; border-radius:50%; background:#16202C; border:1px solid #24354A; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:600; color:#8FA3BC;">RS</div>
+    </div>
+  </header>
+
+  <div style="flex:1; display:flex; min-height:0;">
+
+    <nav style="width:196px; flex:0 0 196px; border-right:1px solid #16202C; background:#080C12; display:flex; flex-direction:column; padding:10px 8px; gap:1px; overflow-y:auto;">
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#3C4C60; letter-spacing:.16em; padding:6px 8px 5px;">{{ L.opsGroup }}</div>
+      <sc-for list="{{ navOps }}" as="it" hint-placeholder-count="6">
+        <button onClick="{{ it.go }}" style="{{ it.style }}">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:{{ it.num }}; width:15px; text-align:left;">{{ it.n }}</span>
+          <span style="flex:1; text-align:left;">{{ it.label }}</span>
+          <span style="{{ it.badgeStyle }}">{{ it.badge }}</span>
+        </button>
+      </sc-for>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#3C4C60; letter-spacing:.16em; padding:14px 8px 5px;">{{ L.bizGroup }}</div>
+      <sc-for list="{{ navBiz }}" as="it" hint-placeholder-count="4">
+        <button onClick="{{ it.go }}" style="{{ it.style }}">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:{{ it.num }}; width:15px; text-align:left;">{{ it.n }}</span>
+          <span style="flex:1; text-align:left;">{{ it.label }}</span>
+          <span style="{{ it.badgeStyle }}">{{ it.badge }}</span>
+        </button>
+      </sc-for>
+      <div style="margin-top:auto; padding:10px 8px 4px; border-top:1px solid #121A24;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#3C4C60; letter-spacing:.12em; margin-bottom:6px;">{{ L.ingest }}</div>
+        <div style="display:flex; align-items:baseline; gap:5px;">
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600; color:#00E0A4;">{{ eps }}</span>
+          <span style="font-size:9.5px; color:#4A5A70;">EPS</span>
+        </div>
+        <div style="height:3px; background:#111A24; border-radius:2px; margin-top:6px; overflow:hidden;">
+          <div style="height:100%; width:{{ epsPct }}%; background:linear-gradient(90deg,#0B7A5E,#00E0A4); border-radius:2px;"></div>
+        </div>
+      </div>
+    </nav>
+
+    <main style="flex:1; min-width:0; overflow-y:auto; background:#06090E;">
+
+      <!-- ══ DASHBOARD ══ -->
+      <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:16px 18px 26px;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:14px; gap:16px; flex-wrap:wrap;">
+          <div>
+            <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-.3px;">{{ L.socTitle }}</h1>
+            <p style="margin:3px 0 0; font-size:11.5px; color:#5A6B82;">{{ L.socSub }}</p>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#3C4C60; letter-spacing:.1em;">{{ L.layout }}</span>
+            <div style="display:flex; background:#0B1017; border:1px solid #1C2836; border-radius:7px; overflow:hidden;">
+              <button onClick="{{ setGrid }}" style="{{ gridBtn }}">A · {{ L.layoutA }}</button>
+              <button onClick="{{ setTriage }}" style="{{ triageBtn }}">B · {{ L.layoutB }}</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:12px;">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="6">
+            <div style="background:#0B1017; border:1px solid #16202C; border-radius:9px; padding:11px 12px; position:relative; overflow:hidden;">
+              <div style="position:absolute; left:0; top:0; bottom:0; width:2px; background:{{ k.c }};"></div>
+              <div style="font-size:9.5px; color:#5A6B82; letter-spacing:.05em; text-transform:uppercase; margin-bottom:6px;">{{ k.label }}</div>
+              <div style="display:flex; align-items:baseline; gap:6px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:21px; font-weight:600; color:{{ k.c }}; letter-spacing:-.5px;">{{ k.v }}</span>
+                <span style="font-size:9.5px; color:{{ k.dc }}; font-weight:500;">{{ k.d }}</span>
+              </div>
+              <svg viewBox="0 0 100 22" preserveAspectRatio="none" style="width:100%; height:20px; margin-top:5px; display:block;">
+                <path d="{{ k.spark }}" fill="none" stroke="{{ k.c }}" stroke-width="1.4" opacity=".55"></path>
+              </svg>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- Layout A: grade operacional -->
+        <sc-if value="{{ isGrid }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid; grid-template-columns:1fr 340px; gap:12px; align-items:start;">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; border-bottom:1px solid #131C27;">
+                <div style="display:flex; align-items:center; gap:9px;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#FF3B5C; animation:okblink 1.1s infinite;"></span>
+                  <span style="font-size:12.5px; font-weight:600;">{{ L.mapTitle }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#4A5A70; border:1px solid #1C2836; border-radius:4px; padding:1px 6px;">NATURAL EARTH · 110m</span>
+                </div>
+                <div style="display:flex; gap:12px; font-size:10px; color:#5A6B82;">
+                  <span style="display:flex; align-items:center; gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#FF3B5C;"></span>{{ L.origin }}</span>
+                  <span style="display:flex; align-items:center; gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#00E0A4;"></span>{{ L.dc }}</span>
+                </div>
+              </div>
+              <div ref="{{ mapRef }}" style="position:relative; height:326px; background:radial-gradient(ellipse at 50% 45%, #0C1620 0%, #070B10 72%);"></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; padding:13px 14px;">
+                <div style="font-size:12px; font-weight:600; margin-bottom:11px;">{{ L.infra }}</div>
+                <sc-for list="{{ gauges }}" as="g" hint-placeholder-count="5">
+                  <div style="margin-bottom:9px;">
+                    <div style="display:flex; justify-content:space-between; font-size:10.5px; margin-bottom:4px;">
+                      <span style="color:#8FA3BC;">{{ g.label }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; color:{{ g.c }}; font-weight:600;">{{ g.txt }}</span>
+                    </div>
+                    <div style="height:4px; background:#101923; border-radius:3px; overflow:hidden;">
+                      <div style="height:100%; width:{{ g.v }}%; background:{{ g.c }}; border-radius:3px; transition:width .8s ease;"></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; padding:13px 14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:11px;">
+                  <span style="font-size:12px; font-weight:600;">{{ L.topOrigins }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4A5A70;">24H</span>
+                </div>
+                <sc-for list="{{ topOrigins }}" as="o" hint-placeholder-count="6">
+                  <div style="display:flex; align-items:center; gap:9px; margin-bottom:8px;">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#00E0A4; width:20px;">{{ o.cc }}</span>
+                    <span style="font-size:10.5px; color:#8FA3BC; width:76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ o.name }}</span>
+                    <div style="flex:1; height:5px; background:#101923; border-radius:3px; overflow:hidden;">
+                      <div style="height:100%; width:{{ o.pct }}%; background:linear-gradient(90deg,#7A1F30,#FF3B5C); border-radius:3px;"></div>
+                    </div>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#6E8098; width:38px; text-align:right;">{{ o.n }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 13px; border-bottom:1px solid #131C27;">
+                <span style="font-size:12px; font-weight:600;">{{ L.liveFeed }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#00E0A4; display:flex; align-items:center; gap:5px;"><span style="width:5px;height:5px;border-radius:50%;background:#00E0A4;animation:okblink 1s infinite;"></span>STREAM</span>
+              </div>
+              <div style="max-height:330px; overflow-y:auto;">
+                <sc-for list="{{ feed }}" as="f" hint-placeholder-count="8">
+                  <div style="padding:8px 13px; border-bottom:1px solid #0F1720; animation:okslide .35s ease;">
+                    <div style="display:flex; align-items:center; gap:7px; margin-bottom:3px;">
+                      <span style="{{ f.chip }}">{{ f.sevTxt }}</span>
+                      <span style="font-size:11px; font-weight:600; color:#D4DDEA;">{{ f.type }}</span>
+                      <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60;">{{ f.time }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#5A6B82;">
+                      <span style="color:#7C8FA8;">{{ f.ip }}</span>
+                      <span style="color:#2C3C4E;">{{ f.cc }}</span>
+                      <span>→</span>
+                      <span style="color:#7C8FA8;">{{ f.target }}</span>
+                      <span style="margin-left:auto; color:{{ f.actC }}; font-weight:500;">{{ f.action }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:linear-gradient(160deg,#0C1A18,#0B1017); border:1px solid #143A31; border-radius:11px; padding:13px 14px;">
+              <div style="display:flex; align-items:center; gap:7px; margin-bottom:9px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#06090E; background:#00E0A4; border-radius:4px; padding:2px 5px; font-weight:600;">AI</span>
+                <span style="font-size:12px; font-weight:600;">{{ L.aiBrief }}</span>
+              </div>
+              <p style="margin:0 0 10px; font-size:11.5px; line-height:1.55; color:#A8BACE; text-wrap:pretty;">{{ L.aiBriefBody }}</p>
+              <button onClick="{{ askBrief }}" style="width:100%; background:#00E0A4; border:none; border-radius:7px; padding:8px; font-family:inherit; font-size:11.5px; font-weight:600; color:#06090E; cursor:pointer;" style-hover="background:#5BFFD1;">{{ L.investigate }}</button>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <!-- Layout B: fila de triagem -->
+        <sc-if value="{{ isTriage }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid; grid-template-columns:380px 1fr; gap:12px; align-items:start;">
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+            <div style="padding:11px 13px; border-bottom:1px solid #131C27; display:flex; align-items:center; justify-content:space-between;">
+              <span style="font-size:12px; font-weight:600;">{{ L.triageQueue }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#FF6B84;">{{ queueCount }} {{ L.open }}</span>
+            </div>
+            <sc-for list="{{ queue }}" as="q" hint-placeholder-count="5">
+              <div onClick="{{ q.pick }}" style="{{ q.style }}">
+                <div style="display:flex; align-items:center; gap:7px; margin-bottom:5px;">
+                  <span style="{{ q.chip }}">{{ q.sevTxt }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60;">{{ q.id }}</span>
+                  <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60;">{{ q.age }}</span>
+                </div>
+                <div style="font-size:12px; font-weight:600; color:#D4DDEA; margin-bottom:4px; line-height:1.3;">{{ q.title }}</div>
+                <div style="display:flex; align-items:center; gap:7px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#5A6B82;">
+                  <span>{{ q.asset }}</span>
+                  <span style="color:#2C3C4E;">·</span>
+                  <span style="color:#7A6BFF;">{{ q.mitre }}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:5px; margin-top:6px; padding-top:6px; border-top:1px solid #0F1720;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:8px; color:#00E0A4;">AI</span>
+                  <span style="font-size:10px; color:#6E8098; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ q.ai }}</span>
+                  <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:9.5px; font-weight:600; color:{{ q.confC }};">{{ q.conf }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:11px 14px; border-bottom:1px solid #131C27;">
+                <div style="display:flex; align-items:center; gap:9px;">
+                  <span style="width:6px; height:6px; border-radius:50%; background:#FF3B5C; animation:okblink 1.1s infinite;"></span>
+                  <span style="font-size:12.5px; font-weight:600;">{{ L.mapTitle }}</span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#4A5A70;">{{ liveAttacks }} {{ L.evtMin }}</span>
+              </div>
+              <div ref="{{ mapRef2 }}" style="position:relative; height:250px; background:radial-gradient(ellipse at 50% 45%, #0C1620 0%, #070B10 72%);"></div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+                <div style="padding:11px 13px; border-bottom:1px solid #131C27; font-size:12px; font-weight:600;">{{ L.liveFeed }}</div>
+                <div style="max-height:260px; overflow-y:auto;">
+                  <sc-for list="{{ feed }}" as="f" hint-placeholder-count="6">
+                    <div style="padding:7px 13px; border-bottom:1px solid #0F1720; display:flex; align-items:center; gap:8px; animation:okslide .35s ease;">
+                      <span style="{{ f.dot }}"></span>
+                      <span style="font-size:10.5px; color:#D4DDEA; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ f.type }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#5A6B82;">{{ f.cc }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:{{ f.actC }};">{{ f.action }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; padding:13px 14px;">
+                <div style="font-size:12px; font-weight:600; margin-bottom:11px;">{{ L.mttr }}</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <sc-for list="{{ socStats }}" as="s" hint-placeholder-count="4">
+                    <div style="background:#0A0F16; border:1px solid #131C27; border-radius:8px; padding:9px 10px;">
+                      <div style="font-size:9px; color:#5A6B82; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">{{ s.label }}</div>
+                      <div style="font-family:'IBM Plex Mono',monospace; font-size:17px; font-weight:600; color:{{ s.c }};">{{ s.v }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ══ EMPRESAS (MSP) ══ -->
+      <sc-if value="{{ isCos }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px 26px;">
+        <div style="margin-bottom:14px;">
+          <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-.3px;">{{ L.cosTitle }}</h1>
+          <p style="margin:3px 0 0; font-size:11.5px; color:#5A6B82;">{{ L.cosSub }}</p>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(272px,1fr)); gap:11px;">
+          <sc-for list="{{ companies }}" as="c" hint-placeholder-count="8">
+            <div onClick="{{ c.pick }}" style="{{ c.style }}">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:11px;">
+                <div>
+                  <div style="font-size:13px; font-weight:600; color:#E8EDF5;">{{ c.name }}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4A5A70; margin-top:2px;">{{ c.sector }} · {{ c.plan }}</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:{{ c.riskC }}; line-height:1;">{{ c.risk }}</div>
+                  <div style="font-size:8px; color:#4A5A70; letter-spacing:.1em;">RISK</div>
+                </div>
+              </div>
+              <div style="height:4px; background:#101923; border-radius:3px; overflow:hidden; margin-bottom:11px;">
+                <div style="height:100%; width:{{ c.risk }}%; background:{{ c.riskC }}; border-radius:3px;"></div>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px;">
+                <sc-for list="{{ c.stats }}" as="s" hint-placeholder-count="4">
+                  <div>
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; color:{{ s.c }};">{{ s.v }}</div>
+                    <div style="font-size:8.5px; color:#4A5A70; text-transform:uppercase; letter-spacing:.04em;">{{ s.k }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ ATIVOS ══ -->
+      <sc-if value="{{ isAssets }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px 26px;">
+        <div style="margin-bottom:14px;">
+          <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-.3px;">{{ L.assetsTitle }}</h1>
+          <p style="margin:3px 0 0; font-size:11.5px; color:#5A6B82;">{{ L.assetsSub }}</p>
+        </div>
+        <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+          <div style="display:grid; grid-template-columns:26px 2fr 90px 1fr 88px 76px 96px 110px; gap:10px; padding:9px 14px; border-bottom:1px solid #16202C; font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#4A5A70; letter-spacing:.1em; text-transform:uppercase;">
+            <span></span><span>{{ L.thAsset }}</span><span>{{ L.thType }}</span><span>{{ L.thStack }}</span><span>{{ L.thUptime }}</span><span>{{ L.thTls }}</span><span>{{ L.thVulns }}</span><span>{{ L.thHealth }}</span>
+          </div>
+          <sc-for list="{{ assets }}" as="a" hint-placeholder-count="9">
+            <div style="display:grid; grid-template-columns:26px 2fr 90px 1fr 88px 76px 96px 110px; gap:10px; padding:11px 14px; border-bottom:1px solid #0F1720; align-items:center;" style-hover="background:#0D131B;">
+              <span style="width:7px; height:7px; border-radius:50%; background:{{ a.dotC }};"></span>
+              <div>
+                <div style="font-size:12px; font-weight:500; color:#D4DDEA;">{{ a.name }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4A5A70;">{{ a.ip }}</div>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#6E8098;">{{ a.type }}</span>
+              <span style="font-size:10.5px; color:#7C8FA8;">{{ a.stack }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:{{ a.upC }};">{{ a.uptime }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:{{ a.tlsC }};">{{ a.tls }}</span>
+              <div style="display:flex; gap:3px;">
+                <sc-for list="{{ a.vulns }}" as="v" hint-placeholder-count="4">
+                  <span style="{{ v.s }}">{{ v.n }}</span>
+                </sc-for>
+              </div>
+              <div style="display:flex; align-items:center; gap:7px;">
+                <div style="flex:1; height:4px; background:#101923; border-radius:3px; overflow:hidden;">
+                  <div style="height:100%; width:{{ a.health }}%; background:{{ a.hC }}; border-radius:3px;"></div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:{{ a.hC }};">{{ a.health }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ VULNERABILIDADES + SCANNER ══ -->
+      <sc-if value="{{ isVuln }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px 26px;">
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:14px;">
+          <div>
+            <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-.3px;">{{ L.vulnTitle }}</h1>
+            <p style="margin:3px 0 0; font-size:11.5px; color:#5A6B82;">{{ L.vulnSub }}</p>
+          </div>
+          <div style="display:flex; background:#0B1017; border:1px solid #1C2836; border-radius:7px; overflow:hidden;">
+            <button onClick="{{ setTabV }}" style="{{ tabVBtn }}">11 · {{ L.tabVulns }}</button>
+            <button onClick="{{ setTabS }}" style="{{ tabSBtn }}">12 · {{ L.tabScanner }}</button>
+          </div>
+        </div>
+
+        <sc-if value="{{ isTabV }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:12px;">
+          <sc-for list="{{ vulnKpis }}" as="k" hint-placeholder-count="5">
+            <div style="background:#0B1017; border:1px solid #16202C; border-radius:9px; padding:11px 13px; border-left:2px solid {{ k.c }};">
+              <div style="font-size:9.5px; color:#5A6B82; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px;">{{ k.label }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:{{ k.c }};">{{ k.v }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+          <div style="display:grid; grid-template-columns:118px 56px 2fr 1fr 96px 118px 78px; gap:10px; padding:9px 14px; border-bottom:1px solid #16202C; font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#4A5A70; letter-spacing:.1em; text-transform:uppercase;">
+            <span>CVE</span><span>CVSS</span><span>{{ L.thTitle }}</span><span>{{ L.thAsset }}</span><span>{{ L.thExposure }}</span><span>{{ L.thAiPrio }}</span><span>{{ L.thStatus }}</span>
+          </div>
+          <sc-for list="{{ vulns }}" as="v" hint-placeholder-count="8">
+            <div style="display:grid; grid-template-columns:118px 56px 2fr 1fr 96px 118px 78px; gap:10px; padding:11px 14px; border-bottom:1px solid #0F1720; align-items:center;" style-hover="background:#0D131B;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#00E0A4;">{{ v.cve }}</span>
+              <span style="{{ v.scoreS }}">{{ v.cvss }}</span>
+              <div>
+                <div style="font-size:11.5px; color:#D4DDEA;">{{ v.title }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#4A5A70; margin-top:2px;">{{ v.cwe }}</div>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#7C8FA8;">{{ v.asset }}</span>
+              <span style="{{ v.expS }}">{{ v.exposure }}</span>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:8px; color:#00E0A4;">AI</span>
+                <div style="flex:1; height:4px; background:#101923; border-radius:3px; overflow:hidden;">
+                  <div style="height:100%; width:{{ v.prio }}%; background:{{ v.prioC }}; border-radius:3px;"></div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:{{ v.prioC }};">{{ v.prio }}</span>
+              </div>
+              <span style="font-size:10px; color:{{ v.stC }};">{{ v.status }}</span>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ isTabS }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid; grid-template-columns:1fr 320px; gap:12px; align-items:start;">
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+            <div style="padding:11px 14px; border-bottom:1px solid #131C27; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12.5px; font-weight:600;">{{ L.runningScans }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#00E0A4;">{{ L.engine }}</span>
+            </div>
+            <sc-for list="{{ scans }}" as="s" hint-placeholder-count="6">
+              <div style="padding:12px 14px; border-bottom:1px solid #0F1720;">
+                <div style="display:flex; align-items:center; gap:9px; margin-bottom:7px;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#7A6BFF; background:#150F2E; border:1px solid #241A4A; border-radius:4px; padding:2px 6px;">{{ s.tool }}</span>
+                  <span style="font-size:11.5px; color:#D4DDEA; font-weight:500;">{{ s.target }}</span>
+                  <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:10px; color:{{ s.c }};">{{ s.state }}</span>
+                </div>
+                <div style="height:5px; background:#101923; border-radius:3px; overflow:hidden; position:relative;">
+                  <div style="height:100%; width:{{ s.pct }}%; background:{{ s.c }}; border-radius:3px; transition:width .9s linear;"></div>
+                </div>
+                <div style="display:flex; gap:14px; margin-top:7px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4A5A70;">
+                  <span>{{ s.checks }}</span><span>{{ s.found }}</span><span>{{ s.eta }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; padding:13px 14px;">
+            <div style="font-size:12px; font-weight:600; margin-bottom:11px;">{{ L.scanCoverage }}</div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+              <sc-for list="{{ scanTypes }}" as="t" hint-placeholder-count="24">
+                <span style="{{ t.s }}">{{ t.n }}</span>
+              </sc-for>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid #131C27;">
+              <div style="font-size:11px; color:#5A6B82; margin-bottom:8px;">{{ L.feeds }}</div>
+              <sc-for list="{{ feeds }}" as="f" hint-placeholder-count="6">
+                <div style="display:flex; align-items:center; justify-content:space-between; padding:5px 0; font-family:'IBM Plex Mono',monospace; font-size:10px;">
+                  <span style="color:#8FA3BC;">{{ f.n }}</span>
+                  <span style="color:#00E0A4;">{{ f.s }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- ══ INCIDENTES ══ -->
+      <sc-if value="{{ isInc }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px 26px;">
+        <div style="margin-bottom:14px;">
+          <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-.3px;">{{ L.incTitle }}</h1>
+          <p style="margin:3px 0 0; font-size:11.5px; color:#5A6B82;">{{ L.incSub }}</p>
+        </div>
+        <div style="display:grid; grid-template-columns:340px 1fr; gap:12px; align-items:start;">
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+            <sc-for list="{{ queue }}" as="q" hint-placeholder-count="5">
+              <div onClick="{{ q.pick }}" style="{{ q.style }}">
+                <div style="display:flex; align-items:center; gap:7px; margin-bottom:5px;">
+                  <span style="{{ q.chip }}">{{ q.sevTxt }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60;">{{ q.id }}</span>
+                  <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60;">{{ q.age }}</span>
+                </div>
+                <div style="font-size:12px; font-weight:600; color:#D4DDEA; line-height:1.3;">{{ q.title }}</div>
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#5A6B82; margin-top:4px;">{{ q.asset }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; padding:16px 18px;">
+              <div style="display:flex; align-items:center; gap:9px; margin-bottom:10px;">
+                <span style="{{ inc.chip }}">{{ inc.sevTxt }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#4A5A70;">{{ inc.id }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10px; color:#7A6BFF; background:#150F2E; border:1px solid #241A4A; border-radius:4px; padding:2px 6px;">{{ inc.mitre }}</span>
+                <span style="margin-left:auto; font-size:10.5px; color:#5A6B82;">{{ L.owner }} <span style="color:#8FA3BC;">{{ inc.analyst }}</span></span>
+              </div>
+              <h2 style="margin:0 0 6px; font-size:17px; font-weight:600; letter-spacing:-.2px; text-wrap:pretty;">{{ inc.title }}</h2>
+              <div style="display:flex; gap:16px; font-family:'IBM Plex Mono',monospace; font-size:10px; color:#5A6B82;">
+                <span>{{ L.asset }}: <span style="color:#8FA3BC;">{{ inc.asset }}</span></span>
+                <span>{{ L.opened }}: <span style="color:#8FA3BC;">{{ inc.opened }}</span></span>
+                <span>{{ L.events }}: <span style="color:#8FA3BC;">{{ inc.events }}</span></span>
+              </div>
+            </div>
+
+            <div style="background:linear-gradient(160deg,#0C1A18,#0B1017); border:1px solid #143A31; border-radius:11px; padding:15px 17px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#06090E; background:#00E0A4; border-radius:4px; padding:2px 5px; font-weight:600;">AI</span>
+                <span style="font-size:12.5px; font-weight:600;">{{ L.aiAnalysis }}</span>
+                <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#00E0A4;">{{ L.confidence }} {{ inc.conf }}</span>
+              </div>
+              <p style="margin:0 0 12px; font-size:12px; line-height:1.6; color:#B8C8D8; text-wrap:pretty;">{{ inc.summary }}</p>
+              <div style="font-size:10px; color:#5A6B82; text-transform:uppercase; letter-spacing:.08em; margin-bottom:7px;">{{ L.recommended }}</div>
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <sc-for list="{{ inc.steps }}" as="st" hint-placeholder-count="4">
+                  <div style="display:flex; align-items:flex-start; gap:9px; background:#0A1219; border:1px solid #132C26; border-radius:7px; padding:9px 11px;">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#00E0A4; margin-top:1px;">{{ st.n }}</span>
+                    <span style="font-size:11.5px; color:#A8BACE; flex:1; line-height:1.45;">{{ st.t }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4A5A70; border:1px solid #1C2836; border-radius:4px; padding:2px 6px;">{{ st.k }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; padding:15px 17px;">
+              <div style="font-size:12px; font-weight:600; margin-bottom:12px;">{{ L.timeline }}</div>
+              <sc-for list="{{ inc.timeline }}" as="t" hint-placeholder-count="5">
+                <div style="display:flex; gap:12px; padding-bottom:12px;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#4A5A70; width:52px; flex:0 0 52px;">{{ t.time }}</span>
+                  <div style="flex:0 0 auto; display:flex; flex-direction:column; align-items:center;">
+                    <span style="width:7px; height:7px; border-radius:50%; background:{{ t.c }}; margin-top:3px;"></span>
+                    <span style="width:1px; flex:1; background:#16202C; margin-top:3px;"></span>
+                  </div>
+                  <div style="flex:1;">
+                    <div style="font-size:11.5px; color:#D4DDEA;">{{ t.txt }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4A5A70; margin-top:2px;">{{ t.src }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ SIEM ══ -->
+      <sc-if value="{{ isSiem }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px 26px;">
+        <div style="margin-bottom:12px;">
+          <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-.3px;">{{ L.siemTitle }}</h1>
+          <p style="margin:3px 0 0; font-size:11.5px; color:#5A6B82;">{{ L.siemSub }}</p>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:12px;">
+          <div style="flex:1; display:flex; align-items:center; gap:9px; background:#0B1017; border:1px solid #1C2836; border-radius:8px; padding:9px 12px;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#00E0A4;">KQL</span>
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:#C8D6E6;">{{ query }}</span>
+            <span style="width:1px; height:13px; background:#00E0A4; animation:okblink 1s infinite;"></span>
+          </div>
+          <button onClick="{{ askSiem }}" style="display:flex; align-items:center; gap:7px; background:#0C1A18; border:1px solid #143A31; border-radius:8px; padding:0 14px; color:#00E0A4; font-family:inherit; font-size:11.5px; font-weight:600; cursor:pointer;" style-hover="background:#0F231F;">
+            <span style="font-family:'IBM Plex Mono',monospace; font-size:9px;">AI</span>{{ L.nlQuery }}
+          </button>
+        </div>
+        <div style="display:grid; grid-template-columns:196px 1fr; gap:12px; align-items:start;">
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; padding:12px 13px;">
+            <sc-for list="{{ facets }}" as="f" hint-placeholder-count="3">
+              <div style="margin-bottom:14px;">
+                <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#4A5A70; letter-spacing:.1em; text-transform:uppercase; margin-bottom:7px;">{{ f.name }}</div>
+                <sc-for list="{{ f.items }}" as="i" hint-placeholder-count="4">
+                  <div style="display:flex; justify-content:space-between; padding:3px 0; font-size:10.5px;">
+                    <span style="color:#8FA3BC;">{{ i.k }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; color:#4A5A70;">{{ i.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+            <div style="display:flex; align-items:flex-end; gap:2px; height:64px; padding:12px 14px 0; border-bottom:1px solid #131C27;">
+              <sc-for list="{{ histogram }}" as="h" hint-placeholder-count="40">
+                <div style="flex:1; height:{{ h.h }}%; background:{{ h.c }}; border-radius:1px 1px 0 0; min-height:2px;"></div>
+              </sc-for>
+            </div>
+            <div style="max-height:440px; overflow-y:auto;">
+              <sc-for list="{{ logs }}" as="l" hint-placeholder-count="14">
+                <div style="display:grid; grid-template-columns:76px 84px 116px 1fr 70px; gap:11px; padding:8px 14px; border-bottom:1px solid #0F1720; font-family:'IBM Plex Mono',monospace; font-size:10px; align-items:center; animation:okslide .3s ease;" style-hover="background:#0D131B;">
+                  <span style="color:#3C4C60;">{{ l.time }}</span>
+                  <span style="{{ l.lvlS }}">{{ l.lvl }}</span>
+                  <span style="color:#7A6BFF;">{{ l.src }}</span>
+                  <span style="color:#8FA3BC; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ l.msg }}</span>
+                  <span style="color:#4A5A70; text-align:right;">{{ l.host }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ IA ══ -->
+      <sc-if value="{{ isAi }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px 26px;">
+        <div style="margin-bottom:14px;">
+          <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-.3px;">{{ L.aiTitle }}</h1>
+          <p style="margin:3px 0 0; font-size:11.5px; color:#5A6B82;">{{ L.aiSub }}</p>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px;">
+          <sc-for list="{{ aiKpis }}" as="k" hint-placeholder-count="4">
+            <div style="background:#0B1017; border:1px solid #16202C; border-radius:9px; padding:12px 13px; border-left:2px solid {{ k.c }};">
+              <div style="font-size:9.5px; color:#5A6B82; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px;">{{ k.label }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:{{ k.c }};">{{ k.v }}</div>
+              <div style="font-size:10px; color:#4A5A70; margin-top:3px;">{{ k.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 320px; gap:12px; align-items:start;">
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+            <div style="padding:12px 14px; border-bottom:1px solid #131C27; font-size:12.5px; font-weight:600;">{{ L.aiDetections }}</div>
+            <sc-for list="{{ aiDetections }}" as="d" hint-placeholder-count="5">
+              <div style="padding:13px 14px; border-bottom:1px solid #0F1720;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                  <span style="{{ d.chip }}">{{ d.kind }}</span>
+                  <span style="font-size:12px; font-weight:600; color:#D4DDEA;">{{ d.title }}</span>
+                  <span style="margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:10px; color:{{ d.confC }};">{{ d.conf }}</span>
+                </div>
+                <p style="margin:0 0 8px; font-size:11.5px; line-height:1.5; color:#7C8FA8; text-wrap:pretty;">{{ d.body }}</p>
+                <div style="display:flex; gap:6px;">
+                  <sc-for list="{{ d.tags }}" as="t" hint-placeholder-count="3">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#5A6B82; border:1px solid #1C2836; border-radius:4px; padding:2px 7px;">{{ t.n }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; padding:13px 14px;">
+            <div style="font-size:12px; font-weight:600; margin-bottom:11px;">{{ L.models }}</div>
+            <sc-for list="{{ models }}" as="m" hint-placeholder-count="5">
+              <div style="padding:9px 0; border-bottom:1px solid #0F1720;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <span style="font-size:11px; color:#D4DDEA;">{{ m.n }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:{{ m.c }};">{{ m.acc }}</span>
+                </div>
+                <div style="height:3px; background:#101923; border-radius:2px; overflow:hidden;">
+                  <div style="height:100%; width:{{ m.p }}%; background:{{ m.c }}; border-radius:2px;"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ RELATÓRIOS ══ -->
+      <sc-if value="{{ isRep }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px 26px;">
+        <div style="margin-bottom:14px;">
+          <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-.3px;">{{ L.repTitle }}</h1>
+          <p style="margin:3px 0 0; font-size:11.5px; color:#5A6B82;">{{ L.repSub }}</p>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 380px; gap:12px; align-items:start;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:11px;">
+            <sc-for list="{{ reports }}" as="r" hint-placeholder-count="6">
+              <div style="background:#0B1017; border:1px solid #16202C; border-radius:10px; padding:14px 15px;" style-hover="border-color:#24354A;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:{{ r.fc }}; border:1px solid {{ r.fb }}; border-radius:4px; padding:2px 6px;">{{ r.fmt }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4A5A70;">{{ r.freq }}</span>
+                </div>
+                <div style="font-size:13px; font-weight:600; color:#E8EDF5; margin-bottom:4px;">{{ r.name }}</div>
+                <p style="margin:0 0 10px; font-size:11px; line-height:1.5; color:#5A6B82;">{{ r.desc }}</p>
+                <div style="display:flex; align-items:center; justify-content:space-between; padding-top:9px; border-top:1px solid #131C27;">
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60;">{{ r.last }}</span>
+                  <span style="font-size:10.5px; color:#00E0A4; font-weight:500;">{{ L.generate }} →</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+            <div style="padding:12px 14px; border-bottom:1px solid #131C27; display:flex; align-items:center; gap:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#06090E; background:#00E0A4; border-radius:4px; padding:2px 5px; font-weight:600;">AI</span>
+              <span style="font-size:12.5px; font-weight:600;">{{ L.execPreview }}</span>
+            </div>
+            <div style="padding:16px 18px; background:#0A0E14;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#4A5A70; letter-spacing:.1em; margin-bottom:8px;">{{ L.period }}</div>
+              <h3 style="margin:0 0 12px; font-size:15px; font-weight:600; line-height:1.35; text-wrap:pretty;">{{ L.execHead }}</h3>
+              <p style="margin:0 0 14px; font-size:11.5px; line-height:1.65; color:#8FA3BC; text-wrap:pretty;">{{ L.execBody }}</p>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:9px;">
+                <sc-for list="{{ execStats }}" as="e" hint-placeholder-count="4">
+                  <div style="background:#0B1017; border:1px solid #131C27; border-radius:8px; padding:10px 11px;">
+                    <div style="font-size:9px; color:#4A5A70; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;">{{ e.k }}</div>
+                    <div style="font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600; color:{{ e.c }};">{{ e.v }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- ══ FINANCEIRO ══ -->
+      <sc-if value="{{ isFin }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px 26px;">
+        <div style="margin-bottom:14px;">
+          <h1 style="margin:0; font-size:19px; font-weight:600; letter-spacing:-.3px;">{{ L.finTitle }}</h1>
+          <p style="margin:3px 0 0; font-size:11.5px; color:#5A6B82;">{{ L.finSub }}</p>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:12px;">
+          <sc-for list="{{ finKpis }}" as="k" hint-placeholder-count="4">
+            <div style="background:#0B1017; border:1px solid #16202C; border-radius:9px; padding:12px 13px; border-left:2px solid {{ k.c }};">
+              <div style="font-size:9.5px; color:#5A6B82; text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px;">{{ k.label }}</div>
+              <div style="display:flex; align-items:baseline; gap:6px;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; color:{{ k.c }};">{{ k.v }}</span>
+                <span style="font-size:10px; color:#00E0A4;">{{ k.d }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start;">
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+            <div style="padding:12px 14px; border-bottom:1px solid #131C27; font-size:12.5px; font-weight:600;">{{ L.plans }}</div>
+            <sc-for list="{{ plans }}" as="p" hint-placeholder-count="4">
+              <div style="padding:13px 14px; border-bottom:1px solid #0F1720;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:7px;">
+                  <span style="font-size:12.5px; font-weight:600; color:{{ p.c }};">{{ p.n }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#D4DDEA;">{{ p.price }}</span>
+                </div>
+                <div style="font-size:10.5px; color:#5A6B82; margin-bottom:8px;">{{ p.inc }}</div>
+                <div style="display:flex; align-items:center; gap:9px;">
+                  <div style="flex:1; height:4px; background:#101923; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:{{ p.pct }}%; background:{{ p.c }}; border-radius:3px;"></div>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#6E8098;">{{ p.cos }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#0B1017; border:1px solid #16202C; border-radius:11px; overflow:hidden;">
+            <div style="padding:12px 14px; border-bottom:1px solid #131C27; font-size:12.5px; font-weight:600;">{{ L.invoices }}</div>
+            <sc-for list="{{ invoices }}" as="i" hint-placeholder-count="7">
+              <div style="display:grid; grid-template-columns:78px 1fr 78px 84px; gap:10px; padding:10px 14px; border-bottom:1px solid #0F1720; align-items:center;">
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#4A5A70;">{{ i.num }}</span>
+                <span style="font-size:11px; color:#D4DDEA;">{{ i.co }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:#8FA3BC; text-align:right;">{{ i.amt }}</span>
+                <span style="{{ i.stS }}">{{ i.st }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+    </main>
+
+    <!-- ══ AI COPILOT ══ -->
+    <sc-if value="{{ aiOpen }}" hint-placeholder-val="{{ true }}">
+    <aside style="width:352px; flex:0 0 352px; border-left:1px solid #16202C; background:#080C12; display:flex; flex-direction:column;">
+      <div style="padding:12px 14px; border-bottom:1px solid #16202C; display:flex; align-items:center; gap:9px;">
+        <span style="width:22px; height:22px; border-radius:6px; background:linear-gradient(150deg,#00E0A4,#0B7A5E); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; color:#06090E;">AI</span>
+        <div style="line-height:1.15;">
+          <div style="font-size:12px; font-weight:600;">{{ L.copilotTitle }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#4A5A70;">{{ L.copilotCtx }} {{ tenantName }}</div>
+        </div>
+        <button onClick="{{ toggleAi }}" style="margin-left:auto; background:none; border:none; color:#4A5A70; font-size:15px; cursor:pointer; padding:2px 4px;" style-hover="color:#8FA3BC;">✕</button>
+      </div>
+
+      <div ref="{{ chatRef }}" style="flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:11px;">
+        <sc-for list="{{ aiMsgs }}" as="m" hint-placeholder-count="2">
+          <div style="{{ m.wrap }}">
+            <div style="{{ m.bubble }}">{{ m.text }}</div>
+            <sc-if value="{{ m.hasEvidence }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:7px; display:flex; flex-direction:column; gap:4px;">
+                <sc-for list="{{ m.evidence }}" as="e" hint-placeholder-count="3">
+                  <div style="display:flex; align-items:center; gap:7px; background:#0A0F16; border:1px solid #16202C; border-radius:6px; padding:6px 9px;">
+                    <span style="width:5px; height:5px; border-radius:50%; background:{{ e.c }};"></span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:#8FA3BC; flex:1;">{{ e.k }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:9.5px; color:{{ e.c }};">{{ e.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ aiTyping }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:center; gap:7px; padding:4px 2px;">
+            <span style="width:12px; height:12px; border:1.5px solid #143A31; border-top-color:#00E0A4; border-radius:50%; animation:okspin .7s linear infinite;"></span>
+            <span style="font-size:10.5px; color:#4A5A70;">{{ L.thinking }}</span>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="padding:11px 14px 14px; border-top:1px solid #16202C;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:8.5px; color:#3C4C60; letter-spacing:.1em; margin-bottom:7px;">{{ L.suggested }}</div>
+        <div style="display:flex; flex-direction:column; gap:5px; margin-bottom:11px;">
+          <sc-for list="{{ prompts }}" as="p" hint-placeholder-count="4">
+            <button onClick="{{ p.ask }}" style="text-align:left; background:#0B1017; border:1px solid #16202C; border-radius:7px; padding:8px 10px; font-family:inherit; font-size:11px; color:#8FA3BC; cursor:pointer; line-height:1.35;" style-hover="border-color:#143A31; color:#C8D6E6; background:#0C1A18;">{{ p.q }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; background:#0B1017; border:1px solid #1C2836; border-radius:8px; padding:9px 11px;">
+          <span style="font-size:11px; color:#3C4C60; flex:1;">{{ L.askPh }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace; font-size:9px; color:#3C4C60; border:1px solid #1C2836; border-radius:4px; padding:1px 5px;">↵</span>
+        </div>
+      </div>
+    </aside>
+    </sc-if>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#4D9BFF&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#00E0A4&quot;,&quot;#4D9BFF&quot;,&quot;#7A6BFF&quot;,&quot;#F5D547&quot;],&quot;section&quot;:&quot;Marca&quot;},&quot;liveSpeed&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2500,&quot;min&quot;:600,&quot;max&quot;:4000,&quot;step&quot;:100,&quot;unit&quot;:&quot;ms&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Tempo real&quot;}}">
+class Component extends DCLogic {
+  state = {
+    lang: 'pt', module: 'dashboard', dash: 'grid', tenant: 0, aiOpen: true,
+    vtab: 'v', inc: 0, feed: [], t: 0, aiMsgs: [], aiTyping: false,
+    cpu: 41, ram: 63, disk: 72, net: 34, lat: 22,
+    attacks: 128437, blocked: 127902, live: 47, eps: 18420,
+    scanPct: [72, 38, 91, 14, 56, 100]
+  };
+
+  ORIG = [
+    ['CN','China','China',35,105,2841],['RU','Rússia','Russia',61,95,2216],
+    ['US','EUA','USA',38,-97,1704],['IN','Índia','India',21,78,1188],
+    ['BR','Brasil','Brazil',-12,-51,964],['VN','Vietnã','Vietnam',15,108,742],
+    ['IR','Irã','Iran',32,53,618],['NG','Nigéria','Nigeria',9,8,455],
+    ['UA','Ucrânia','Ukraine',49,31,401],['NL','Holanda','Netherlands',52,5,332],
+    ['ID','Indonésia','Indonesia',-2,118,287],['TR','Turquia','Türkiye',39,35,241]
+  ];
+  DCS = [['SAO1',-23.5,-46.6],['GRU2',-23.4,-46.5],['FRA1',50.1,8.7],['IAD1',38.9,-77.4],['SCL1',-33.4,-70.6]];
+  TYPES = [
+    ['SQL Injection','crit'],['Brute Force SSH','high'],['Credential Stuffing','high'],
+    ['XSS Reflected','med'],['Port Scan','low'],['DDoS L7 Flood','crit'],
+    ['Path Traversal','high'],['Log4Shell Probe','crit'],['WordPress Enum','low'],
+    ['API Rate Abuse','med'],['RDP Brute Force','high'],['DNS Tunneling','high'],
+    ['Malicious Upload','crit'],['Open Redirect','low'],['JWT Tampering','med']
+  ];
+  TARGETS = ['api.grupovector.com','portal.hsanta.br','vpn-sp01','wp.lojaativa.com.br','srv-db-prod-02','checkout.pagou.io','mail.prefdigital.gov.br'];
+
+  D = {
+    pt: {
+      tenant:'ORGANIZAÇÃO', searchPh:'buscar ativo, IP, CVE, usuário…', liveNow:'ativos agora',
+      copilot:'Copiloto', opsGroup:'OPERAÇÕES', bizGroup:'GESTÃO', ingest:'INGESTÃO',
+      nav:{dash:'Dashboard',cos:'Empresas',assets:'Ativos',vuln:'Vulnerabilidades',inc:'Incidentes',siem:'SIEM',ai:'IA',rep:'Relatórios',fin:'Financeiro'},
+      socTitle:'Centro de Operações de Segurança', socSub:'Correlação em tempo real de 5 datacenters, 1.284 ativos monitorados',
+      layout:'LAYOUT', layoutA:'Grade operacional', layoutB:'Fila de triagem',
+      mapTitle:'Origem de ataques em tempo real', origin:'Origem', dc:'Datacenter', evtMin:'evt/min',
+      infra:'Saúde da infraestrutura', topOrigins:'Principais origens', liveFeed:'Fluxo de eventos',
+      aiBrief:'Briefing do turno', aiBriefBody:'Pico de força bruta contra vpn-sp01 vindo de 3 ASNs russos nas últimas 40 min. Padrão compatível com credential stuffing pós-vazamento. Nenhuma autenticação bem-sucedida até agora.',
+      investigate:'Investigar com IA',
+      triageQueue:'Fila de triagem priorizada por IA', open:'abertos', mttr:'Desempenho do SOC',
+      cosTitle:'Empresas gerenciadas', cosSub:'Visão MSSP · 8 organizações · isolamento total de dados por tenant',
+      assetsTitle:'Inventário de ativos', assetsSub:'Websites, APIs e servidores descobertos e monitorados continuamente',
+      thAsset:'Ativo', thType:'Tipo', thStack:'Stack', thUptime:'Uptime', thTls:'TLS', thVulns:'Vulns', thHealth:'Saúde',
+      thTitle:'Vulnerabilidade', thExposure:'Exposição', thAiPrio:'Prioridade IA', thStatus:'Status',
+      vulnTitle:'Gestão de vulnerabilidades', vulnSub:'Correlação automática CVE · CVSS · CISA KEV · EPSS · OWASP Top 10',
+      tabVulns:'Vulnerabilidades', tabScanner:'Scanner',
+      runningScans:'Varreduras em execução', engine:'ENGINE v4.2', scanCoverage:'Cobertura de varredura', feeds:'Feeds de inteligência',
+      incTitle:'Central de incidentes', incSub:'Triagem, contenção e resposta com apoio de IA',
+      owner:'Responsável', asset:'Ativo', opened:'Aberto', events:'Eventos',
+      aiAnalysis:'Análise da IA', confidence:'confiança', recommended:'Ações recomendadas', timeline:'Linha do tempo',
+      siemTitle:'SIEM · Correlação de eventos', siemSub:'2,4 bilhões de eventos indexados · retenção quente de 90 dias',
+      nlQuery:'Perguntar em linguagem natural',
+      aiTitle:'Inteligência Artificial', aiSub:'Detecção comportamental, classificação de alertas e investigação assistida',
+      aiDetections:'Detecções por comportamento', models:'Modelos ativos',
+      repTitle:'Relatórios', repSub:'Geração automática em PDF, Excel, Word e PowerPoint',
+      generate:'Gerar', execPreview:'Prévia do relatório executivo', period:'PERÍODO · JULHO 2026',
+      execHead:'Postura de segurança melhorou 12% no mês, com redução de superfície exposta',
+      execBody:'Foram bloqueados 3,84 milhões de eventos maliciosos e contidos 7 incidentes, nenhum com impacto em produção. A dívida de vulnerabilidades caiu de 214 para 168 itens abertos; três CVEs do catálogo CISA KEV permanecem sem correção e concentram o risco residual.',
+      finTitle:'Financeiro', finSub:'Assinaturas, licenças e faturamento multiempresa',
+      plans:'Planos', invoices:'Faturas recentes',
+      copilotTitle:'Copiloto de segurança', copilotCtx:'contexto:', thinking:'analisando eventos correlacionados…',
+      suggested:'PERGUNTAS SUGERIDAS', askPh:'Pergunte sobre qualquer ativo, log ou incidente…',
+      greet:'Estou com acesso aos logs, ativos e incidentes desta organização. Pergunte em linguagem natural — respondo com evidências correlacionadas.'
+    },
+    en: {
+      tenant:'ORGANIZATION', searchPh:'search asset, IP, CVE, user…', liveNow:'live now',
+      copilot:'Copilot', opsGroup:'OPERATIONS', bizGroup:'MANAGEMENT', ingest:'INGESTION',
+      nav:{dash:'Dashboard',cos:'Companies',assets:'Assets',vuln:'Vulnerabilities',inc:'Incidents',siem:'SIEM',ai:'AI',rep:'Reports',fin:'Billing'},
+      socTitle:'Security Operations Center', socSub:'Real-time correlation across 5 datacenters, 1,284 monitored assets',
+      layout:'LAYOUT', layoutA:'Operational grid', layoutB:'Triage queue',
+      mapTitle:'Live attack origin', origin:'Origin', dc:'Datacenter', evtMin:'evt/min',
+      infra:'Infrastructure health', topOrigins:'Top origins', liveFeed:'Event stream',
+      aiBrief:'Shift briefing', aiBriefBody:'Brute-force spike against vpn-sp01 from 3 Russian ASNs in the last 40 min. Pattern consistent with post-breach credential stuffing. No successful authentication so far.',
+      investigate:'Investigate with AI',
+      triageQueue:'AI-prioritized triage queue', open:'open', mttr:'SOC performance',
+      cosTitle:'Managed companies', cosSub:'MSSP view · 8 organizations · full per-tenant data isolation',
+      assetsTitle:'Asset inventory', assetsSub:'Websites, APIs and servers continuously discovered and monitored',
+      thAsset:'Asset', thType:'Type', thStack:'Stack', thUptime:'Uptime', thTls:'TLS', thVulns:'Vulns', thHealth:'Health',
+      thTitle:'Vulnerability', thExposure:'Exposure', thAiPrio:'AI priority', thStatus:'Status',
+      vulnTitle:'Vulnerability management', vulnSub:'Automatic correlation CVE · CVSS · CISA KEV · EPSS · OWASP Top 10',
+      tabVulns:'Vulnerabilities', tabScanner:'Scanner',
+      runningScans:'Running scans', engine:'ENGINE v4.2', scanCoverage:'Scan coverage', feeds:'Threat intel feeds',
+      incTitle:'Incident center', incSub:'AI-assisted triage, containment and response',
+      owner:'Owner', asset:'Asset', opened:'Opened', events:'Events',
+      aiAnalysis:'AI analysis', confidence:'confidence', recommended:'Recommended actions', timeline:'Timeline',
+      siemTitle:'SIEM · Event correlation', siemSub:'2.4 billion events indexed · 90-day hot retention',
+      nlQuery:'Ask in natural language',
+      aiTitle:'Artificial Intelligence', aiSub:'Behavioral detection, alert classification and assisted investigation',
+      aiDetections:'Behavioral detections', models:'Active models',
+      repTitle:'Reports', repSub:'Automatic generation in PDF, Excel, Word and PowerPoint',
+      generate:'Generate', execPreview:'Executive report preview', period:'PERIOD · JULY 2026',
+      execHead:'Security posture improved 12% this month, with reduced exposed surface',
+      execBody:'3.84 million malicious events were blocked and 7 incidents contained, none with production impact. Vulnerability debt dropped from 214 to 168 open items; three CVEs from the CISA KEV catalog remain unpatched and concentrate residual risk.',
+      finTitle:'Billing', finSub:'Subscriptions, licenses and multi-company invoicing',
+      plans:'Plans', invoices:'Recent invoices',
+      copilotTitle:'Security copilot', copilotCtx:'context:', thinking:'correlating events…',
+      suggested:'SUGGESTED QUESTIONS', askPh:'Ask about any asset, log or incident…',
+      greet:'I have access to this organization\u2019s logs, assets and incidents. Ask in natural language — I answer with correlated evidence.'
+    }
+  };
+
+  COMPANIES = [
+    ['Grupo Vector','Indústria','Industry','Enterprise',78,[1284,12,3,'99.9%']],
+    ['Hospital Santa Clara','Saúde','Healthcare','Enterprise',64,[412,7,1,'99.9%']],
+    ['Banco Meridiano','Financeiro','Finance','Enterprise+',31,[2140,3,0,'100%']],
+    ['Prefeitura Digital','Governo','Government','Gov',86,[318,21,5,'98.4%']],
+    ['Loja Ativa','Varejo','Retail','Business',52,[96,9,1,'99.7%']],
+    ['Pagou Fintech','Fintech','Fintech','Enterprise',44,[588,5,2,'99.9%']],
+    ['NetSul Provedor','ISP','ISP','MSP',69,[1902,14,2,'99.6%']],
+    ['Escritório Lemos','Jurídico','Legal','Business',27,[48,2,0,'99.9%']]
+  ];
+
+  INCIDENTS = [
+    { id:'INC-4821', sev:'crit', age:'12m', asset:'vpn-sp01', mitre:'T1110.004', analyst:'R. Silva', opened:'14:02', events:'3.418',
+      t:{pt:'Credential stuffing distribuído contra concentrador VPN',en:'Distributed credential stuffing against VPN concentrator'},
+      ai:{pt:'3 ASNs, 1.842 usuários testados',en:'3 ASNs, 1,842 users tested'}, conf:'94%',
+      s:{pt:'Detectei 3.418 tentativas de autenticação falhas em 41 minutos contra vpn-sp01, partindo de 214 IPs distribuídos em 3 sistemas autônomos russos. As credenciais testadas coincidem em 61% com um vazamento público de 2024 associado ao domínio corporativo. Nenhuma sessão foi estabelecida, mas duas contas de serviço sem MFA foram alvo repetido — elas representam o caminho mais provável de sucesso caso o ataque continue.',
+         en:'I detected 3,418 failed authentication attempts in 41 minutes against vpn-sp01, from 214 IPs across 3 Russian autonomous systems. Tested credentials match a 2024 public breach tied to the corporate domain at 61%. No session was established, but two service accounts without MFA were repeatedly targeted — they are the most likely path to success if the attack continues.'},
+      steps:[
+        {pt:'Bloquear os 3 ASNs de origem no firewall de borda por 24h',en:'Block the 3 source ASNs at the edge firewall for 24h',k:'FIREWALL'},
+        {pt:'Forçar MFA nas contas svc-backup e svc-integra',en:'Enforce MFA on svc-backup and svc-integra accounts',k:'IAM'},
+        {pt:'Rotacionar credenciais das 1.842 contas testadas',en:'Rotate credentials for the 1,842 tested accounts',k:'IAM'},
+        {pt:'Ativar rate limit adaptativo no concentrador VPN',en:'Enable adaptive rate limiting on the VPN concentrator',k:'NETWORK'}],
+      tl:[['14:02','#FF3B5C',{pt:'Primeiro pico anômalo de falhas de autenticação',en:'First anomalous spike in auth failures'},'siem.auth'],
+          ['14:09','#FF8A3D',{pt:'IA correlacionou 214 IPs a 3 ASNs conhecidos',en:'AI correlated 214 IPs to 3 known ASNs'},'ai.correlation'],
+          ['14:17','#FFC93C',{pt:'Incidente aberto automaticamente · severidade crítica',en:'Incident auto-opened · critical severity'},'soc.rules'],
+          ['14:23','#00E0A4',{pt:'Bloqueio temporário de 96 IPs aplicado',en:'Temporary block applied to 96 IPs'},'firewall.edge'],
+          ['14:31','#4D9BFF',{pt:'Analista R. Silva assumiu o incidente',en:'Analyst R. Silva took ownership'},'soc.console']] },
+    { id:'INC-4818', sev:'crit', age:'1h', asset:'wp.lojaativa.com.br', mitre:'T1190', analyst:'C. Duarte', opened:'13:11', events:'842',
+      t:{pt:'Exploração ativa de plugin WordPress desatualizado',en:'Active exploitation of outdated WordPress plugin'},
+      ai:{pt:'Webshell provável em /wp-content/uploads',en:'Likely webshell in /wp-content/uploads'}, conf:'88%',
+      s:{pt:'Requisições POST com payload ofuscado atingiram um plugin de formulários na versão 4.1.2, vulnerável a upload arbitrário. Um arquivo PHP foi criado em /wp-content/uploads/2026/07 e acessado 6 vezes a partir do mesmo IP holandês. O padrão de acesso indica webshell funcional. Recomendo isolamento imediato antes de qualquer análise forense.',
+         en:'POST requests with obfuscated payload hit a forms plugin on version 4.1.2, vulnerable to arbitrary upload. A PHP file was created in /wp-content/uploads/2026/07 and accessed 6 times from the same Dutch IP. The access pattern indicates a working webshell. I recommend immediate isolation before any forensic analysis.'},
+      steps:[
+        {pt:'Isolar o host da rede mantendo memória para forense',en:'Isolate the host from the network, preserving memory for forensics',k:'CONTAIN'},
+        {pt:'Quarentenar o arquivo suspeito e coletar hash',en:'Quarantine the suspicious file and collect its hash',k:'FORENSIC'},
+        {pt:'Atualizar plugin para 4.3.1 e revisar todos os uploads',en:'Update plugin to 4.3.1 and review all uploads',k:'PATCH'}],
+      tl:[['13:11','#FF3B5C',{pt:'POST anômalo detectado pelo WAF',en:'Anomalous POST detected by WAF'},'waf.rules'],
+          ['13:14','#FF8A3D',{pt:'Criação de arquivo PHP em diretório de uploads',en:'PHP file created in uploads directory'},'fim.agent'],
+          ['13:22','#FFC93C',{pt:'IA classificou como webshell com 88% de confiança',en:'AI classified as webshell with 88% confidence'},'ai.malware'],
+          ['13:40','#4D9BFF',{pt:'Notificação enviada ao cliente Loja Ativa',en:'Notification sent to client Loja Ativa'},'notify.email']] },
+    { id:'INC-4815', sev:'high', age:'3h', asset:'srv-db-prod-02', mitre:'T1046', analyst:'A. Nakamura', opened:'11:28', events:'1.204',
+      t:{pt:'Varredura interna lateral a partir de estação comprometida',en:'Internal lateral scan from a compromised workstation'},
+      ai:{pt:'Movimento lateral em 3 sub-redes',en:'Lateral movement across 3 subnets'}, conf:'76%',
+      s:{pt:'Uma estação da rede administrativa iniciou varredura de portas em 3 sub-redes, incluindo o segmento de banco de dados. O comportamento diverge da linha de base do usuário em 4 dimensões: horário, volume, destinos e protocolo. Probabilidade elevada de estação comprometida servindo de pivô.',
+         en:'A workstation in the admin network started port scanning across 3 subnets, including the database segment. Behavior diverges from the user baseline on 4 dimensions: time, volume, destinations and protocol. High probability of a compromised workstation acting as pivot.'},
+      steps:[
+        {pt:'Isolar a estação WKS-ADM-14 via EDR',en:'Isolate workstation WKS-ADM-14 via EDR',k:'EDR'},
+        {pt:'Revisar regras de microsegmentação do segmento de dados',en:'Review microsegmentation rules for the data segment',k:'NETWORK'},
+        {pt:'Coletar dump de memória para análise de credenciais',en:'Collect memory dump for credential analysis',k:'FORENSIC'}],
+      tl:[['11:28','#FF8A3D',{pt:'Varredura de portas iniciada em 10.20.0.0/16',en:'Port scan started on 10.20.0.0/16'},'ids.suricata'],
+          ['11:35','#FFC93C',{pt:'Desvio comportamental de 4σ sinalizado pela IA',en:'4σ behavioral deviation flagged by AI'},'ai.ueba'],
+          ['11:52','#4D9BFF',{pt:'Incidente escalado para nível 2',en:'Incident escalated to tier 2'},'soc.console']] },
+    { id:'INC-4809', sev:'med', age:'6h', asset:'api.grupovector.com', mitre:'T1499', analyst:'—', opened:'08:44', events:'96',
+      t:{pt:'Abuso de rate limit em endpoint público de consulta',en:'Rate-limit abuse on public query endpoint'},
+      ai:{pt:'Scraping automatizado, sem exfiltração',en:'Automated scraping, no exfiltration'}, conf:'82%',
+      s:{pt:'Um único token de API consumiu 96 mil requisições em 2 horas contra /v2/catalog, 40 vezes acima do padrão. Não há indício de exfiltração de dados sensíveis — o endpoint retorna apenas catálogo público — mas o custo de infraestrutura e a latência para clientes legítimos aumentaram.',
+         en:'A single API token consumed 96k requests in 2 hours against /v2/catalog, 40× above baseline. There is no sign of sensitive data exfiltration — the endpoint only returns a public catalog — but infrastructure cost and latency for legitimate clients increased.'},
+      steps:[
+        {pt:'Aplicar quota escalonada ao token afetado',en:'Apply tiered quota to the affected token',k:'API'},
+        {pt:'Habilitar cache de borda para /v2/catalog',en:'Enable edge caching for /v2/catalog',k:'CDN'}],
+      tl:[['08:44','#FFC93C',{pt:'Limite de requisições excedido 40×',en:'Request limit exceeded 40×'},'gateway.api'],
+          ['09:10','#4D9BFF',{pt:'IA descartou exfiltração de dados',en:'AI ruled out data exfiltration'},'ai.classifier']] },
+    { id:'INC-4802', sev:'high', age:'9h', asset:'mail.prefdigital.gov.br', mitre:'T1566.002', analyst:'M. Rocha', opened:'05:30', events:'318',
+      t:{pt:'Campanha de phishing direcionada a servidores públicos',en:'Phishing campaign targeting public servants'},
+      ai:{pt:'318 mensagens, 11 cliques confirmados',en:'318 messages, 11 confirmed clicks'}, conf:'91%',
+      s:{pt:'Campanha com domínio typosquatting registrado há 4 dias entregou 318 mensagens simulando o portal de contracheque. Onze usuários clicaram e três submeteram credenciais na página falsa. As três contas já apresentam tentativas de login externo a partir de IPs não habituais.',
+         en:'A campaign using a typosquatting domain registered 4 days ago delivered 318 messages impersonating the payroll portal. Eleven users clicked and three submitted credentials on the fake page. All three accounts already show external login attempts from unusual IPs.'},
+      steps:[
+        {pt:'Revogar sessões e resetar senha das 3 contas afetadas',en:'Revoke sessions and reset passwords for the 3 affected accounts',k:'IAM'},
+        {pt:'Bloquear domínio typosquatting no gateway de e-mail',en:'Block the typosquatting domain at the mail gateway',k:'EMAIL'},
+        {pt:'Remover mensagens das caixas de entrada restantes',en:'Purge messages from remaining inboxes',k:'EMAIL'},
+        {pt:'Disparar treinamento direcionado aos 11 usuários',en:'Trigger targeted training for the 11 users',k:'AWARENESS'}],
+      tl:[['05:30','#FF8A3D',{pt:'318 mensagens entregues de domínio recém-registrado',en:'318 messages delivered from newly registered domain'},'mail.gateway'],
+          ['06:12','#FF3B5C',{pt:'Primeiro clique confirmado em link malicioso',en:'First confirmed click on malicious link'},'proxy.web'],
+          ['07:05','#FFC93C',{pt:'IA identificou 3 submissões de credenciais',en:'AI identified 3 credential submissions'},'ai.phishing'],
+          ['07:40','#00E0A4',{pt:'Domínio bloqueado em todos os tenants',en:'Domain blocked across all tenants'},'threat.intel']] }
+  ];
+
+  VULNS = [
+    ['CVE-2024-3094','10.0','xz-utils',{pt:'Backdoor em biblioteca de compressão (SSH)',en:'Backdoor in compression library (SSH)'},'CWE-506','srv-db-prod-02','KEV',97,{pt:'Aberto',en:'Open'},'crit'],
+    ['CVE-2024-6387','8.1','OpenSSH',{pt:'RCE não autenticado — regreSSHion',en:'Unauthenticated RCE — regreSSHion'},'CWE-364','vpn-sp01','KEV',93,{pt:'Em correção',en:'Patching'},'crit'],
+    ['CVE-2021-44228','10.0','Log4j',{pt:'Execução remota de código via JNDI',en:'Remote code execution via JNDI'},'CWE-502','api.grupovector.com','KEV',89,{pt:'Aberto',en:'Open'},'crit'],
+    ['CVE-2024-21762','9.8','FortiOS',{pt:'Escrita fora de limites no SSL-VPN',en:'Out-of-bounds write in SSL-VPN'},'CWE-787','fw-borda-01',{pt:'Interno',en:'Internal'},76,{pt:'Aberto',en:'Open'},'crit'],
+    ['CVE-2023-44487','7.5','HTTP/2',{pt:'Rapid Reset — negação de serviço',en:'Rapid Reset — denial of service'},'CWE-400','checkout.pagou.io',{pt:'Público',en:'Public'},71,{pt:'Mitigado',en:'Mitigated'},'high'],
+    ['CVE-2022-22965','9.8','Spring',{pt:'Spring4Shell — binding de classe',en:'Spring4Shell — class binding'},'CWE-94','portal.hsanta.br',{pt:'Público',en:'Public'},68,{pt:'Em correção',en:'Patching'},'crit'],
+    ['CVE-2023-4863','8.8','libwebp',{pt:'Estouro de heap no decodificador WebP',en:'Heap overflow in WebP decoder'},'CWE-787','wp.lojaativa.com.br',{pt:'Público',en:'Public'},54,{pt:'Aberto',en:'Open'},'high'],
+    ['CVE-2024-23897','9.8','Jenkins',{pt:'Leitura arbitrária de arquivos via CLI',en:'Arbitrary file read via CLI'},'CWE-22','ci.grupovector.com',{pt:'Interno',en:'Internal'},48,{pt:'Aceito',en:'Accepted'},'crit'],
+    ['CVE-2023-38545','8.8','curl',{pt:'Estouro de buffer no handshake SOCKS5',en:'Buffer overflow in SOCKS5 handshake'},'CWE-787','srv-app-04',{pt:'Interno',en:'Internal'},33,{pt:'Corrigido',en:'Fixed'},'high']
+  ];
+
+  ASSETS = [
+    ['api.grupovector.com','189.44.12.8','API','.NET 9 / Kestrel','99.98%',48,'ok',[2,1,4,7],92],
+    ['portal.hsanta.br','200.147.9.44','WEB','Angular 20 / Nginx','99.91%',12,'warn',[1,3,6,11],74],
+    ['vpn-sp01','10.20.0.4','VPN','FortiOS 7.4','99.99%',201,'ok',[1,0,2,3],61],
+    ['wp.lojaativa.com.br','177.92.4.19','WEB','WordPress 6.5','98.72%',5,'crit',[3,8,14,22],38],
+    ['srv-db-prod-02','10.10.2.11','DB','SQL Server 2022','100%','—','na',[1,2,5,9],67],
+    ['checkout.pagou.io','198.51.100.7','API','Node 22 / Fastify','99.99%',87,'ok',[0,1,3,5],95],
+    ['mail.prefdigital.gov.br','200.19.8.61','MAIL','Exchange 2019','99.84%',34,'ok',[0,4,7,12],71],
+    ['ci.grupovector.com','10.10.4.30','CI','Jenkins 2.440','99.95%',119,'ok',[1,1,3,6],80],
+    ['fw-borda-01','189.44.12.1','FW','FortiGate 600F','100%','—','na',[1,0,1,2],88]
+  ];
+
+  spark(seed, up) {
+    let p = '', v = 12;
+    for (let i = 0; i <= 20; i++) {
+      const n = Math.sin((i + seed) * 1.7) * 4 + Math.cos((i + seed) * 0.9) * 3;
+      v = Math.max(2, Math.min(20, 11 + n + (up ? -i * 0.28 : i * 0.22)));
+      p += (i === 0 ? 'M' : 'L') + (i * 5) + ' ' + (22 - v).toFixed(1);
+    }
+    return p;
+  }
+
+  componentDidMount() {
+    const L = this.D[this.state.lang];
+    this.setState({ feed: this.mkFeed(9), aiMsgs: [{ r: 'ai', text: L.greet }] });
+    const speed = this.props.liveSpeed || 1700;
+    this.timer = setInterval(() => this.tick(), speed);
+    this.waitMap();
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+
+  r(n) { return Math.floor(Math.random() * n); }
+
+  mkEvent() {
+    const o = this.ORIG[this.r(this.ORIG.length)];
+    const t = this.TYPES[this.r(this.TYPES.length)];
+    const d = new Date();
+    return {
+      cc: o[0], lat: o[3], lng: o[4], type: t[0], sev: t[1],
+      ip: o[0] === 'BR' ? '177.' : (o[0] === 'CN' ? '118.' : (o[0] === 'RU' ? '95.' : '45.')),
+      ipFull: (o[0] === 'CN' ? '118.' : o[0] === 'RU' ? '95.' : o[0] === 'US' ? '52.' : '45.') + this.r(255) + '.' + this.r(255) + '.' + this.r(255),
+      target: this.TARGETS[this.r(this.TARGETS.length)],
+      blocked: Math.random() > 0.11,
+      time: String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0')
+    };
+  }
+  mkFeed(n) { const a = []; for (let i = 0; i < n; i++) a.push(this.mkEvent()); return a; }
+
+  tick() {
+    const e = this.mkEvent();
+    const j = (v, d, lo, hi) => Math.max(lo, Math.min(hi, v + (Math.random() - 0.5) * d));
+    this.setState(s => ({
+      feed: [e, ...s.feed].slice(0, 14), t: s.t + 1,
+      attacks: s.attacks + 1 + this.r(6), blocked: s.blocked + 1 + this.r(5),
+      live: Math.max(11, Math.min(96, s.live + this.r(9) - 4)),
+      eps: Math.round(j(s.eps, 2400, 9000, 27000)),
+      cpu: Math.round(j(s.cpu, 9, 18, 88)), ram: Math.round(j(s.ram, 5, 40, 91)),
+      disk: Math.round(j(s.disk, 1.4, 60, 84)), net: Math.round(j(s.net, 14, 8, 92)),
+      lat: Math.round(j(s.lat, 7, 9, 68)),
+      scanPct: s.scanPct.map((p, i) => (p >= 100 ? (i === 3 ? 100 : 4) : Math.min(100, p + 1 + this.r(5))))
+    }));
+    this.fire(e);
+  }
+
+  waitMap() {
+    if (window.d3 && window.topojson) { this.loadGeo(); return; }
+    this.geoWait = setInterval(() => {
+      if (window.d3 && window.topojson) { clearInterval(this.geoWait); this.loadGeo(); }
+    }, 120);
+  }
+  loadGeo() {
+    if (this.geoLoading) return;
+    this.geoLoading = true;
+    window.d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json').then(topo => {
+      this.geo = window.topojson.feature(topo, topo.objects.countries);
+      if (this.host) this.drawMap(this.host);
+    }).catch(() => {});
+  }
+
+  setHost = (el) => { if (el) { this.host = el; if (this.geo) this.drawMap(el); } };
+
+  drawMap(host) {
+    if (!window.d3 || !this.geo) return;
+    const W = 980, H = host.clientHeight > 40 ? host.clientHeight : 320;
+    host.innerHTML = '';
+    const svg = window.d3.select(host).append('svg')
+      .attr('viewBox', '0 0 ' + W + ' ' + H)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
+      .style('width', '100%').style('height', '100%').style('display', 'block');
+    const proj = window.d3.geoNaturalEarth1().fitExtent([[14, 10], [W - 14, H - 10]], this.geo);
+    const path = window.d3.geoPath(proj);
+    svg.append('g').selectAll('path').data(this.geo.features).enter().append('path')
+      .attr('d', path).attr('fill', '#111C26').attr('stroke', '#1B2C3A').attr('stroke-width', 0.5);
+    this.arcs = svg.append('g');
+    this.proj = proj;
+    const dcg = svg.append('g');
+    this.DCS.forEach(d => {
+      const p = proj([d[2], d[1]]);
+      if (!p) return;
+      dcg.append('circle').attr('cx', p[0]).attr('cy', p[1]).attr('r', 3.2)
+        .attr('fill', '#00E0A4').attr('stroke', '#06251E').attr('stroke-width', 1);
+      dcg.append('text').attr('x', p[0] + 6).attr('y', p[1] + 3)
+        .attr('fill', '#3E6C60').attr('font-size', '8px')
+        .attr('font-family', 'IBM Plex Mono, monospace').text(d[0]);
+    });
+  }
+
+  fire(e) {
+    if (!this.arcs || !this.proj) return;
+    const a = this.proj([e.lng, e.lat]);
+    const dc = this.DCS[this.r(this.DCS.length)];
+    const b = this.proj([dc[2], dc[1]]);
+    if (!a || !b) return;
+    const col = e.sev === 'crit' ? '#FF3B5C' : e.sev === 'high' ? '#FF8A3D' : e.sev === 'med' ? '#FFC93C' : '#4D9BFF';
+    const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2 - Math.abs(a[0] - b[0]) * 0.24 - 18;
+    const p = this.arcs.append('path')
+      .attr('d', 'M' + a[0] + ',' + a[1] + ' Q' + mx + ',' + my + ' ' + b[0] + ',' + b[1])
+      .attr('fill', 'none').attr('stroke', col).attr('stroke-width', 1.1).attr('opacity', 0.85);
+    const node = p.node();
+    const len = node.getTotalLength();
+    node.setAttribute('stroke-dasharray', len);
+    node.setAttribute('stroke-dashoffset', len);
+    node.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: 900, easing: 'cubic-bezier(.3,.7,.4,1)', fill: 'forwards' });
+    const dot = this.arcs.append('circle').attr('cx', a[0]).attr('cy', a[1]).attr('r', 2.4).attr('fill', col);
+    const ring = this.arcs.append('circle').attr('cx', a[0]).attr('cy', a[1]).attr('r', 2.4)
+      .attr('fill', 'none').attr('stroke', col).attr('stroke-width', 1);
+    ring.node().animate([{ r: 2.4, opacity: 0.9 }, { r: 13, opacity: 0 }], { duration: 1400, easing: 'ease-out' });
+    setTimeout(() => {
+      node.animate([{ opacity: 0.85 }, { opacity: 0 }], { duration: 500, fill: 'forwards' });
+      setTimeout(() => { p.remove(); dot.remove(); ring.remove(); }, 520);
+    }, 1000);
+  }
+
+  ask(q, a, ev) {
+    this.setState(s => ({ aiMsgs: [...s.aiMsgs, { r: 'u', text: q }], aiTyping: true, aiOpen: true }));
+    setTimeout(() => {
+      this.setState(s => ({ aiTyping: false, aiMsgs: [...s.aiMsgs, { r: 'ai', text: a, ev: ev }] }));
+      if (this.chat) this.chat.scrollTop = this.chat.scrollHeight;
+    }, 1100);
+  }
+
+  PROMPTS = {
+    pt: [
+      ['O servidor vpn-sp01 está sob ataque?','Sim. 3.418 tentativas de autenticação falhas nos últimos 41 minutos, originadas de 214 IPs em 3 ASNs russos. Nenhuma sessão foi estabelecida. Duas contas de serviço sem MFA foram alvo repetido — recomendo bloquear os ASNs e forçar MFA agora.',[['tentativas / 41min','3.418','#FF3B5C'],['IPs distintos','214','#FF8A3D'],['sessões estabelecidas','0','#00E0A4']]],
+      ['Existe ransomware em algum ativo?','Nenhum indicador de ransomware ativo. Detectei 1 comportamento suspeito de criptografia em massa em WKS-ADM-14, mas a análise apontou backup legítimo do usuário. Assinaturas de 214 famílias conhecidas foram verificadas nas últimas 6 horas.',[['famílias verificadas','214','#00E0A4'],['detecções positivas','0','#00E0A4'],['comportamentos suspeitos','1','#FFC93C']]],
+      ['Quais certificados vencem em 30 dias?','Quatro certificados vencem nos próximos 30 dias. O mais crítico é checkout.pagou.io, que processa pagamentos e vence em 9 dias. A renovação automática via ACME falhou 2 vezes por erro de validação DNS.',[['checkout.pagou.io','9 dias','#FF3B5C'],['portal.hsanta.br','17 dias','#FF8A3D'],['api.grupovector.com','28 dias','#FFC93C']]],
+      ['Qual servidor está mais lento agora?','srv-db-prod-02 apresenta latência de consulta 3,4× acima da linha de base desde 13:40. A causa provável é um plano de execução degradado após a última carga em lote — não há correlação com atividade maliciosa.',[['latência p95','842ms','#FF8A3D'],['linha de base','247ms','#4D9BFF'],['correlação com ataque','nenhuma','#00E0A4']]],
+      ['Houve vazamento de dados este mês?','Não identifiquei exfiltração confirmada. O maior volume de saída anômalo foi 96 mil requisições ao endpoint público /v2/catalog, que não expõe dados sensíveis. Monitoramento DLP não registrou correspondências em 30 dias.',[['exfiltrações confirmadas','0','#00E0A4'],['alertas DLP','0','#00E0A4'],['anomalias de saída','1','#FFC93C']]]
+    ],
+    en: [
+      ['Is server vpn-sp01 under attack?','Yes. 3,418 failed authentication attempts in the last 41 minutes, from 214 IPs across 3 Russian ASNs. No session was established. Two service accounts without MFA were repeatedly targeted — I recommend blocking the ASNs and enforcing MFA now.',[['attempts / 41min','3,418','#FF3B5C'],['distinct IPs','214','#FF8A3D'],['sessions established','0','#00E0A4']]],
+      ['Is there ransomware on any asset?','No active ransomware indicators. I detected 1 suspicious mass-encryption behavior on WKS-ADM-14, but analysis pointed to a legitimate user backup. Signatures for 214 known families were checked in the last 6 hours.',[['families checked','214','#00E0A4'],['positive detections','0','#00E0A4'],['suspicious behaviors','1','#FFC93C']]],
+      ['Which certificates expire in 30 days?','Four certificates expire within 30 days. The most critical is checkout.pagou.io, which processes payments and expires in 9 days. Automatic ACME renewal failed twice due to a DNS validation error.',[['checkout.pagou.io','9 days','#FF3B5C'],['portal.hsanta.br','17 days','#FF8A3D'],['api.grupovector.com','28 days','#FFC93C']]],
+      ['Which server is slowest right now?','srv-db-prod-02 shows query latency 3.4× above baseline since 13:40. The likely cause is a degraded execution plan after the last batch load — there is no correlation with malicious activity.',[['p95 latency','842ms','#FF8A3D'],['baseline','247ms','#4D9BFF'],['attack correlation','none','#00E0A4']]],
+      ['Was there any data breach this month?','No confirmed exfiltration. The largest anomalous outbound volume was 96k requests to the public /v2/catalog endpoint, which exposes no sensitive data. DLP monitoring recorded no matches in 30 days.',[['confirmed exfiltrations','0','#00E0A4'],['DLP alerts','0','#00E0A4'],['outbound anomalies','1','#FFC93C']]]
+    ]
+  };
+
+  sevColor(s) { return s === 'crit' ? '#FF3B5C' : s === 'high' ? '#FF8A3D' : s === 'med' ? '#FFC93C' : '#4D9BFF'; }
+  sevBg(s) { return s === 'crit' ? '#2A0D14' : s === 'high' ? '#2A1608' : s === 'med' ? '#2A2208' : '#0C1B2E'; }
+  sevLabel(s, lang) {
+    const m = { pt: { crit: 'CRÍTICO', high: 'ALTO', med: 'MÉDIO', low: 'BAIXO' }, en: { crit: 'CRITICAL', high: 'HIGH', med: 'MEDIUM', low: 'LOW' } };
+    return m[lang][s];
+  }
+  chip(s, lang) {
+    const c = this.sevColor(s);
+    return 'font-family:\'IBM Plex Mono\',monospace; font-size:8px; font-weight:600; letter-spacing:.08em; color:' + c + '; background:' + this.sevBg(s) + '; border:1px solid ' + c + '40; border-radius:4px; padding:2px 6px;';
+  }
+
+  renderVals() {
+    const s = this.state, lang = s.lang, L = this.D[lang];
+    const accent = this.props.accent || '#00E0A4';
+    const navBtn = (id, active) => 'display:flex; align-items:center; gap:8px; width:100%; padding:7px 8px; border-radius:6px; border:none; cursor:pointer; font-family:inherit; font-size:11.5px; font-weight:' + (active ? '600' : '500') + '; background:' + (active ? '#0F1D22' : 'transparent') + '; color:' + (active ? accent : '#7C8FA8') + ';';
+    const mkNav = (id, n, label, badge, bc) => ({
+      n: n, label: label, badge: badge || '', num: this.state.module === id ? accent : '#2C3C4E',
+      style: navBtn(id, s.module === id),
+      badgeStyle: badge ? ('font-family:\'IBM Plex Mono\',monospace; font-size:8.5px; font-weight:600; color:' + bc + '; background:' + bc + '1A; border-radius:4px; padding:1px 5px;') : 'display:none;',
+      go: () => this.setState({ module: id })
+    });
+
+    const nf = (n) => n.toLocaleString(lang === 'pt' ? 'pt-BR' : 'en-US');
+    const gaugeC = (v) => v > 80 ? '#FF3B5C' : v > 65 ? '#FF8A3D' : accent;
+
+    const inc = this.INCIDENTS[s.inc];
+    const prompts = this.PROMPTS[lang];
+
+    const total = this.ORIG.reduce((a, o) => a + o[5], 0);
+
+    return {
+      L, accent,
+      tenantName: this.COMPANIES[s.tenant][0],
+      tenantDot: this.COMPANIES[s.tenant][4] > 70 ? '#FF3B5C' : this.COMPANIES[s.tenant][4] > 45 ? '#FF8A3D' : accent,
+      cycleTenant: () => this.setState(st => ({ tenant: (st.tenant + 1) % this.COMPANIES.length })),
+      liveAttacks: s.live,
+      eps: nf(s.eps), epsPct: Math.round(s.eps / 270),
+      setPt: () => this.setState({ lang: 'pt', aiMsgs: [{ r: 'ai', text: this.D.pt.greet }] }),
+      setEn: () => this.setState({ lang: 'en', aiMsgs: [{ r: 'ai', text: this.D.en.greet }] }),
+      ptBtn: 'border:none; padding:6px 10px; font-family:\'IBM Plex Mono\',monospace; font-size:10px; font-weight:600; cursor:pointer; background:' + (lang === 'pt' ? '#16202C' : 'transparent') + '; color:' + (lang === 'pt' ? accent : '#4A5A70') + ';',
+      enBtn: 'border:none; padding:6px 10px; font-family:\'IBM Plex Mono\',monospace; font-size:10px; font-weight:600; cursor:pointer; background:' + (lang === 'en' ? '#16202C' : 'transparent') + '; color:' + (lang === 'en' ? accent : '#4A5A70') + ';',
+      toggleAi: () => this.setState(st => ({ aiOpen: !st.aiOpen })),
+      aiOpen: s.aiOpen,
+      aiBtn: 'display:flex; align-items:center; gap:7px; border-radius:7px; padding:7px 11px; cursor:pointer; font-family:inherit; background:' + (s.aiOpen ? '#0C1A18' : '#0E141D') + '; border:1px solid ' + (s.aiOpen ? '#143A31' : '#1C2836') + '; color:' + (s.aiOpen ? accent : '#7C8FA8') + ';',
+
+      navOps: [
+        mkNav('dashboard', '01', L.nav.dash, '', ''),
+        mkNav('companies', '02', L.nav.cos, '8', '#4D9BFF'),
+        mkNav('assets', '06', L.nav.assets, '', ''),
+        mkNav('vuln', '11', L.nav.vuln, '168', '#FF8A3D'),
+        mkNav('incidents', '17', L.nav.inc, '5', '#FF3B5C'),
+        mkNav('siem', '18', L.nav.siem, '', '')
+      ],
+      navBiz: [
+        mkNav('ai', '20', L.nav.ai, '', ''),
+        mkNav('reports', '21', L.nav.rep, '', ''),
+        mkNav('billing', '22', L.nav.fin, '', '')
+      ],
+
+      isDash: s.module === 'dashboard', isCos: s.module === 'companies', isAssets: s.module === 'assets',
+      isVuln: s.module === 'vuln', isInc: s.module === 'incidents', isSiem: s.module === 'siem',
+      isAi: s.module === 'ai', isRep: s.module === 'reports', isFin: s.module === 'billing',
+
+      isGrid: s.dash === 'grid', isTriage: s.dash === 'triage',
+      setGrid: () => this.setState({ dash: 'grid' }), setTriage: () => this.setState({ dash: 'triage' }),
+      gridBtn: 'border:none; padding:7px 13px; font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; background:' + (s.dash === 'grid' ? '#16202C' : 'transparent') + '; color:' + (s.dash === 'grid' ? accent : '#5A6B82') + ';',
+      triageBtn: 'border:none; padding:7px 13px; font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; background:' + (s.dash === 'triage' ? '#16202C' : 'transparent') + '; color:' + (s.dash === 'triage' ? accent : '#5A6B82') + ';',
+
+      kpis: [
+        { label: lang === 'pt' ? 'Eventos 24h' : 'Events 24h', v: nf(s.attacks), d: '+8,2%', c: '#4D9BFF', dc: '#4A5A70', spark: this.spark(1) },
+        { label: lang === 'pt' ? 'Bloqueados' : 'Blocked', v: nf(s.blocked), d: '99,6%', c: accent, dc: accent, spark: this.spark(3) },
+        { label: lang === 'pt' ? 'Incidentes abertos' : 'Open incidents', v: '5', d: '-2', c: '#FF3B5C', dc: accent, spark: this.spark(5, true) },
+        { label: lang === 'pt' ? 'Vulns críticas' : 'Critical vulns', v: '23', d: '-9', c: '#FF8A3D', dc: accent, spark: this.spark(7, true) },
+        { label: lang === 'pt' ? 'Ativos monitorados' : 'Monitored assets', v: '1.284', d: '+12', c: '#7A6BFF', dc: '#4A5A70', spark: this.spark(9) },
+        { label: lang === 'pt' ? 'Disponibilidade' : 'Availability', v: '99,97%', d: 'SLA', c: accent, dc: '#4A5A70', spark: this.spark(11) }
+      ],
+
+      mapRef: this.setHost, mapRef2: this.setHost,
+
+      gauges: [
+        { label: 'CPU', v: s.cpu, txt: s.cpu + '%', c: gaugeC(s.cpu) },
+        { label: lang === 'pt' ? 'Memória' : 'Memory', v: s.ram, txt: s.ram + '%', c: gaugeC(s.ram) },
+        { label: lang === 'pt' ? 'Disco' : 'Disk', v: s.disk, txt: s.disk + '%', c: gaugeC(s.disk) },
+        { label: lang === 'pt' ? 'Rede' : 'Network', v: s.net, txt: s.net + ' Gbps', c: gaugeC(s.net) },
+        { label: lang === 'pt' ? 'Latência p95' : 'p95 latency', v: s.lat, txt: s.lat + ' ms', c: gaugeC(s.lat) }
+      ],
+
+      topOrigins: this.ORIG.slice(0, 7).map(o => ({
+        cc: o[0], name: lang === 'pt' ? o[1] : o[2], n: nf(o[5]), pct: Math.round(o[5] / 30)
+      })),
+
+      feed: s.feed.map((f, i) => ({
+        type: f.type, ip: f.ipFull, cc: f.cc, target: f.target, time: f.time,
+        sevTxt: this.sevLabel(f.sev, lang), chip: this.chip(f.sev, lang),
+        dot: 'width:6px; height:6px; border-radius:50%; flex:0 0 6px; background:' + this.sevColor(f.sev) + ';',
+        action: f.blocked ? (lang === 'pt' ? 'BLOQUEADO' : 'BLOCKED') : (lang === 'pt' ? 'ALERTA' : 'ALERTED'),
+        actC: f.blocked ? accent : '#FF8A3D'
+      })),
+
+      askBrief: () => this.ask(prompts[0][0], prompts[0][1], prompts[0][2]),
+      askSiem: () => this.ask(prompts[3][0], prompts[3][1], prompts[3][2]),
+
+      queueCount: this.INCIDENTS.length,
+      queue: this.INCIDENTS.map((it, i) => ({
+        id: it.id, age: it.age, title: it.t[lang], asset: it.asset, mitre: it.mitre,
+        ai: it.ai[lang], conf: it.conf, confC: accent,
+        sevTxt: this.sevLabel(it.sev, lang), chip: this.chip(it.sev, lang),
+        style: 'padding:12px 13px; border-bottom:1px solid #0F1720; cursor:pointer; border-left:2px solid ' + (s.inc === i ? this.sevColor(it.sev) : 'transparent') + '; background:' + (s.inc === i ? '#0D141C' : 'transparent') + ';',
+        pick: () => this.setState({ inc: i, module: 'incidents' })
+      })),
+
+      socStats: [
+        { label: 'MTTD', v: '3m 12s', c: accent },
+        { label: 'MTTR', v: '41m', c: '#4D9BFF' },
+        { label: lang === 'pt' ? 'Falsos positivos' : 'False positives', v: '4,1%', c: '#FFC93C' },
+        { label: lang === 'pt' ? 'Auto-contidos' : 'Auto-contained', v: '86%', c: accent }
+      ],
+
+      companies: this.COMPANIES.map((c, i) => ({
+        name: c[0], sector: lang === 'pt' ? c[1] : c[2], plan: c[3], risk: c[4],
+        riskC: c[4] > 70 ? '#FF3B5C' : c[4] > 45 ? '#FF8A3D' : accent,
+        stats: [
+          { v: nf(c[5][0]), k: lang === 'pt' ? 'ativos' : 'assets', c: '#D4DDEA' },
+          { v: c[5][1], k: 'vulns', c: '#FF8A3D' },
+          { v: c[5][2], k: lang === 'pt' ? 'incid.' : 'incid.', c: c[5][2] ? '#FF3B5C' : '#4A5A70' },
+          { v: c[5][3], k: 'SLA', c: accent }
+        ],
+        style: 'background:' + (s.tenant === i ? '#0D141C' : '#0B1017') + '; border:1px solid ' + (s.tenant === i ? '#1F3A45' : '#16202C') + '; border-radius:10px; padding:14px 15px; cursor:pointer;',
+        pick: () => this.setState({ tenant: i })
+      })),
+
+      assets: this.ASSETS.map(a => {
+        const sev = ['#4D9BFF', '#FFC93C', '#FF8A3D', '#FF3B5C'];
+        return {
+          name: a[0], ip: a[1], type: a[2], stack: a[3], uptime: a[4],
+          upC: parseFloat(a[4]) > 99.5 ? accent : '#FF8A3D',
+          tls: a[5] === '—' ? '—' : a[5] + 'd',
+          tlsC: a[6] === 'crit' ? '#FF3B5C' : a[6] === 'warn' ? '#FF8A3D' : a[6] === 'na' ? '#3C4C60' : accent,
+          dotC: a[8] > 85 ? accent : a[8] > 60 ? '#FFC93C' : '#FF3B5C',
+          health: a[8], hC: a[8] > 85 ? accent : a[8] > 60 ? '#FFC93C' : '#FF3B5C',
+          vulns: a[7].map((n, i) => ({
+            n: n,
+            s: 'font-family:\'IBM Plex Mono\',monospace; font-size:9px; min-width:17px; text-align:center; border-radius:3px; padding:2px 0; color:' + (n ? sev[3 - i] : '#3C4C60') + '; background:' + (n ? sev[3 - i] + '1F' : '#0F1720') + ';'
+          }))
+        };
+      }),
+
+      vtab: s.vtab, isTabV: s.vtab === 'v', isTabS: s.vtab === 's',
+      setTabV: () => this.setState({ vtab: 'v' }), setTabS: () => this.setState({ vtab: 's' }),
+      tabVBtn: 'border:none; padding:7px 13px; font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; background:' + (s.vtab === 'v' ? '#16202C' : 'transparent') + '; color:' + (s.vtab === 'v' ? accent : '#5A6B82') + ';',
+      tabSBtn: 'border:none; padding:7px 13px; font-family:inherit; font-size:11px; font-weight:600; cursor:pointer; background:' + (s.vtab === 's' ? '#16202C' : 'transparent') + '; color:' + (s.vtab === 's' ? accent : '#5A6B82') + ';',
+
+      vulnKpis: [
+        { label: lang === 'pt' ? 'Total aberto' : 'Total open', v: '168', c: '#D4DDEA' },
+        { label: lang === 'pt' ? 'Crítico' : 'Critical', v: '23', c: '#FF3B5C' },
+        { label: lang === 'pt' ? 'Alto' : 'High', v: '54', c: '#FF8A3D' },
+        { label: 'CISA KEV', v: '3', c: '#FF3B5C' },
+        { label: lang === 'pt' ? 'Corrigidos 30d' : 'Fixed 30d', v: '211', c: accent }
+      ],
+
+      vulns: this.VULNS.map(v => {
+        const sc = parseFloat(v[1]);
+        const c = sc >= 9 ? '#FF3B5C' : sc >= 7 ? '#FF8A3D' : '#FFC93C';
+        const exp = typeof v[6] === 'string' ? v[6] : v[6][lang];
+        const st = v[8][lang];
+        return {
+          cve: v[0], cvss: v[1], title: v[3][lang], cwe: v[4] + ' · ' + v[2], asset: v[5],
+          exposure: exp, prio: v[7], prioC: v[7] > 80 ? '#FF3B5C' : v[7] > 50 ? '#FF8A3D' : '#FFC93C',
+          status: st, stC: /Aberto|Open/.test(st) ? '#FF3B5C' : /Corrig|Fixed|Mitig/.test(st) ? accent : '#FFC93C',
+          scoreS: 'font-family:\'IBM Plex Mono\',monospace; font-size:11px; font-weight:600; text-align:center; border-radius:4px; padding:2px 0; color:' + c + '; background:' + c + '1A;',
+          expS: 'font-family:\'IBM Plex Mono\',monospace; font-size:9px; text-align:center; border-radius:4px; padding:2px 5px; color:' + (exp === 'KEV' ? '#FF3B5C' : '#6E8098') + '; background:' + (exp === 'KEV' ? '#2A0D14' : '#0F1720') + '; border:1px solid ' + (exp === 'KEV' ? '#FF3B5C40' : '#16202C') + ';'
+        };
+      }),
+
+      scans: [
+        ['Nuclei', 'api.grupovector.com', 0], ['OWASP ZAP', 'portal.hsanta.br', 1],
+        ['Nmap', '10.20.0.0/16', 2], ['Trivy', 'registry/prod:latest', 3],
+        ['Subfinder', 'grupovector.com', 4], ['Nikto', 'wp.lojaativa.com.br', 5]
+      ].map(x => {
+        const p = s.scanPct[x[2]];
+        const done = p >= 100;
+        return {
+          tool: x[0], target: x[1], pct: p,
+          state: done ? (lang === 'pt' ? 'CONCLUÍDO' : 'DONE') : p + '%',
+          c: done ? accent : '#4D9BFF',
+          checks: (lang === 'pt' ? 'verificações ' : 'checks ') + Math.round(p * 84) ,
+          found: (lang === 'pt' ? 'achados ' : 'findings ') + (x[2] * 3 + Math.round(p / 24)),
+          eta: done ? '—' : 'ETA ' + Math.max(1, Math.round((100 - p) / 9)) + 'm'
+        };
+      }),
+
+      scanTypes: ['Portas','DNS','Subdomínios','SSL/TLS','Headers','Cookies','CORS','CSRF','SQLi','XSS','XXE','RCE','LFI/RFI','Open Redirect','Path Traversal','Clickjacking','Dir Listing','Uploads','JWT','OAuth','GraphQL','SMTP','SSH','RDP'].map((n, i) => ({
+        n: n,
+        s: 'font-family:\'IBM Plex Mono\',monospace; font-size:9px; border-radius:4px; padding:3px 7px; color:' + (i % 5 === 0 ? accent : '#6E8098') + '; background:' + (i % 5 === 0 ? '#0C1A18' : '#0F1720') + '; border:1px solid ' + (i % 5 === 0 ? '#143A31' : '#16202C') + ';'
+      })),
+
+      feeds: [
+        { n: 'NVD / NIST', s: '4 min' }, { n: 'CISA KEV', s: '11 min' }, { n: 'MITRE ATT&CK', s: '1 h' },
+        { n: 'EPSS', s: '6 h' }, { n: 'OWASP Top 10', s: 'v2025' }, { n: 'AbuseIPDB', s: '2 min' }
+      ],
+
+      inc: {
+        id: inc.id, title: inc.t[lang], asset: inc.asset, mitre: inc.mitre, analyst: inc.analyst,
+        opened: inc.opened, events: inc.events, conf: inc.conf, summary: inc.s[lang],
+        sevTxt: this.sevLabel(inc.sev, lang), chip: this.chip(inc.sev, lang),
+        steps: inc.steps.map((st, i) => ({ n: String(i + 1).padStart(2, '0'), t: st[lang], k: st.k })),
+        timeline: inc.tl.map(t => ({ time: t[0], c: t[1], txt: t[2][lang], src: t[3] }))
+      },
+
+      query: 'event.category:auth AND event.outcome:failure AND source.geo != "BR" | stats count by source.ip',
+
+      facets: [
+        { name: lang === 'pt' ? 'Fonte' : 'Source', items: [{ k: 'Linux auditd', v: '842k' }, { k: 'Windows Sec', v: '611k' }, { k: 'FortiGate', v: '418k' }, { k: 'Nginx', v: '294k' }, { k: 'Kubernetes', v: '187k' }] },
+        { name: lang === 'pt' ? 'Severidade' : 'Severity', items: [{ k: 'critical', v: '1.204' }, { k: 'high', v: '8.417' }, { k: 'medium', v: '41k' }, { k: 'low', v: '312k' }] },
+        { name: lang === 'pt' ? 'Nuvem' : 'Cloud', items: [{ k: 'Azure', v: '221k' }, { k: 'AWS', v: '164k' }, { k: 'GCP', v: '38k' }] }
+      ],
+
+      histogram: Array.from({ length: 44 }, (_, i) => {
+        const v = 24 + Math.sin((i + s.t * 0.4) * 0.7) * 18 + Math.sin(i * 0.23) * 26 + (i > 34 ? (i - 34) * 5 : 0);
+        return { h: Math.max(6, Math.min(100, Math.round(v))), c: i > 38 ? '#FF3B5C' : i > 33 ? '#FF8A3D' : '#1F3A4A' };
+      }),
+
+      logs: s.feed.concat(s.feed).slice(0, 16).map((f, i) => {
+        const lv = f.sev === 'crit' ? 'CRITICAL' : f.sev === 'high' ? 'ERROR' : f.sev === 'med' ? 'WARN' : 'INFO';
+        const c = this.sevColor(f.sev);
+        return {
+          time: f.time, lvl: lv, src: ['sshd', 'nginx', 'fortigate', 'auditd', 'k8s-api'][i % 5],
+          msg: f.type + ' — ' + (lang === 'pt' ? 'origem' : 'from') + ' ' + f.ipFull + ' → ' + f.target,
+          host: ['sp-01', 'sp-02', 'fra-01', 'iad-01'][i % 4],
+          lvlS: 'font-weight:600; color:' + c + ';'
+        };
+      }),
+
+      aiKpis: [
+        { label: lang === 'pt' ? 'Alertas classificados' : 'Alerts classified', v: '41.208', sub: lang === 'pt' ? 'últimas 24h' : 'last 24h', c: '#4D9BFF' },
+        { label: lang === 'pt' ? 'Ruído eliminado' : 'Noise removed', v: '93,4%', sub: lang === 'pt' ? '38.487 suprimidos' : '38,487 suppressed', c: accent },
+        { label: lang === 'pt' ? 'Falsos positivos' : 'False positives', v: '4,1%', sub: lang === 'pt' ? '-6,2 p.p. no mês' : '-6.2 pp this month', c: '#FFC93C' },
+        { label: lang === 'pt' ? 'Investigações' : 'Investigations', v: '312', sub: lang === 'pt' ? 'assistidas por IA' : 'AI-assisted', c: '#7A6BFF' }
+      ],
+
+      aiDetections: [
+        { kind: 'UEBA', title: lang === 'pt' ? 'Acesso fora do padrão horário' : 'Off-hours access anomaly', conf: '87%',
+          body: lang === 'pt' ? 'O usuário m.torres acessou 214 registros de pacientes às 03:12, sem histórico de plantão noturno em 18 meses. Volume 12× acima da média pessoal.' : 'User m.torres accessed 214 patient records at 03:12, with no night-shift history in 18 months. Volume 12× above personal average.',
+          tags: [{ n: 'T1078' }, { n: 'hsanta.br' }, { n: 'LGPD' }] },
+        { kind: 'MALWARE', title: lang === 'pt' ? 'Webshell identificado por comportamento' : 'Webshell identified by behavior', conf: '88%',
+          body: lang === 'pt' ? 'Arquivo PHP criado por processo web e imediatamente acessado por IP externo único. Sem correspondência de assinatura — detecção puramente comportamental.' : 'PHP file created by a web process and immediately accessed by a single external IP. No signature match — purely behavioral detection.',
+          tags: [{ n: 'T1505.003' }, { n: 'lojaativa' }] },
+        { kind: 'DDOS', title: lang === 'pt' ? 'Padrão de botnet em formação' : 'Botnet pattern forming', conf: '73%',
+          body: lang === 'pt' ? 'Crescimento coordenado de requisições de 1.842 IPs residenciais com mesmo user-agent malformado. Ainda abaixo do limiar de mitigação automática.' : 'Coordinated request growth from 1,842 residential IPs sharing the same malformed user-agent. Still below the automatic mitigation threshold.',
+          tags: [{ n: 'T1498' }, { n: 'checkout.pagou.io' }] },
+        { kind: 'PHISHING', title: lang === 'pt' ? 'Domínio typosquatting recém-registrado' : 'Newly registered typosquatting domain', conf: '96%',
+          body: lang === 'pt' ? 'Domínio com distância de edição 1 do portal oficial, registrado há 4 dias, com certificado emitido 2 horas antes da campanha.' : 'Domain with edit distance 1 from the official portal, registered 4 days ago, certificate issued 2 hours before the campaign.',
+          tags: [{ n: 'T1566.002' }, { n: 'prefdigital' }] },
+        { kind: 'INSIDER', title: lang === 'pt' ? 'Download em massa antes de desligamento' : 'Bulk download before offboarding', conf: '64%',
+          body: lang === 'pt' ? 'Colaborador com desligamento agendado baixou 3,2 GB do repositório comercial em 40 minutos. Contexto de RH correlacionado automaticamente.' : 'Employee with scheduled offboarding downloaded 3.2 GB from the sales repository in 40 minutes. HR context correlated automatically.',
+          tags: [{ n: 'T1530' }, { n: 'vector' }] }
+      ].map(d => ({
+        ...d, confC: parseInt(d.conf) > 85 ? '#FF3B5C' : parseInt(d.conf) > 70 ? '#FF8A3D' : '#FFC93C',
+        chip: 'font-family:\'IBM Plex Mono\',monospace; font-size:8px; font-weight:600; letter-spacing:.08em; color:#7A6BFF; background:#150F2E; border:1px solid #241A4A; border-radius:4px; padding:2px 6px;'
+      })),
+
+      models: [
+        { n: lang === 'pt' ? 'Classificador de alertas' : 'Alert classifier', acc: '96,2%', p: 96, c: accent },
+        { n: 'UEBA (baseline)', acc: '91,8%', p: 92, c: accent },
+        { n: lang === 'pt' ? 'Detecção de anomalia de rede' : 'Network anomaly detection', acc: '88,4%', p: 88, c: '#4D9BFF' },
+        { n: lang === 'pt' ? 'Triagem de phishing' : 'Phishing triage', acc: '97,1%', p: 97, c: accent },
+        { n: lang === 'pt' ? 'Priorização de CVE (EPSS+)' : 'CVE prioritization (EPSS+)', acc: '84,6%', p: 85, c: '#FFC93C' }
+      ],
+
+      reports: [
+        { name: lang === 'pt' ? 'Relatório executivo mensal' : 'Monthly executive report', fmt: 'PDF', fc: '#FF3B5C', fb: '#3A1620', freq: lang === 'pt' ? 'MENSAL' : 'MONTHLY', desc: lang === 'pt' ? 'Postura de segurança, tendências e risco residual em linguagem de negócio.' : 'Security posture, trends and residual risk in business language.', last: '01/08/2026' },
+        { name: lang === 'pt' ? 'Inventário de vulnerabilidades' : 'Vulnerability inventory', fmt: 'XLSX', fc: '#00E0A4', fb: '#0F2E26', freq: lang === 'pt' ? 'SEMANAL' : 'WEEKLY', desc: lang === 'pt' ? 'Todas as CVEs abertas com CVSS, EPSS, ativo afetado e prazo de correção.' : 'All open CVEs with CVSS, EPSS, affected asset and remediation deadline.', last: '28/07/2026' },
+        { name: lang === 'pt' ? 'Conformidade LGPD / ISO 27001' : 'GDPR / ISO 27001 compliance', fmt: 'DOCX', fc: '#4D9BFF', fb: '#12283F', freq: lang === 'pt' ? 'TRIMESTRAL' : 'QUARTERLY', desc: lang === 'pt' ? 'Mapeamento de controles, evidências de auditoria e desvios identificados.' : 'Control mapping, audit evidence and identified deviations.', last: '01/07/2026' },
+        { name: lang === 'pt' ? 'Apresentação para o conselho' : 'Board presentation', fmt: 'PPTX', fc: '#FF8A3D', fb: '#3A2410', freq: lang === 'pt' ? 'TRIMESTRAL' : 'QUARTERLY', desc: lang === 'pt' ? 'Slides gerados por IA com narrativa de risco e comparativo setorial.' : 'AI-generated slides with risk narrative and sector benchmark.', last: '01/07/2026' },
+        { name: lang === 'pt' ? 'Relatório de incidentes' : 'Incident report', fmt: 'PDF', fc: '#FF3B5C', fb: '#3A1620', freq: lang === 'pt' ? 'POR EVENTO' : 'PER EVENT', desc: lang === 'pt' ? 'Cronologia, impacto, contenção e lições aprendidas de cada incidente.' : 'Timeline, impact, containment and lessons learned for each incident.', last: '02/08/2026' },
+        { name: lang === 'pt' ? 'SLA e disponibilidade' : 'SLA and availability', fmt: 'PDF', fc: '#FF3B5C', fb: '#3A1620', freq: lang === 'pt' ? 'MENSAL' : 'MONTHLY', desc: lang === 'pt' ? 'Uptime por ativo, janelas de indisponibilidade e créditos aplicáveis.' : 'Uptime per asset, downtime windows and applicable credits.', last: '01/08/2026' }
+      ],
+
+      execStats: [
+        { k: lang === 'pt' ? 'Eventos bloqueados' : 'Events blocked', v: '3,84 M', c: accent },
+        { k: lang === 'pt' ? 'Incidentes contidos' : 'Incidents contained', v: '7', c: '#4D9BFF' },
+        { k: lang === 'pt' ? 'Dívida de vulns' : 'Vuln debt', v: '168', c: '#FF8A3D' },
+        { k: lang === 'pt' ? 'Risco residual' : 'Residual risk', v: lang === 'pt' ? 'Médio' : 'Medium', c: '#FFC93C' }
+      ],
+
+      finKpis: [
+        { label: 'MRR', v: 'R$ 284,7k', d: '+11,4%', c: accent },
+        { label: lang === 'pt' ? 'Contratos ativos' : 'Active contracts', v: '8', d: '+1', c: '#4D9BFF' },
+        { label: lang === 'pt' ? 'Ativos licenciados' : 'Licensed assets', v: '6.788', d: '+214', c: '#7A6BFF' },
+        { label: 'Churn 12m', v: '2,1%', d: '-0,8 p.p.', c: accent }
+      ],
+
+      plans: [
+        { n: 'Business', price: 'R$ 1.890/mês', inc: lang === 'pt' ? 'até 100 ativos · scanner · SIEM básico' : 'up to 100 assets · scanner · basic SIEM', pct: 25, cos: '2 ' + (lang === 'pt' ? 'empresas' : 'companies'), c: '#4D9BFF' },
+        { n: 'Enterprise', price: 'R$ 8.400/mês', inc: lang === 'pt' ? 'até 1.500 ativos · SOC 24×7 · IA completa' : 'up to 1,500 assets · 24×7 SOC · full AI', pct: 50, cos: '4 ' + (lang === 'pt' ? 'empresas' : 'companies'), c: '#00E0A4' },
+        { n: 'Enterprise+', price: 'R$ 21.900/mês', inc: lang === 'pt' ? 'ativos ilimitados · pentest trimestral · SLA 15min' : 'unlimited assets · quarterly pentest · 15min SLA', pct: 13, cos: '1 ' + (lang === 'pt' ? 'empresa' : 'company'), c: '#7A6BFF' },
+        { n: 'Gov / MSP', price: lang === 'pt' ? 'sob consulta' : 'custom', inc: lang === 'pt' ? 'white label · on-premises · multi-país' : 'white label · on-premises · multi-country', pct: 12, cos: '1 ' + (lang === 'pt' ? 'empresa' : 'company'), c: '#FF8A3D' }
+      ],
+
+      invoices: [
+        ['NF-8841', 'Banco Meridiano', 'R$ 21.900', 'paid'], ['NF-8840', 'Grupo Vector', 'R$ 8.400', 'paid'],
+        ['NF-8839', 'NetSul Provedor', 'R$ 14.200', 'paid'], ['NF-8838', 'Hospital Santa Clara', 'R$ 8.400', 'open'],
+        ['NF-8837', 'Prefeitura Digital', 'R$ 18.700', 'open'], ['NF-8836', 'Pagou Fintech', 'R$ 8.400', 'paid'],
+        ['NF-8835', 'Loja Ativa', 'R$ 1.890', 'late']
+      ].map(i => {
+        const m = { paid: [lang === 'pt' ? 'PAGA' : 'PAID', accent], open: [lang === 'pt' ? 'ABERTA' : 'OPEN', '#4D9BFF'], late: [lang === 'pt' ? 'ATRASADA' : 'LATE', '#FF3B5C'] }[i[3]];
+        return { num: i[0], co: i[1], amt: i[2], st: m[0], stS: 'font-family:\'IBM Plex Mono\',monospace; font-size:8.5px; font-weight:600; text-align:center; border-radius:4px; padding:3px 0; color:' + m[1] + '; background:' + m[1] + '1A;' };
+      }),
+
+      chatRef: (el) => { this.chat = el; },
+      aiTyping: s.aiTyping,
+      aiMsgs: s.aiMsgs.map(m => ({
+        text: m.text,
+        wrap: 'display:flex; flex-direction:column; align-items:' + (m.r === 'u' ? 'flex-end' : 'stretch') + ';',
+        bubble: m.r === 'u'
+          ? 'background:#16202C; border-radius:9px 9px 3px 9px; padding:9px 11px; font-size:11.5px; line-height:1.5; color:#D4DDEA; max-width:88%;'
+          : 'background:#0C1A18; border:1px solid #143A31; border-radius:9px 9px 9px 3px; padding:10px 12px; font-size:11.5px; line-height:1.6; color:#B8C8D8; text-wrap:pretty;',
+        hasEvidence: !!m.ev,
+        evidence: (m.ev || []).map(e => ({ k: e[0], v: e[1], c: e[2] }))
+      })),
+
+      prompts: prompts.map(p => ({ q: p[0], ask: () => this.ask(p[0], p[1], p[2]) }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

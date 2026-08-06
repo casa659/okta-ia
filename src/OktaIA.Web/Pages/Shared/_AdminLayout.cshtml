@@ -1,0 +1,87 @@
+@using Microsoft.AspNetCore.Identity
+@using OktaIA.Web.Models
+@using OktaIA.Web.Services
+@inject UserManager<ApplicationUser> UserManager
+@{
+    var usuario = User.Identity?.IsAuthenticated == true ? await UserManager.GetUserAsync(User) : null;
+    var currentPage = (ViewContext.RouteData.Values["page"] as string) ?? "";
+    bool IsActive(string page) => currentPage.Equals(page, StringComparison.OrdinalIgnoreCase);
+}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] is not null ? $"{ViewData["Title"]} — Administração — okta-ia" : "Administração — okta-ia")</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="~/img/brand/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="~/img/brand/favicon-64.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="~/img/brand/apple-touch-icon-180.png" />
+    <meta name="theme-color" content="#060B14" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+<div class="adm-shell">
+    <header class="adm-header">
+        <button type="button" class="adm-menu-btn" data-adm-menu-toggle aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="adm-header-brand">
+            <span style="width:26px; height:26px; border-radius:7px; background:linear-gradient(145deg,#4D9BFF,#1B4FA8); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; color:#050A12;">O</span>
+            <div style="display:flex; flex-direction:column; line-height:1.05;">
+                <span style="font-size:13.5px; font-weight:700; letter-spacing:-.2px;">okta-ia<span style="color:#5A7191; font-weight:500;">.com</span></span>
+                <span style="font-family:'IBM Plex Mono',monospace; font-size:8px; color:#5A7191; letter-spacing:.14em;">ADMINISTRAÇÃO</span>
+            </div>
+        </div>
+
+        <div class="adm-search">
+            <span>⌕</span>
+            <span>buscar empresa, usuário, fatura…</span>
+        </div>
+
+        <div class="adm-header-right">
+            <a asp-page="/Dashboard" class="adm-soc-link"><span class="adm-soc-dot"></span>Ir para o SOC</a>
+            <a asp-page="/Autenticador" class="adm-site-link">Autenticador</a>
+            <a asp-page="/TrocarSenha" class="adm-site-link">Senha</a>
+            <a href="/" class="adm-site-link">Site</a>
+            <form method="post" asp-page="/Login" asp-page-handler="Logout" style="display:contents;">
+                <button type="submit" class="adm-logout-btn">
+                    <span class="adm-avatar">@(usuario?.Iniciais ?? "?")</span>
+                    <span style="font-size:12px;">Sair</span>
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <div class="adm-body">
+        <nav class="adm-sidebar" data-adm-sidebar>
+            @foreach (var group in AdminCatalog.NavGroups)
+            {
+                <div class="adm-nav-group-label">@group.Title</div>
+                @foreach (var item in group.Items)
+                {
+                    <a asp-page="@item.Page" class="adm-nav-item @(IsActive(item.Page) ? "adm-active" : "")">
+                        <span class="adm-nav-num">@item.Num</span>
+                        <span class="adm-nav-label">@item.Label</span>
+                        @if (item.Badge is not null)
+                        {
+                            <span class="adm-nav-badge" style="color:@item.BadgeColor; background:@(item.BadgeColor)1F;">@item.Badge</span>
+                        }
+                    </a>
+                }
+            }
+        </nav>
+
+        <main class="adm-main">
+            @RenderBody()
+        </main>
+    </div>
+</div>
+
+<script src="~/js/site-admin.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,186 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model VulnerabilidadesModel
+@{
+    ViewData["Title"] = I18n.T("nav.vuln");
+}
+
+<div class="oi-content">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px;gap:16px;flex-wrap:wrap;">
+        <div>
+            <h1 class="oi-dash-title">@I18n.T("vulnTitle")</h1>
+            <p class="oi-dash-sub">@I18n.T("vulnSub")</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <form method="get">
+                <input type="hidden" name="tab" value="@Model.Tab" />
+                <select name="empresa" data-oi-autosubmit style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+                    @foreach (var e in Model.EmpresasDisponiveis)
+                    {
+                        <option value="@e.Id" selected="@(e.Id == Model.EmpresaSelecionadaId)">@e.Nome</option>
+                    }
+                </select>
+            </form>
+            <div class="oi-vuln-tabs">
+                <a asp-page="/Vulnerabilidades" asp-route-tab="v" asp-route-empresa="@Model.EmpresaSelecionadaId" class="@(Model.Tab == "v" ? "oi-active" : "")">11 · @I18n.T("tabVulns")</a>
+                <a asp-page="/Vulnerabilidades" asp-route-tab="s" asp-route-empresa="@Model.EmpresaSelecionadaId" class="@(Model.Tab == "s" ? "oi-active" : "")">12 · @I18n.T("tabScanner")</a>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Tab == "v")
+    {
+        @if (Model.ReverificarResultado is not null)
+        {
+            var corrigido = Model.ReverificarResultado == "corrigido";
+            <div class="oi-panel" style="padding:12px 16px;margin-bottom:14px;border-left:2px solid @(corrigido ? "#00E0A4" : "#FF8A3D");">
+                <span style="font-size:12.5px;color:#D4DFEC;">
+                    @(corrigido
+                        ? (I18n.Lang == "pt" ? "✓ Corrigido! O achado foi removido da lista." : "✓ Fixed! The finding was removed from the list.")
+                        : (I18n.Lang == "pt" ? "Ainda presente — a checagem foi rerodada e o problema continua lá." : "Still present — the check ran again and the issue is still there."))
+                </span>
+            </div>
+        }
+
+        @if (Model.Score is not null)
+        {
+            var s = Model.Score;
+            <div class="oi-panel" style="padding:18px 20px;margin-bottom:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:24px;align-items:center;">
+                <div>
+                    <div style="font-size:10px;color:#5A7191;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">@I18n.T("scoreGeral")</div>
+                    <div style="display:flex;align-items:baseline;gap:8px;">
+                        <span class="oi-mono" style="font-size:32px;font-weight:700;color:@s.RiscoCor;">@s.Score</span>
+                        <span style="font-size:13px;color:#7A8FAB;">/100 · @s.Classificacao</span>
+                    </div>
+                    <div style="height:6px;background:rgba(120,170,255,.09);border-radius:4px;overflow:hidden;margin-top:8px;">
+                        <div style="height:100%;width:@(s.Score)%;background:@s.RiscoCor;border-radius:4px;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size:10px;color:#5A7191;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">@I18n.T("riscoAtual")</div>
+                    <div style="font-size:18px;font-weight:600;color:@s.RiscoCor;">@s.RiscoEmoji @(I18n.Lang == "pt" ? s.RiscoLabelPt : s.RiscoLabelEn)</div>
+                    <div style="font-size:11px;color:#7A8FAB;margin-top:6px;">@I18n.T("ultimaVarredura"): @(Model.UltimaVarredura?.ToString("dd/MM HH:mm") ?? I18n.T("neverScannedFem"))</div>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(Model.NarrativaIa))
+                {
+                    <div style="grid-column:span 2;background:rgba(77,155,255,.06);border:1px solid rgba(77,155,255,.18);border-radius:10px;padding:12px 14px;">
+                        <div style="font-size:10px;color:#8FC0FF;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;">@I18n.T("aiPriority")</div>
+                        <div style="font-size:12.5px;color:#D4DFEC;line-height:1.55;">@Model.NarrativaIa</div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:12px;flex-wrap:wrap;">
+            <div class="oi-vuln-kpi-grid" style="margin-bottom:0;flex:1;">
+                @foreach (var k in Model.Kpis)
+                {
+                    <div class="oi-vuln-kpi" style="--oi-kpi-color:@k.Cor">
+                        <div class="oi-vuln-kpi-label">@k.Label</div>
+                        <div class="oi-vuln-kpi-value" style="color:@k.Cor">@k.Valor</div>
+                    </div>
+                }
+            </div>
+            <a asp-page="/Vulnerabilidades" asp-page-handler="Proposta" asp-route-empresa="@Model.EmpresaSelecionadaId" class="adm-btn-ghost adm-accent" style="text-decoration:none;white-space:nowrap;">@I18n.T("downloadProposta")</a>
+            <a asp-page="/Vulnerabilidades" asp-page-handler="PdfCliente" asp-route-empresa="@Model.EmpresaSelecionadaId" class="adm-btn-ghost" style="text-decoration:none;white-space:nowrap;">@I18n.T("downloadReportCliente")</a>
+            <a asp-page="/Vulnerabilidades" asp-page-handler="Pdf" asp-route-empresa="@Model.EmpresaSelecionadaId" class="adm-btn-primary" style="text-decoration:none;white-space:nowrap;">@I18n.T("downloadReport")</a>
+        </div>
+
+        <div class="oi-panel oi-table-scroll">
+            <div class="oi-vuln-head oi-vuln-grid-cols">
+                <span>CVE</span><span>CVSS</span><span>@I18n.T("thTitle")</span><span>@I18n.T("thAsset")</span>
+                <span>@I18n.T("thExposure")</span><span>@I18n.T("thAiPrio")</span><span>@I18n.T("thStatus")</span>
+            </div>
+            @foreach (var v in Model.Vulns)
+            {
+                <div class="oi-vuln-item">
+                    <div class="oi-vuln-row oi-vuln-grid-cols @(v.FonteScan ? "oi-vuln-toggle" : "")">
+                        <span class="oi-vuln-cve">@v.Cve</span>
+                        <span class="oi-vuln-score" style="color:@v.ScoreCor;background:@(v.ScoreCor)1A">@v.Cvss</span>
+                        <div>
+                            <div class="oi-vuln-title">@v.Titulo</div>
+                            <div class="oi-vuln-cwe">@v.Cwe</div>
+                        </div>
+                        <span class="oi-vuln-asset">@v.Asset</span>
+                        <span class="oi-vuln-exposure" style="color:@v.ExposicaoCor;background:@v.ExposicaoFundo;border-color:@(v.ExposicaoCor)40">@v.Exposicao</span>
+                        <div class="oi-vuln-prio-wrap">
+                            <span class="oi-vuln-prio-ai">AI</span>
+                            <div class="oi-vuln-prio-track"><div class="oi-vuln-prio-fill" style="width:@(v.Prioridade)%;background:@v.PrioridadeCor"></div></div>
+                            <span class="oi-vuln-prio-val" style="color:@v.PrioridadeCor">@v.Prioridade</span>
+                        </div>
+                        <span class="oi-vuln-status" style="color:@v.StatusCor">@v.Status</span>
+                    </div>
+                    @if (v.FonteScan)
+                    {
+                        <div class="oi-vuln-detail">
+                            @if (!string.IsNullOrWhiteSpace(v.Risco))
+                            {
+                                <div style="font-size:12px;color:#FFC2CC;margin-bottom:10px;"><strong style="color:#FF8098;">@I18n.T("riskIfNotFixed"):</strong> @v.Risco</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(v.Recomendacao))
+                            {
+                                <div style="font-size:12px;color:#B4C4D8;margin-bottom:10px;"><strong style="color:#8FC0FF;">@I18n.T("recommendation"):</strong> @v.Recomendacao</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(v.Instrucoes))
+                            {
+                                <div style="background:rgba(255,255,255,.03);border:1px solid rgba(120,170,255,.10);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+                                    <div style="font-size:10px;color:#5A7191;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">@I18n.T("howToFix")</div>
+                                    <div style="font-size:11.5px;color:#9FB0C7;white-space:pre-line;line-height:1.6;">@v.Instrucoes</div>
+                                </div>
+                            }
+                            <form method="post" asp-page-handler="Reverificar" asp-route-id="@v.Id" asp-route-empresa="@Model.EmpresaSelecionadaId">
+                                <button type="submit" class="adm-btn-ghost adm-accent" style="font-size:10.5px;">@I18n.T("recheck")</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start;">
+            <div class="oi-panel">
+                <div class="oi-panel-head">
+                    <span class="oi-panel-title" style="margin:0">@I18n.T("runningScans")</span>
+                    <span class="oi-mono" style="font-size:9px;color:var(--oi-muted-2)">@I18n.T("engine")</span>
+                </div>
+                <div class="oi-panel-body" style="display:flex;flex-direction:column;gap:10px;">
+                    @foreach (var s in Model.Scans)
+                    {
+                        <div>
+                            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;">
+                                <span style="color:#D4DDEA;font-weight:600">@s.Ferramenta <span style="color:var(--oi-muted-2);font-weight:400">· @s.Alvo</span></span>
+                                <span class="oi-mono" style="color:@s.Cor">@s.Estado</span>
+                            </div>
+                            <div class="oi-gauge-track"><div class="oi-gauge-fill" style="width:@(s.Pct)%;background:@s.Cor"></div></div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="oi-dash-col">
+                <div class="oi-panel oi-panel-body">
+                    <div class="oi-gauge-title">@I18n.T("scanCoverage")</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                        @for (var i = 0; i < Model.ScanTypes.Length; i++)
+                        {
+                            var ativo = i % 5 == 0;
+                            <span class="oi-mono" style="font-size:9px;border-radius:4px;padding:3px 7px;color:@(ativo ? "var(--oi-accent)" : "#6E8098");background:@(ativo ? "#0C1A18" : "#0F1720");border:1px solid @(ativo ? "#143A31" : "var(--oi-border)")">@Model.ScanTypes[i]</span>
+                        }
+                    </div>
+                </div>
+                <div class="oi-panel oi-panel-body">
+                    <div class="oi-gauge-title">@I18n.T("feeds")</div>
+                    @foreach (var f in Model.Feeds)
+                    {
+                        <div style="display:flex;justify-content:space-between;font-size:11px;padding:6px 0;border-bottom:1px solid var(--oi-border-4);">
+                            <span style="color:#8FA3BC">@f.Nome</span>
+                            <span class="oi-mono" style="color:var(--oi-muted-2)">@f.Atualizacao</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

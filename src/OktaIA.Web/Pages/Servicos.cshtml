@@ -1,0 +1,55 @@
+@page
+@model ServicosModel
+@using OktaIA.Web.Services
+@{
+    Layout = "_MarketingLayout";
+    ViewData["Title"] = "Serviços";
+}
+
+<section class="mk-section-tight" style="padding-top:80px; padding-bottom:56px; border-bottom:1px solid rgba(120,170,255,.09);">
+  <span class="mk-kicker">Serviços</span>
+  <h1 class="mk-h1" style="max-width:880px;">Do monitoramento contínuo à resposta em campo</h1>
+  <p class="mk-lead" style="max-width:700px;">Contrate a plataforma, a operação assistida ou o pacote completo. Cada serviço tem escopo, SLA e evidência de execução documentados.</p>
+</section>
+
+@foreach (var g in MarketingContent.ServiceGroups)
+{
+  <section class="@(g.Dark ? "mk-section-shaded" : "mk-section-bordered")">
+    <div style="max-width:1280px; margin:0 auto; padding:clamp(38px,5vw,64px) clamp(16px,4vw,32px);">
+      <div style="display:flex; align-items:baseline; gap:16px; margin-bottom:30px;">
+        <span class="mk-mono" style="font-size:11px; color:@g.C; letter-spacing:.14em;">@g.N</span>
+        <h2 style="margin:0; font-size:24px; font-weight:600; letter-spacing:-.02em;">@g.T</h2>
+        <span style="flex:1; height:1px; background:linear-gradient(90deg,rgba(120,170,255,.22),transparent);"></span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(288px,100%),1fr)); gap:16px;">
+        @foreach (var i in g.Items)
+        {
+          <div style="background:linear-gradient(165deg,rgba(255,255,255,.04),rgba(255,255,255,.01)); border:1px solid rgba(120,170,255,.11); border-radius:14px; padding:24px 22px;">
+            <div style="font-size:16px; font-weight:600; margin-bottom:9px; letter-spacing:-.014em;">@i.T</div>
+            <p style="margin:0; font-size:13.5px; line-height:1.66; color:#8296B0;">@i.D</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+}
+
+<section class="mk-section">
+  <div class="mk-lede-block" style="max-width:620px;">
+    <span class="mk-kicker">Como entramos</span>
+    <h2 class="mk-h2">Onboarding em quatro etapas</h2>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(212px,100%),1fr)); gap:0;">
+    @foreach (var s in MarketingContent.OnboardingSteps)
+    {
+      <div style="padding:0 24px 0 0;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+          <span style="width:34px; height:34px; border-radius:50%; border:1px solid rgba(77,155,255,.34); background:rgba(77,155,255,.09); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:#4D9BFF; flex:0 0 34px;">@s.N</span>
+          <span style="flex:1; height:1px; background:linear-gradient(90deg,rgba(77,155,255,.28),transparent);"></span>
+        </div>
+        <div style="font-size:16px; font-weight:600; margin-bottom:9px; letter-spacing:-.014em;">@s.T</div>
+        <p style="margin:0; font-size:13.5px; line-height:1.66; color:#8296B0;">@s.D</p>
+      </div>
+    }
+  </div>
+</section>

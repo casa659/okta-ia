@@ -1,0 +1,82 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model DigitalTwinModel
+@{
+    ViewData["Title"] = I18n.T("nav.twin");
+}
+
+<div class="oi-content">
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:14px; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h1 class="oi-dash-title">@I18n.T("twinTitle")</h1>
+            <p class="oi-dash-sub">@I18n.T("twinSub")</p>
+        </div>
+        <form method="get">
+            <select name="empresa" data-oi-autosubmit style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+                @foreach (var e in Model.EmpresasDisponiveis)
+                {
+                    <option value="@e.Id" selected="@(e.Id == Model.EmpresaSelecionadaId)">@e.Nome</option>
+                }
+            </select>
+        </form>
+    </div>
+
+    <div class="oi-vuln-kpi-grid" style="margin-bottom:14px;">
+        <div class="oi-vuln-kpi" style="--oi-kpi-color:#4D9BFF;">
+            <div class="oi-vuln-kpi-label">@I18n.T("twinKpiAtivos")</div>
+            <div class="oi-vuln-kpi-value">@Model.TotalAtivos</div>
+        </div>
+        <div class="oi-vuln-kpi" style="--oi-kpi-color:#00E0A4;">
+            <div class="oi-vuln-kpi-label">@I18n.T("twinKpiSaude")</div>
+            <div class="oi-vuln-kpi-value">@Model.SaudeMedia</div>
+        </div>
+        <div class="oi-vuln-kpi" style="--oi-kpi-color:#FF3B5C;">
+            <div class="oi-vuln-kpi-label">@I18n.T("twinKpiCriticos")</div>
+            <div class="oi-vuln-kpi-value">@Model.TotalCriticos</div>
+        </div>
+        <div class="oi-vuln-kpi" style="--oi-kpi-color:#FF8A3D;">
+            <div class="oi-vuln-kpi-label">@I18n.T("twinKpiVulns")</div>
+            <div class="oi-vuln-kpi-value">@Model.TotalVulnsGraves</div>
+        </div>
+    </div>
+
+    <div class="oi-panel oi-twin-board">
+        <div class="oi-twin-internet"><span class="oi-twin-internet-dot"></span>@I18n.T("twinInternet")</div>
+        <div class="oi-twin-connector"></div>
+
+        @foreach (var layer in Model.Layers)
+        {
+            <div class="oi-twin-layer">
+                <div class="oi-twin-layer-label">@I18n.T(layer.LabelKey)</div>
+                <div class="oi-twin-nodes">
+                    @if (layer.Nos.Count == 0)
+                    {
+                        <div class="oi-twin-empty">@I18n.T("twinEmptyLayer")</div>
+                    }
+                    @foreach (var n in layer.Nos)
+                    {
+                        <div class="oi-twin-node" title="@n.Nome · @n.Tipo">
+                            <span class="oi-twin-node-dot" style="background:@n.Cor;"></span>
+                            <div>
+                                <div class="oi-twin-node-name">@n.Nome</div>
+                                <div class="oi-twin-node-meta">@n.Tipo@(n.VulnsCriticas + n.VulnsAltas > 0 ? $" · {n.VulnsCriticas + n.VulnsAltas} vulns" : "")</div>
+                            </div>
+                            <span class="oi-twin-node-health" style="color:@n.Cor;">@n.Saude</span>
+                        </div>
+                    }
+                </div>
+            </div>
+            @if (layer != Model.Layers[^1])
+            {
+                <div class="oi-twin-connector"></div>
+            }
+        }
+
+        <div class="oi-twin-legend">
+            <span class="oi-twin-legend-item"><span class="oi-twin-legend-dot" style="background:#00E0A4;"></span>@I18n.T("twinLegendOk")</span>
+            <span class="oi-twin-legend-item"><span class="oi-twin-legend-dot" style="background:#F5D547;"></span>@I18n.T("twinLegendAlerta")</span>
+            <span class="oi-twin-legend-item"><span class="oi-twin-legend-dot" style="background:#FF3B5C;"></span>@I18n.T("twinLegendCritico")</span>
+        </div>
+    </div>
+</div>
