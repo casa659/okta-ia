@@ -24,6 +24,7 @@ builder.Services.AddScoped<I18nService>();
 builder.Services.AddScoped<AdminAuditService>();
 builder.Services.AddSingleton<RelatorioPdfService>();
 builder.Services.AddSingleton<PropostaComercialPdfService>();
+builder.Services.AddSingleton<TermoAutorizacaoPdfService>();
 builder.Services.AddHttpClient<SecurityScanService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);

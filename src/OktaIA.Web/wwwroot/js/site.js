@@ -76,6 +76,18 @@
     empresaDominioSelect.addEventListener('change', prefillDominio);
   }
 
+  // ---------- Termo de Autorização em PDF (Ativos · adicionar ativo real) ----------
+  // Gerado a partir do que está digitado no formulário — o ativo ainda não existe no banco
+  // nesse ponto, então empresa/domínio vão soltos na URL, não como IDs de registro salvo.
+  var termoBtn = document.querySelector('[data-oi-termo-autorizacao]');
+  if (termoBtn && empresaDominioSelect && dominioInput) {
+    termoBtn.addEventListener('click', function () {
+      var empresaId = empresaDominioSelect.value;
+      var dominio = encodeURIComponent(dominioInput.value || '');
+      window.open('/Ativos?handler=TermoAutorizacao&empresaId=' + empresaId + '&dominio=' + dominio, '_blank');
+    });
+  }
+
   // ---------- Scan de ativo real: confirmação + estado "Escaneando..." (Ativos) ----------
   document.querySelectorAll('form[data-oi-scan-confirm]').forEach(function (form) {
     form.addEventListener('submit', function (ev) {

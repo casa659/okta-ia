@@ -92,10 +92,11 @@
         </select>
         <label>@I18n.T("realAssetDomain")</label>
         <input asp-for="Input.Dominio" placeholder="exemplo.com.br" data-oi-dominio-input />
-        <label class="adm-checkbox-item" style="margin-bottom:14px;">
+        <label class="adm-checkbox-item">
             <input type="checkbox" asp-for="Input.AutorizoScan" />
             <span>@I18n.T("realAssetAuthorize")</span>
         </label>
+        <button type="button" class="adm-btn-ghost adm-accent" style="margin:8px 0 14px; font-size:11px;" data-oi-termo-autorizacao>@I18n.T("authTermButton")</button>
         <div class="adm-dialog-actions">
             <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
             <button type="submit" class="adm-btn-primary">@I18n.T("realAssetAdd")</button>

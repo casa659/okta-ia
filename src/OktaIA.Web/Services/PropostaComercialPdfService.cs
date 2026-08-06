@@ -147,8 +147,10 @@ public class PropostaComercialPdfService
                     // 01 — Sumário executivo
                     SectionTitle(body, "01", "Sumário executivo");
                     body.Item().PaddingTop(6).Text(
-                        $"A {empresa.Nome} já investe em segurança — ferramentas de perímetro, endpoint, identidade, nuvem, " +
-                        "monitoramento e backup, cada uma resolvendo bem o seu pedaço.")
+                        $"A {empresa.Nome} já trabalha com firewall, antivírus ou EDR, algum sistema de identidade (Active Directory, " +
+                        "Google Workspace ou similar), provedor de nuvem, monitoramento e rotina de backup? Se a resposta for sim — mesmo que só " +
+                        "parte disso — cada uma dessas ferramentas resolve bem o seu pedaço. A pergunta é: juntas, elas respondem sozinhas a " +
+                        "\"estamos seguros?\"")
                         .FontSize(10).LineHeight(1.6f);
                     body.Item().PaddingTop(6).Text(
                         "O problema não é falta de ferramenta. É que ninguém enxerga tudo junto. Quando a diretoria pergunta " +
@@ -225,7 +227,7 @@ public class PropostaComercialPdfService
                                             cc.Item().Text(label).FontSize(9).Bold();
                                             cc.Item().PaddingTop(1).Text(ok
                                                 ? "Verificado — nenhuma vulnerabilidade encontrada."
-                                                : $"{achados.Count} achado(s) — ver detalhe no relatório técnico de vulnerabilidades.")
+                                                : $"{achados.Count} achado(s) identificado(s) — risco mapeado, correção conduzida pela nossa equipe técnica.")
                                                 .FontSize(8.5f).FontColor(ok ? BrandGreen : BrandOrange);
                                         });
                                     });
@@ -239,8 +241,8 @@ public class PropostaComercialPdfService
                                   "Nos aspectos técnicos avaliados (certificado, cabeçalhos de segurança, autenticação de e-mail e portas expostas), o ambiente está em conformidade " +
                                   "com as medidas de segurança exigidas pelo Art. 46 da LGPD."
                                 : $"{achadosPorCategoria.Count(x => x.Achados.Count == 0)} de {categorias.Length} frentes verificadas não apresentaram nenhuma vulnerabilidade. " +
-                                  "As demais estão detalhadas, com risco, recomendação e passo a passo de correção, no relatório técnico de vulnerabilidades — botão " +
-                                  "“Baixar relatório PDF”, na mesma tela desta proposta.")
+                                  "As demais têm achado identificado, com risco e recomendação já mapeados pela nossa equipe — a correção técnica completa é " +
+                                  "conduzida por especialistas, dentro do escopo do serviço contratado.")
                             .FontSize(9).FontColor("#1C2836").LineHeight(1.55f);
 
                         body.Item().PaddingTop(10).Text(
@@ -249,8 +251,9 @@ public class PropostaComercialPdfService
                             .FontSize(8.5f).FontColor(TextMuted);
 
                         body.Item().PaddingTop(10).Text(
-                            "Cada achado do relatório vem com três coisas que uma varredura comum não entrega: qual é o risco em termos de negócio, " +
-                            "qual é a recomendação e como corrigir. Não é uma lista de problemas — é um plano de ação.")
+                            "Cada achado vem com duas coisas que uma varredura comum não entrega: qual é o risco em termos de negócio e qual é a " +
+                            "recomendação. A correção — o passo a passo técnico — fica com a nossa equipe, que executa e responde pelo resultado. " +
+                            "Não é uma lista de problemas — é um plano de ação conduzido por especialistas.")
                             .FontSize(9).FontColor(TextMuted).LineHeight(1.6f);
                     }
 
@@ -652,7 +655,7 @@ public class PropostaComercialPdfService
                         Termo("PRAZO CONTRATUAL", "12 meses, renovação automática por igual período");
                         Termo("FATURAMENTO", "Mensal, com setup faturado na assinatura");
                         Termo("PILOTO", "30 dias na camada Discover, sem compromisso");
-                        Termo("SUPORTE", "8×5 no Essencial; 24×7 no Avançado e Enterprise");
+                        Termo("SUPORTE", "Horário comercial (8×5), em todos os planos");
                     });
                     body.Item().Row(row =>
                     {
@@ -712,6 +715,11 @@ public class PropostaComercialPdfService
                     // Anexo A
                     body.Item().PaddingTop(20);
                     SectionTitle(body, "A", "Anexo A — Catálogo dos 15 módulos");
+                    body.Item().PaddingTop(6).Background("#F0F5FF").Padding(10).Text(
+                        "Roadmap do produto, construído por fase. O módulo 01 (Attack Surface Management) já está em operação e é a base do " +
+                        "diagnóstico desta proposta — os demais entram em produção conforme o cronograma de implantação (seção 10) e a integração " +
+                        "com as ferramentas que a empresa já usa.")
+                        .FontSize(8.5f).FontColor("#1C2836").LineHeight(1.5f);
                     body.Item().PaddingTop(8).Table(table =>
                     {
                         table.ColumnsDefinition(cd =>

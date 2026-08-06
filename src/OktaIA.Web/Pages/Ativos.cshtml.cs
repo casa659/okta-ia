@@ -15,12 +15,14 @@ public class AtivosModel : PageModel
     private readonly ApplicationDbContext _db;
     private readonly I18nService _i18n;
     private readonly SecurityScanService _scanner;
+    private readonly TermoAutorizacaoPdfService _termoPdf;
 
-    public AtivosModel(ApplicationDbContext db, I18nService i18n, SecurityScanService scanner)
+    public AtivosModel(ApplicationDbContext db, I18nService i18n, SecurityScanService scanner, TermoAutorizacaoPdfService termoPdf)
     {
         _db = db;
         _i18n = i18n;
         _scanner = scanner;
+        _termoPdf = termoPdf;
     }
 
     public record VulnBadgeView(string Numero, string Cor, string Fundo);
@@ -103,6 +105,13 @@ public class AtivosModel : PageModel
 
         AtivoAdicionadoEmpresa = empresaEscolhida.Nome;
         return RedirectToPage(new { empresa = empresaEscolhida.Id });
+    }
+
+    public async Task<IActionResult> OnGetTermoAutorizacaoAsync(int empresaId, string? dominio)
+    {
+        var empresa = await _db.Companies.FirstOrDefaultAsync(c => c.Id == empresaId);
+        var pdf = _termoPdf.Gerar(empresa?.Nome ?? "—", dominio ?? "");
+        return File(pdf, "application/pdf", "termo-autorizacao-okta-ia.pdf");
     }
 
     public async Task<IActionResult> OnPostScanAsync(int id, int? empresa)
