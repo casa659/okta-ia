@@ -125,14 +125,14 @@ public class AtivosModel : PageModel
             return RedirectToPage(new { empresa });
         }
 
-        var achados = await _scanner.ExecutarAsync(asset.Nome);
+        var resultado = await _scanner.ExecutarAsync(asset.Nome);
 
         var antigos = await _db.Vulnerabilities
             .Where(v => v.CompanyId == asset.CompanyId && v.AssetNome == asset.Nome && v.FonteScan)
             .ToListAsync();
         _db.Vulnerabilities.RemoveRange(antigos);
 
-        foreach (var achado in achados)
+        foreach (var achado in resultado.Achados)
         {
             _db.Vulnerabilities.Add(new Vulnerability
             {
@@ -161,12 +161,17 @@ public class AtivosModel : PageModel
             });
         }
 
+        if (!string.IsNullOrWhiteSpace(resultado.Ip))
+        {
+            asset.Ip = resultado.Ip;
+        }
+
         asset.UltimoScanEm = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync();
         await AssetScoreCalculator.RecalcularAsync(_db, asset.CompanyId, asset.Nome);
 
         ScanDominio = asset.Nome;
-        ScanAchados = achados.Count;
+        ScanAchados = resultado.Achados.Count;
 
         return RedirectToPage(new { empresa });
     }

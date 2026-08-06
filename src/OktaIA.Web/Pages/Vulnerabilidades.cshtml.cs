@@ -189,13 +189,13 @@ public class VulnerabilidadesModel : PageModel
             .ToListAsync();
         var ativosReais = await _db.Assets
             .Where(a => a.CompanyId == empresaAtual!.Id && a.Real)
-            .Select(a => new { a.Nome, a.UltimoScanEm })
+            .Select(a => new { a.Nome, a.Ip, a.UltimoScanEm })
             .ToListAsync();
 
         var pdf = _relatorioPdf.Gerar(
             empresaAtual?.Nome ?? "—",
             achados,
-            ativosReais.Select(a => (a.Nome, a.UltimoScanEm)).ToList(),
+            ativosReais.Select(a => (a.Nome, a.Ip, a.UltimoScanEm)).ToList(),
             _i18n.Lang);
 
         var nomeArquivo = $"relatorio-seguranca-{(empresaAtual?.Nome ?? "empresa").Replace(" ", "-").ToLowerInvariant()}.pdf";
@@ -210,13 +210,13 @@ public class VulnerabilidadesModel : PageModel
             .ToListAsync();
         var ativosReais = await _db.Assets
             .Where(a => a.CompanyId == empresaAtual!.Id && a.Real)
-            .Select(a => new { a.Nome, a.UltimoScanEm })
+            .Select(a => new { a.Nome, a.Ip, a.UltimoScanEm })
             .ToListAsync();
 
         var pdf = _relatorioPdf.Gerar(
             empresaAtual?.Nome ?? "—",
             achados,
-            ativosReais.Select(a => (a.Nome, a.UltimoScanEm)).ToList(),
+            ativosReais.Select(a => (a.Nome, a.Ip, a.UltimoScanEm)).ToList(),
             _i18n.Lang,
             paraCliente: true);
 

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Authentication;
@@ -36,16 +37,24 @@ public class SecurityScanService
         string DescricaoPt, string DescricaoEn, string RiscoPt, string RiscoEn, string RecomendacaoPt, string RecomendacaoEn,
         string InstrucoesPt, string InstrucoesEn);
 
-    public async Task<List<ScanFinding>> ExecutarAsync(string dominio)
+    // Ip = o endereço resolvido no início do scan (null se a resolução falhou). Guardado pra
+    // exibir no inventário/relatório e reusado nas checagens de porta — resolver 1x evita que
+    // domínio com DNS round-robin/CDN caia em servidores diferentes entre uma checagem e outra
+    // do mesmo scan (o TLS pega um IP, a varredura de porta pega outro, e o resultado combinado
+    // vira uma mistura de dois hosts sem ninguém perceber).
+    public record ScanResult(string? Ip, List<ScanFinding> Achados);
+
+    public async Task<ScanResult> ExecutarAsync(string dominio)
     {
+        var ip = await ResolverIpAsync(dominio);
         var achados = new List<ScanFinding>();
 
         achados.AddRange(await VerificarTlsAsync(dominio));
         achados.AddRange(await VerificarCabecalhosAsync(dominio));
         achados.AddRange(await VerificarDnsEmailAsync(dominio));
-        achados.AddRange(await VerificarPortasAsync(dominio));
+        achados.AddRange(await VerificarPortasAsync(dominio, ip));
 
-        return achados;
+        return new ScanResult(ip, achados);
     }
 
     // Reroda só uma categoria — usado pelo botão "Reverificar" de um achado específico, sem
@@ -55,9 +64,26 @@ public class SecurityScanService
         CategoriaTls => await VerificarTlsAsync(dominio),
         CategoriaHeaders => await VerificarCabecalhosAsync(dominio),
         CategoriaDns => await VerificarDnsEmailAsync(dominio),
-        CategoriaPortas => await VerificarPortasAsync(dominio),
+        CategoriaPortas => await VerificarPortasAsync(dominio, await ResolverIpAsync(dominio)),
         _ => [],
     };
+
+    // IPv4 preferido pro campo Asset.Ip (mais reconhecível/curto pro operador que IPv6) — se o
+    // domínio só resolve em AAAA, usa o primeiro endereço que vier mesmo assim.
+    private static async Task<string?> ResolverIpAsync(string dominio)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            var enderecos = await Dns.GetHostAddressesAsync(dominio, cts.Token);
+            return enderecos.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork)?.ToString()
+                ?? enderecos.FirstOrDefault()?.ToString();
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 
     private static async Task<List<ScanFinding>> VerificarTlsAsync(string dominio)
     {
@@ -255,15 +281,20 @@ public class SecurityScanService
         return false;
     }
 
-    private static async Task<List<ScanFinding>> VerificarPortasAsync(string dominio)
+    // ip = resolvido 1x no início do scan (ExecutarAsync/ExecutarCategoriaAsync) — conecta nele
+    // diretamente em vez de deixar o TcpClient reresolver o domínio a cada porta, garantindo que
+    // as 10 portas testadas sejam sempre do mesmo host. Se a resolução falhou (ip null), cai de
+    // volta pro comportamento antigo (domínio direto, resolvido pelo próprio TcpClient).
+    private static async Task<List<ScanFinding>> VerificarPortasAsync(string dominio, string? ip)
     {
+        var alvo = ip ?? dominio;
         var tarefas = PortasComuns.Select(async porta =>
         {
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
                 using var tcp = new TcpClient();
-                await tcp.ConnectAsync(dominio, porta, cts.Token);
+                await tcp.ConnectAsync(alvo, porta, cts.Token);
                 return (Porta: porta, Aberta: true);
             }
             catch (Exception)

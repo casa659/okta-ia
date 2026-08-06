@@ -20,7 +20,7 @@ public class RelatorioPdfService
     // interna) ou pra consultoria vendida à parte; o relatório que vai pro cliente final mostra o
     // achado e o risco de negócio, mas não entrega de graça o "como resolver" que é justamente o
     // que a Okta IA vende como serviço. Risco e Recomendação (1 linha) continuam visíveis nos dois.
-    public byte[] Gerar(string empresaNome, List<Vulnerability> achados, List<(string Nome, DateTimeOffset? UltimoScan)> ativosEscaneados, string lang, bool paraCliente = false)
+    public byte[] Gerar(string empresaNome, List<Vulnerability> achados, List<(string Nome, string Ip, DateTimeOffset? UltimoScan)> ativosEscaneados, string lang, bool paraCliente = false)
     {
         var pt = lang != "en";
         var geradoEm = DateTimeOffset.Now;
@@ -157,14 +157,21 @@ public class RelatorioPdfService
                     });
 
                     col.Item().PaddingTop(20).Text(pt ? "Ativos verificados" : "Assets checked").FontSize(13).Bold();
-                    foreach (var (nome, ultimoScan) in ativosEscaneados)
+                    foreach (var (nome, ip, ultimoScan) in ativosEscaneados)
                     {
                         var achadosDoAtivo = achados.Where(a => a.AssetNome == nome).ToList();
                         col.Item().PaddingTop(10).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Column(ativoCol =>
                         {
                             ativoCol.Item().Row(row =>
                             {
-                                row.RelativeItem().Text(nome).FontSize(11).Bold();
+                                row.RelativeItem().Column(c =>
+                                {
+                                    c.Item().Text(nome).FontSize(11).Bold();
+                                    if (!string.IsNullOrWhiteSpace(ip) && ip != "—")
+                                    {
+                                        c.Item().Text($"IP verificado: {ip}").FontSize(7.5f).FontColor(Colors.Grey.Medium);
+                                    }
+                                });
                                 row.AutoItem().Text(ultimoScan is null ? (pt ? "nunca escaneado" : "never scanned") : ultimoScan.Value.ToString("dd/MM/yyyy HH:mm")).FontSize(8).FontColor(Colors.Grey.Medium);
                             });
 
