@@ -16,19 +16,22 @@ public class AtivosModel : PageModel
     private readonly I18nService _i18n;
     private readonly ScanExecutor _executor;
     private readonly TermoAutorizacaoPdfService _termoPdf;
+    private readonly AdminAuditService _auditoria;
 
-    public AtivosModel(ApplicationDbContext db, I18nService i18n, ScanExecutor executor, TermoAutorizacaoPdfService termoPdf)
+    public AtivosModel(ApplicationDbContext db, I18nService i18n, ScanExecutor executor,
+        TermoAutorizacaoPdfService termoPdf, AdminAuditService auditoria)
     {
         _db = db;
         _i18n = i18n;
         _executor = executor;
         _termoPdf = termoPdf;
+        _auditoria = auditoria;
     }
 
     public record VulnBadgeView(string Numero, string Cor, string Fundo);
     public record AssetView(int Id, string Nome, string Ip, string Tipo, string Stack, string DotCor,
         string Uptime, string UptimeCor, string Tls, string TlsCor, List<VulnBadgeView> Vulns, int Saude, string SaudeCor,
-        bool Real, bool AutorizadoParaScan, string? UltimoScan);
+        bool Real, bool AutorizadoParaScan, string? UltimoScan, int AchadosCount, int AlertasCount);
 
     [BindProperty]
     public NovoAtivoInput Input { get; set; } = new();
@@ -46,6 +49,15 @@ public class AtivosModel : PageModel
 
     [TempData]
     public string? AtivoAdicionadoEmpresa { get; set; }
+
+    [TempData]
+    public string? AtivoExcluidoNome { get; set; }
+
+    [TempData]
+    public int AtivoExcluidoAchados { get; set; }
+
+    [TempData]
+    public int AtivoExcluidoAlertas { get; set; }
 
     public async Task OnGetAsync(int? empresa)
     {
@@ -139,6 +151,49 @@ public class AtivosModel : PageModel
         return RedirectToPage(new { empresa });
     }
 
+    // Exclusão de ativo cadastrado errado (ex.: domínio lançado na empresa errada). Restrita a
+    // Admin e só a ativo Real: os do seed sustentam a demo/vitrine e não têm por que sumir.
+    //
+    // Achado e alerta NÃO têm FK pro Asset — se ligam por (CompanyId, AssetNome) —, então apagar
+    // só a linha do Asset deixaria os achados órfãos, ainda contando no KPI e listados em
+    // /Vulnerabilidades. Por isso os três somem juntos, sempre escopados na empresa do ativo pra
+    // não tocar no mesmo domínio cadastrado em outra empresa.
+    public async Task<IActionResult> OnPostExcluirAsync(int id, int? empresa)
+    {
+        if (!User.IsInRole("Admin"))
+        {
+            return RedirectToPage(new { empresa });
+        }
+
+        var asset = await _db.Assets.FirstOrDefaultAsync(a => a.Id == id && a.Real);
+        if (asset is null)
+        {
+            return RedirectToPage(new { empresa });
+        }
+
+        var achados = await _db.Vulnerabilities
+            .Where(v => v.CompanyId == asset.CompanyId && v.AssetNome == asset.Nome)
+            .ToListAsync();
+        var alertas = await _db.ScanAlertas
+            .Where(s => s.CompanyId == asset.CompanyId && s.AssetNome == asset.Nome)
+            .ToListAsync();
+
+        _db.Vulnerabilities.RemoveRange(achados);
+        _db.ScanAlertas.RemoveRange(alertas);
+        _db.Assets.Remove(asset);
+        await _db.SaveChangesAsync();
+
+        await _auditoria.RegistrarAsync("ativo.excluido",
+            $"{asset.Nome} (empresa {asset.CompanyId}) — {achados.Count} achado(s) e {alertas.Count} alerta(s) removidos junto",
+            User.Identity?.Name ?? "—");
+
+        AtivoExcluidoNome = asset.Nome;
+        AtivoExcluidoAchados = achados.Count;
+        AtivoExcluidoAlertas = alertas.Count;
+
+        return RedirectToPage(new { empresa = asset.CompanyId });
+    }
+
     // Aceita tanto "okta-ia.com" quanto "https://okta-ia.com/" (usuário costuma colar a URL da
     // barra de endereço) — extrai só o hostname, senão TcpClient/HttpClient/DNS falham em
     // silêncio pra "https://okta-ia.com/" (não é hostname válido) e todo achado vira falso
@@ -182,6 +237,21 @@ public class AtivosModel : PageModel
         // (empresaAtual só é nulo se não houver nenhuma empresa ativa cadastrada — mesma
         // premissa já assumida por _Layout.cshtml pro botão de seletor.)
 
+        // Quanto some junto se o ativo for excluído — a confirmação mostra o número em vez de um
+        // "isso apaga tudo" vago. Agrupado por nome porque é assim que achado/alerta se ligam ao ativo.
+        var achadosPorAtivo = (await _db.Vulnerabilities
+                .Where(v => v.CompanyId == empresaAtual!.Id)
+                .GroupBy(v => v.AssetNome)
+                .Select(g => new { Nome = g.Key, Total = g.Count() })
+                .ToListAsync())
+            .ToDictionary(x => x.Nome, x => x.Total);
+        var alertasPorAtivo = (await _db.ScanAlertas
+                .Where(s => s.CompanyId == empresaAtual!.Id)
+                .GroupBy(s => s.AssetNome)
+                .Select(g => new { Nome = g.Key, Total = g.Count() })
+                .ToListAsync())
+            .ToDictionary(x => x.Nome, x => x.Total);
+
         string SaudeCor(int v) => v > 85 ? accent : v > 60 ? "#FFC93C" : "#FF3B5C";
         string TlsCor(AssetTlsStatus s) => s switch
         {
@@ -205,7 +275,8 @@ public class AtivosModel : PageModel
                 a.TlsDias is null ? "—" : $"{a.TlsDias}d", TlsCor(a.TlsStatus),
                 vulns.Select(v => new VulnBadgeView(v.N.ToString(), v.N > 0 ? v.Cor : "#3C4C60", v.N > 0 ? v.Cor + "1F" : "#0F1720")).ToList(),
                 a.Saude, SaudeCor(a.Saude),
-                a.Real, a.AutorizadoParaScan, a.UltimoScanEm?.ToString("dd/MM HH:mm"));
+                a.Real, a.AutorizadoParaScan, a.UltimoScanEm?.ToString("dd/MM HH:mm"),
+                achadosPorAtivo.GetValueOrDefault(a.Nome), alertasPorAtivo.GetValueOrDefault(a.Nome));
         }).ToList();
     }
 

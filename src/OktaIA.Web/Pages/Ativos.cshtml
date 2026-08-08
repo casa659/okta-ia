@@ -20,6 +20,12 @@
             <span style="font-size:13px; color:#D4DFEC;">✓ @I18n.T("assetAddedPrefix") <strong style="color:#00E0A4;">@Model.AtivoAdicionadoEmpresa</strong></span>
         </div>
     }
+    @if (Model.AtivoExcluidoNome is not null)
+    {
+        <div class="oi-panel" style="padding:14px 18px; margin-bottom:14px; border-left:2px solid #FF8A3D;">
+            <span style="font-size:13px; color:#D4DFEC;">@I18n.T("assetDeletedPrefix") <strong style="color:#FF8A3D;">@Model.AtivoExcluidoNome</strong> — @Model.AtivoExcluidoAchados @I18n.T("deleteAssetFindings") @(I18n.Lang == "pt" ? "e" : "and") @Model.AtivoExcluidoAlertas @I18n.T("deleteAssetAlerts") @(I18n.T("assetDeletedRemoved") + ".")</span>
+        </div>
+    }
     <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:14px; gap:16px; flex-wrap:wrap;">
         <div>
             <h1 class="oi-dash-title">@I18n.T("assetsTitle")</h1>
@@ -68,9 +74,15 @@
                 <div>
                     @if (a.Real)
                     {
-                        <form method="post" asp-page-handler="Scan" asp-route-id="@a.Id" asp-route-empresa="@Model.EmpresaSelecionadaId" data-oi-scan-confirm="@I18n.T("scanConfirm")">
-                            <button type="submit" class="adm-btn-ghost adm-accent" style="font-size:10px; padding:6px 9px;" data-oi-scan-label="@I18n.T("scanNow")" data-oi-scan-running-label="@I18n.T("scanRunning")">@I18n.T("scanNow")</button>
-                        </form>
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <form method="post" asp-page-handler="Scan" asp-route-id="@a.Id" asp-route-empresa="@Model.EmpresaSelecionadaId" data-oi-scan-confirm="@I18n.T("scanConfirm")">
+                                <button type="submit" class="adm-btn-ghost adm-accent" style="font-size:10px; padding:6px 9px;" data-oi-scan-label="@I18n.T("scanNow")" data-oi-scan-running-label="@I18n.T("scanRunning")">@I18n.T("scanNow")</button>
+                            </form>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <button type="button" class="adm-btn-ghost" style="font-size:10px; padding:6px 9px; color:#FF8098; border-color:rgba(255,59,92,.35);" data-adm-open-dialog="oi-dialog-del-ativo-@a.Id">@I18n.T("deleteAsset")</button>
+                            }
+                        </div>
                         <div style="font-size:9.5px; color:#4A5D78; margin-top:4px;">@I18n.T("lastScan"): @(a.UltimoScan ?? I18n.T("neverScanned"))</div>
                     }
                 </div>
@@ -78,6 +90,31 @@
         }
     </div>
 </div>
+
+@if (User.IsInRole("Admin"))
+{
+    @* Um diálogo por ativo real: a confirmação precisa nomear o ativo e dizer quantos achados e
+       alertas somem junto — "tem certeza?" genérico não dá base pra decidir. *@
+    foreach (var a in Model.Ativos.Where(x => x.Real))
+    {
+        <dialog id="oi-dialog-del-ativo-@a.Id" class="adm-dialog">
+            <h2>@I18n.T("deleteAssetTitle")</h2>
+            <p style="font-size:14px; color:#EAF0F8; margin:0 0 6px;"><strong style="color:#FF8098;">@a.Nome</strong></p>
+            <p style="font-size:12.5px; color:#8FA3BC; margin:0 0 12px;">@I18n.T("deleteAssetLead")</p>
+            <p style="font-size:12.5px; color:#8FA3BC; margin:0 0 4px;">@I18n.T("deleteAssetAlso")</p>
+            <ul style="font-size:12.5px; color:#D4DFEC; margin:0 0 14px; padding-left:18px;">
+                <li>@a.AchadosCount @I18n.T("deleteAssetFindings")</li>
+                <li>@a.AlertasCount @I18n.T("deleteAssetAlerts")</li>
+            </ul>
+            <form method="post" asp-page-handler="Excluir" asp-route-id="@a.Id" asp-route-empresa="@Model.EmpresaSelecionadaId">
+                <div class="adm-dialog-actions">
+                    <button type="button" class="adm-btn-secondary" data-adm-dialog-close>@I18n.T("cancel")</button>
+                    <button type="submit" class="adm-btn-primary" style="background:#FF3B5C; border-color:#FF3B5C;">@I18n.T("deleteAssetConfirm")</button>
+                </div>
+            </form>
+        </dialog>
+    }
+}
 
 <dialog id="oi-dialog-add-ativo" class="adm-dialog" data-oi-autoopen="@(Model.MostrarForm ? "true" : "false")">
     <h2>@I18n.T("addRealAsset")</h2>
