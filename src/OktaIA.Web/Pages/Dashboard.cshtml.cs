@@ -68,7 +68,11 @@ public class DashboardModel : PageModel
         if (temAtivoReal)
         {
             var ativosDaEmpresa = await _db.Assets.Where(a => a.CompanyId == tenantId).ToListAsync();
-            vulnsCriticas = await _db.Vulnerabilities.CountAsync(v => v.CompanyId == tenantId && v.FonteScan);
+            // Só Crítica+Alta — contar todo achado FonteScan inflava o número (empresa sem nenhum
+            // achado grave aparecia com 5/8, somando Média). Mesmo recorte do KPI do Digital Twin.
+            vulnsCriticas = await _db.Vulnerabilities.CountAsync(
+                v => v.CompanyId == tenantId && v.FonteScan
+                     && (v.Severidade == Severidade.Critica || v.Severidade == Severidade.Alta));
             incidentesAbertos = await _db.Incidents.CountAsync(i => i.CompanyId == tenantId);
             ativosMonitorados = ativosDaEmpresa.Count;
             disponibilidade = ativosDaEmpresa.Count > 0 ? ativosDaEmpresa.Average(a => a.UptimePercentual) : 100m;
@@ -92,7 +96,7 @@ public class DashboardModel : PageModel
                 SparkHorario(eventos24h.Where(e => e.Bloqueado).ToList(), agora)),
             new(lang == "pt" ? "Incidentes abertos" : "Open incidents", incidentesAbertos.ToString("N0", culture),
                 "", "#FF3B5C", "#4A5A70", SparkPath.Generate(5, true)),
-            new(lang == "pt" ? "Vulns críticas" : "Critical vulns", vulnsCriticas.ToString("N0", culture),
+            new(lang == "pt" ? "Vulns críticas + altas" : "Critical + high vulns", vulnsCriticas.ToString("N0", culture),
                 "", "#FF8A3D", "#4A5A70", SparkPath.Generate(7, true)),
             new(lang == "pt" ? "Ativos monitorados" : "Monitored assets", ativosMonitorados.ToString("N0", culture),
                 "", "#7A6BFF", "#4A5A70", SparkPath.Generate(9)),
