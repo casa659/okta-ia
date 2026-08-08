@@ -14,11 +14,13 @@ public class DashboardModel : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly I18nService _i18n;
+    private readonly CopilotService _copilot;
 
-    public DashboardModel(ApplicationDbContext db, I18nService i18n)
+    public DashboardModel(ApplicationDbContext db, I18nService i18n, CopilotService copilot)
     {
         _db = db;
         _i18n = i18n;
+        _copilot = copilot;
     }
 
     public record KpiView(string Label, string Valor, string Delta, string Cor, string DeltaCor, string Spark);
@@ -136,8 +138,8 @@ public class DashboardModel : PageModel
         var datacenters = ThreatCatalog.Datacenters.Select(d => new { codigo = d.Codigo, lat = d.Lat, lng = d.Lng });
         MapaJson = System.Text.Json.JsonSerializer.Serialize(new { origens = origensMapa, datacenters });
 
-        AiBriefBody = _i18n.T("aiBriefBody");
-        Prompts = CopilotPrompts.For(lang).ToList();
+        AiBriefBody = await _copilot.GerarBriefingAsync(tenantId, lang);
+        Prompts = await _copilot.GerarAsync(tenantId, lang);
         GreetMsg = _i18n.T("greet");
     }
 

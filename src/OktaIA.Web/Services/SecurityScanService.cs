@@ -15,7 +15,9 @@ public class SecurityScanService
 {
     private readonly HttpClient _http;
 
-    private static readonly int[] PortasComuns = [21, 22, 23, 25, 445, 1433, 3306, 3389, 5432, 6379];
+    // Pública porque a aba "Scanner" (/Vulnerabilidades?tab=s) mostra ao operador exatamente
+    // quais portas são testadas — a tela não deve alegar cobertura que o código não executa.
+    public static readonly int[] PortasComuns = [21, 22, 23, 25, 445, 1433, 3306, 3389, 5432, 6379];
 
     // Chaves estáveis gravadas em Vulnerability.CategoriaScan — permitem "Reverificar" rodar só
     // a checagem específica daquele achado, em vez do scan inteiro de novo.

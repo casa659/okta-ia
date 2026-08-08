@@ -16,14 +16,17 @@ public class VulnerabilidadesModel : PageModel
     private readonly SecurityScanService _scanner;
     private readonly RelatorioPdfService _relatorioPdf;
     private readonly PropostaComercialPdfService _propostaPdf;
+    private readonly IConfiguration _config;
 
-    public VulnerabilidadesModel(ApplicationDbContext db, I18nService i18n, SecurityScanService scanner, RelatorioPdfService relatorioPdf, PropostaComercialPdfService propostaPdf)
+    public VulnerabilidadesModel(ApplicationDbContext db, I18nService i18n, SecurityScanService scanner,
+        RelatorioPdfService relatorioPdf, PropostaComercialPdfService propostaPdf, IConfiguration config)
     {
         _db = db;
         _i18n = i18n;
         _scanner = scanner;
         _relatorioPdf = relatorioPdf;
         _propostaPdf = propostaPdf;
+        _config = config;
     }
 
     public record KpiView(string Label, string Valor, string Cor);
@@ -51,11 +54,22 @@ public class VulnerabilidadesModel : PageModel
     [TempData]
     public string? ReverificarResultado { get; set; } // "corrigido" | "ainda-presente" | null
 
-    // Scanner — dado operacional/decorativo (não é histórico de negócio), mesma lista fixa do mockup.
-    public record ScanView(string Ferramenta, string Alvo, int Pct, string Estado, string Cor);
-    public List<ScanView> Scans { get; private set; } = [];
-    public string[] ScanTypes { get; private set; } = [];
-    public (string Nome, string Atualizacao)[] Feeds { get; private set; } = [];
+    // Aba "Scanner": estado REAL do monitoramento desta empresa. Antes era um mockup com
+    // ferramentas (Nuclei/ZAP/Nmap), percentuais fixos e "feeds de inteligência" inventados —
+    // removido de propósito: dado falso numa tela de segurança é passivo, não recurso (basta o
+    // cliente abrir duas vezes e ver o mesmo "72%" parado pra perder a confiança na plataforma
+    // inteira). Só aparece aqui o que o SecurityScanService de fato executa.
+    public record AtivoMonitoradoView(int Id, string Nome, string Ip, string UltimoScan, bool NuncaEscaneado,
+        int Criticas, int Altas, int Medias, int Baixas, int Saude, string SaudeCor,
+        bool MonitoramentoContinuo, string ProximoScan);
+    public record ChecagemView(string Nome, string Descricao, int Achados);
+    public record MudancaView(string Quando, string AssetNome, string Titulo, bool Novo, string Cor, bool Automatico);
+
+    public List<AtivoMonitoradoView> AtivosMonitorados { get; private set; } = [];
+    public List<ChecagemView> Checagens { get; private set; } = [];
+    public int[] PortasVerificadas { get; private set; } = [];
+    public List<MudancaView> Mudancas { get; private set; } = [];
+    public string IntervaloMonitoramento { get; private set; } = "";
 
     public async Task OnGetAsync(string? tab, int? empresa)
     {
@@ -102,14 +116,21 @@ public class VulnerabilidadesModel : PageModel
         var totalAberto = vulns.Count(v => v.StatusPt is "Aberto" or "Em correção");
         var criticas = vulns.Count(v => v.Severidade == Severidade.Critica);
         var altas = vulns.Count(v => v.Severidade == Severidade.Alta);
-        var kev = vulns.Count(v => v.ExposicaoPt == "KEV");
+        // Antes havia um KPI "CISA KEV" (contava ExposicaoPt=="KEV", valor que só existe no seed de
+        // demonstração) — o rótulo anunciava uma correlação com o catálogo KEV da CISA que a
+        // plataforma não faz; para cliente real ele exibiria 0 eternamente, sugerindo "nenhuma vuln
+        // explorada ativamente" quando na verdade nunca se consultou o catálogo. Trocado por portas
+        // expostas, que é sinal real produzido pelo scanner.
+        var portasExpostas = vulns.Count(v => v.FonteScan && v.CategoriaScan == SecurityScanService.CategoriaPortas);
+        // "Corrigidos 30d" não filtrava por data nenhuma (contava todo "Corrigido" do histórico) e
+        // não há campo de data de correção pra filtrar — rótulo ajustado ao que de fato é contado.
         Kpis =
         [
             new(lang == "pt" ? "Total aberto" : "Total open", totalAberto.ToString(), "#D4DDEA"),
             new(lang == "pt" ? "Crítico" : "Critical", criticas.ToString(), "#FF3B5C"),
             new(lang == "pt" ? "Alto" : "High", altas.ToString(), "#FF8A3D"),
-            new("CISA KEV", kev.ToString(), "#FF3B5C"),
-            new(lang == "pt" ? "Corrigidos 30d" : "Fixed 30d", vulns.Count(v => v.StatusPt == "Corrigido").ToString(), accent),
+            new(lang == "pt" ? "Portas expostas" : "Exposed ports", portasExpostas.ToString(), portasExpostas > 0 ? "#FF3B5C" : accent),
+            new(lang == "pt" ? "Corrigidos" : "Fixed", vulns.Count(v => v.StatusPt == "Corrigido").ToString(), accent),
         ];
 
         Vulns = vulns.Select(v =>
@@ -131,27 +152,115 @@ public class VulnerabilidadesModel : PageModel
                 v.FonteScan, lang == "pt" ? v.RiscoPt : v.RiscoEn, lang == "pt" ? v.RecomendacaoPt : v.RecomendacaoEn, lang == "pt" ? v.InstrucoesPt : v.InstrucoesEn);
         }).ToList();
 
-        var scanPct = new[] { 72, 38, 91, 14, 56, 100 };
-        (string Ferramenta, string Alvo)[] scanDefs =
-        [
-            ("Nuclei", "api.grupovector.com"), ("OWASP ZAP", "portal.hsanta.br"), ("Nmap", "10.20.0.0/16"),
-            ("Trivy", "registry/prod:latest"), ("Subfinder", "grupovector.com"), ("Nikto", "wp.lojaativa.com.br"),
-        ];
-        Scans = scanDefs.Select((s, i) =>
+        await MontarAbaScannerAsync(ativosReais, vulns, empresaAtual?.Id, lang, accent);
+    }
+
+    // Estado real do monitoramento: quais ativos são escaneáveis, quando cada um foi visto pela
+    // última vez e quantos achados cada checagem produziu. Sem ativo real cadastrado, a aba fica
+    // legitimamente vazia (a view mostra o aviso) em vez de exibir atividade fictícia.
+    private async Task MontarAbaScannerAsync(List<Asset> ativosReais, List<Vulnerability> vulns, int? companyId, string lang, string accent)
+    {
+        var intervaloHoras = _config.GetValue("Scanner:IntervaloHoras", 24d);
+        IntervaloMonitoramento = intervaloHoras >= 24 && intervaloHoras % 24 == 0
+            ? $"{intervaloHoras / 24:0}{(lang == "pt" ? "d" : "d")}"
+            : $"{intervaloHoras:0}h";
+
+        AtivosMonitorados = ativosReais
+            .OrderBy(a => a.Nome)
+            .Select(a => new AtivoMonitoradoView(
+                a.Id,
+                a.Nome,
+                string.IsNullOrWhiteSpace(a.Ip) ? "—" : a.Ip,
+                a.UltimoScanEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? _i18n.T("neverScanned"),
+                a.UltimoScanEm is null,
+                a.VulnsCriticas, a.VulnsAltas, a.VulnsMedias, a.VulnsBaixas,
+                a.Saude,
+                a.Saude > 85 ? accent : a.Saude > 60 ? "#FFC93C" : "#FF3B5C",
+                a.MonitoramentoContinuo,
+                ProximoScanTexto(a, intervaloHoras, lang)))
+            .ToList();
+
+        // Histórico de mudanças: é o que prova que o monitoramento está rodando sozinho, e a
+        // pergunta que o cliente realmente faz ("o que mudou desde ontem?").
+        var alertas = await _db.ScanAlertas
+            .Where(s => s.CompanyId == companyId)
+            .OrderByDescending(s => s.DetectadoEm)
+            .Take(12)
+            .ToListAsync();
+
+        Mudancas = alertas.Select(s => new MudancaView(
+            s.DetectadoEm.ToLocalTime().ToString("dd/MM HH:mm"),
+            s.AssetNome,
+            lang == "pt" ? s.TituloPt : s.TituloEn,
+            s.Tipo == TipoMudancaScan.Novo,
+            s.Tipo == TipoMudancaScan.Novo
+                ? s.Severidade switch
+                {
+                    Severidade.Critica => "#FF3B5C",
+                    Severidade.Alta => "#FF8A3D",
+                    Severidade.Media => "#FFC93C",
+                    _ => "#4D9BFF",
+                }
+                : accent,
+            s.Automatico)).ToList();
+
+        // Contagem por categoria vem dos achados reais (FonteScan) — as 4 categorias abaixo são
+        // exatamente as que SecurityScanService.ExecutarCategoriaAsync sabe executar.
+        var achadosReais = vulns.Where(v => v.FonteScan).ToList();
+        int PorCategoria(string categoria) => achadosReais.Count(v => v.CategoriaScan == categoria);
+
+        Checagens = lang == "pt"
+            ?
+            [
+                new("TLS / Certificado", "Validade do certificado, expiração próxima e versão do protocolo negociado.", PorCategoria(SecurityScanService.CategoriaTls)),
+                new("Cabeçalhos HTTP", "HSTS, CSP, X-Content-Type-Options e X-Frame-Options.", PorCategoria(SecurityScanService.CategoriaHeaders)),
+                new("DNS de e-mail", "Registros SPF e DMARC publicados no domínio.", PorCategoria(SecurityScanService.CategoriaDns)),
+                new("Portas expostas", "Serviços administrativos e de banco de dados acessíveis pela internet.", PorCategoria(SecurityScanService.CategoriaPortas)),
+            ]
+            :
+            [
+                new("TLS / Certificate", "Certificate validity, upcoming expiration and negotiated protocol version.", PorCategoria(SecurityScanService.CategoriaTls)),
+                new("HTTP headers", "HSTS, CSP, X-Content-Type-Options and X-Frame-Options.", PorCategoria(SecurityScanService.CategoriaHeaders)),
+                new("Email DNS", "SPF and DMARC records published on the domain.", PorCategoria(SecurityScanService.CategoriaDns)),
+                new("Exposed ports", "Administrative and database services reachable from the internet.", PorCategoria(SecurityScanService.CategoriaPortas)),
+            ];
+
+        PortasVerificadas = SecurityScanService.PortasComuns;
+    }
+
+    // Quando o agendador deve pegar este ativo. O texto reflete a fila real: sem monitoramento
+    // contínuo ele nunca entra, e um ativo já vencido aparece como "na próxima verificação" em vez
+    // de mostrar uma data no passado.
+    private string ProximoScanTexto(Asset a, double intervaloHoras, string lang)
+    {
+        if (!a.MonitoramentoContinuo)
         {
-            var pct = scanPct[i];
-            var done = pct >= 100;
-            return new ScanView(s.Ferramenta, s.Alvo, pct, done ? (lang == "pt" ? "CONCLUÍDO" : "DONE") : $"{pct}%", done ? accent : "#4D9BFF");
-        }).ToList();
+            return lang == "pt" ? "monitoramento desligado" : "monitoring off";
+        }
 
-        ScanTypes = ["Portas", "DNS", "Subdomínios", "SSL/TLS", "Headers", "Cookies", "CORS", "CSRF", "SQLi", "XSS",
-            "XXE", "RCE", "LFI/RFI", "Open Redirect", "Path Traversal", "Clickjacking", "Dir Listing", "Uploads", "JWT", "OAuth", "GraphQL", "SMTP", "SSH", "RDP"];
+        if (a.UltimoScanEm is null)
+        {
+            return lang == "pt" ? "na próxima verificação" : "on next check";
+        }
 
-        Feeds =
-        [
-            ("NVD / NIST", "4 min"), ("CISA KEV", "11 min"), ("MITRE ATT&CK", "1 h"),
-            ("EPSS", "6 h"), ("OWASP Top 10", "v2025"), ("AbuseIPDB", "2 min"),
-        ];
+        var proximo = a.UltimoScanEm.Value.AddHours(intervaloHoras);
+        return proximo <= DateTimeOffset.UtcNow
+            ? (lang == "pt" ? "na próxima verificação" : "on next check")
+            : proximo.ToLocalTime().ToString("dd/MM HH:mm");
+    }
+
+    // Liga/desliga a revarredura automática do ativo. Não mexe em AutorizadoParaScan: a
+    // autorização do cliente continua registrada, só a frequência é pausada.
+    public async Task<IActionResult> OnPostMonitoramentoAsync(int id, int? empresa)
+    {
+        var asset = await _db.Assets.FirstOrDefaultAsync(a => a.Id == id && a.Real && a.AutorizadoParaScan);
+        if (asset is not null)
+        {
+            asset.MonitoramentoContinuo = !asset.MonitoramentoContinuo;
+            await _db.SaveChangesAsync();
+        }
+
+        return RedirectToPage(new { tab = "s", empresa });
     }
 
     public async Task<IActionResult> OnPostReverificarAsync(int id, int? empresa)

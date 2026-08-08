@@ -3,10 +3,15 @@
 @using Microsoft.EntityFrameworkCore
 @inject I18nService I18n
 @inject ApplicationDbContext Db
+@inject CopilotService Copilot
 @{
     var lang = I18n.Lang;
-    var tenantNome = (await Db.Companies.Where(c => c.Ativo).OrderBy(c => c.Id).FirstOrDefaultAsync())?.Nome ?? "—";
-    var prompts = CopilotPrompts.For(lang);
+    // Antes pegava a primeira empresa ativa por Id, então o painel anunciava "contexto: <empresa X>"
+    // independentemente do tenant realmente selecionado no cabeçalho. Agora usa a mesma resolução
+    // das demais telas — o contexto exibido e os dados respondidos são da empresa em uso.
+    var tenant = await TenantResolver.ResolverAtualAsync(Context, Db);
+    var tenantNome = tenant?.Nome ?? "—";
+    var prompts = await Copilot.GerarAsync(tenant?.Id, lang);
 }
 <aside class="oi-copilot" id="oi-copilot-panel" data-greet="@I18n.T("greet")">
     <div class="oi-copilot-head">

@@ -16,6 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<InfraHealthSnapshot> InfraHealthSnapshots => Set<InfraHealthSnapshot>();
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<Vulnerability> Vulnerabilities => Set<Vulnerability>();
+    public DbSet<ScanAlerta> ScanAlertas => Set<ScanAlerta>();
     public DbSet<Incident> Incidents => Set<Incident>();
     public DbSet<IncidentStep> IncidentSteps => Set<IncidentStep>();
     public DbSet<IncidentTimelineEvent> IncidentTimelineEvents => Set<IncidentTimelineEvent>();

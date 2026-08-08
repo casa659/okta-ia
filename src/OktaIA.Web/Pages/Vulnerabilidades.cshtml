@@ -143,42 +143,96 @@
         <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start;">
             <div class="oi-panel">
                 <div class="oi-panel-head">
-                    <span class="oi-panel-title" style="margin:0">@I18n.T("runningScans")</span>
-                    <span class="oi-mono" style="font-size:9px;color:var(--oi-muted-2)">@I18n.T("engine")</span>
+                    <span class="oi-panel-title" style="margin:0">@I18n.T("monitoredAssets")</span>
+                    <span class="oi-mono" style="font-size:9px;color:var(--oi-muted-2)">@Model.AtivosMonitorados.Count</span>
                 </div>
-                <div class="oi-panel-body" style="display:flex;flex-direction:column;gap:10px;">
-                    @foreach (var s in Model.Scans)
+                <div class="oi-panel-body" style="display:flex;flex-direction:column;gap:8px;">
+                    @if (Model.AtivosMonitorados.Count == 0)
                     {
-                        <div>
-                            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;">
-                                <span style="color:#D4DDEA;font-weight:600">@s.Ferramenta <span style="color:var(--oi-muted-2);font-weight:400">· @s.Alvo</span></span>
-                                <span class="oi-mono" style="color:@s.Cor">@s.Estado</span>
+                        <div style="font-size:12px;color:#8FA3BC;line-height:1.6;">
+                            @I18n.T("noRealAssets")
+                            <a asp-page="/Ativos" style="color:var(--oi-accent);text-decoration:none;">@I18n.T("goToAssets")</a>
+                        </div>
+                    }
+                    @foreach (var a in Model.AtivosMonitorados)
+                    {
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--oi-border-4);flex-wrap:wrap;">
+                            <div style="min-width:0;">
+                                <div style="font-size:12px;color:#D4DDEA;font-weight:600;">@a.Nome</div>
+                                <div class="oi-mono" style="font-size:9.5px;color:var(--oi-muted-2);margin-top:2px;">@a.Ip</div>
                             </div>
-                            <div class="oi-gauge-track"><div class="oi-gauge-fill" style="width:@(s.Pct)%;background:@s.Cor"></div></div>
+                            <div style="display:flex;align-items:center;gap:14px;">
+                                <div style="text-align:right;">
+                                    <div style="font-size:9px;color:#5A7191;text-transform:uppercase;letter-spacing:.06em;">@I18n.T("lastScanLabel")</div>
+                                    <div class="oi-mono" style="font-size:10.5px;color:@(a.NuncaEscaneado ? "#FF8A3D" : "#8FA3BC");margin-top:2px;">@a.UltimoScan</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:9px;color:#5A7191;text-transform:uppercase;letter-spacing:.06em;">@I18n.T("nextScanLabel")</div>
+                                    <div class="oi-mono" style="font-size:10.5px;color:@(a.MonitoramentoContinuo ? "#8FA3BC" : "#5A7191");margin-top:2px;">@a.ProximoScan</div>
+                                </div>
+                                <form method="post" asp-page-handler="Monitoramento" asp-route-id="@a.Id" asp-route-empresa="@Model.EmpresaSelecionadaId">
+                                    <button type="submit" class="oi-monitor-toggle @(a.MonitoramentoContinuo ? "oi-monitor-on" : "")"
+                                            title="@(a.MonitoramentoContinuo ? I18n.T("monitorOnHint") : I18n.T("monitorOffHint"))">
+                                        <span class="oi-monitor-dot"></span>@(a.MonitoramentoContinuo ? I18n.T("monitorOn") : I18n.T("monitorOff"))
+                                    </button>
+                                </form>
+                                <div style="display:flex;gap:4px;">
+                                    <span class="oi-mono" style="font-size:9.5px;border-radius:4px;padding:2px 6px;color:@(a.Criticas > 0 ? "#FF3B5C" : "#3C4C60");background:@(a.Criticas > 0 ? "#FF3B5C1F" : "#0F1720");" title="@I18n.T("sevCritical")">@a.Criticas</span>
+                                    <span class="oi-mono" style="font-size:9.5px;border-radius:4px;padding:2px 6px;color:@(a.Altas > 0 ? "#FF8A3D" : "#3C4C60");background:@(a.Altas > 0 ? "#FF8A3D1F" : "#0F1720");" title="@I18n.T("sevHigh")">@a.Altas</span>
+                                    <span class="oi-mono" style="font-size:9.5px;border-radius:4px;padding:2px 6px;color:@(a.Medias > 0 ? "#FFC93C" : "#3C4C60");background:@(a.Medias > 0 ? "#FFC93C1F" : "#0F1720");" title="@I18n.T("sevMedium")">@a.Medias</span>
+                                    <span class="oi-mono" style="font-size:9.5px;border-radius:4px;padding:2px 6px;color:@(a.Baixas > 0 ? "#4D9BFF" : "#3C4C60");background:@(a.Baixas > 0 ? "#4D9BFF1F" : "#0F1720");" title="@I18n.T("sevLow")">@a.Baixas</span>
+                                </div>
+                                <div class="oi-mono" style="font-size:13px;font-weight:700;color:@a.SaudeCor;min-width:32px;text-align:right;">@a.Saude</div>
+                            </div>
                         </div>
                     }
                 </div>
             </div>
             <div class="oi-dash-col">
                 <div class="oi-panel oi-panel-body">
-                    <div class="oi-gauge-title">@I18n.T("scanCoverage")</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:5px;">
-                        @for (var i = 0; i < Model.ScanTypes.Length; i++)
-                        {
-                            var ativo = i % 5 == 0;
-                            <span class="oi-mono" style="font-size:9px;border-radius:4px;padding:3px 7px;color:@(ativo ? "var(--oi-accent)" : "#6E8098");background:@(ativo ? "#0C1A18" : "#0F1720");border:1px solid @(ativo ? "#143A31" : "var(--oi-border)")">@Model.ScanTypes[i]</span>
-                        }
-                    </div>
-                </div>
-                <div class="oi-panel oi-panel-body">
-                    <div class="oi-gauge-title">@I18n.T("feeds")</div>
-                    @foreach (var f in Model.Feeds)
+                    <div class="oi-gauge-title">@I18n.T("recentChanges")</div>
+                    @if (Model.Mudancas.Count == 0)
                     {
-                        <div style="display:flex;justify-content:space-between;font-size:11px;padding:6px 0;border-bottom:1px solid var(--oi-border-4);">
-                            <span style="color:#8FA3BC">@f.Nome</span>
-                            <span class="oi-mono" style="color:var(--oi-muted-2)">@f.Atualizacao</span>
+                        <div style="font-size:11px;color:#7A8FAB;line-height:1.55;">
+                            @I18n.T("noChangesYet") <span class="oi-mono" style="color:#8FA3BC;">@Model.IntervaloMonitoramento</span>.
                         </div>
                     }
+                    @foreach (var m in Model.Mudancas)
+                    {
+                        <div style="display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--oi-border-4);">
+                            <span style="color:@m.Cor;font-size:12px;line-height:1.3;flex:0 0 auto;">@(m.Novo ? "▲" : "▼")</span>
+                            <div style="min-width:0;flex:1;">
+                                <div style="font-size:11px;color:#D4DDEA;line-height:1.4;">@m.Titulo</div>
+                                <div class="oi-mono" style="font-size:9px;color:var(--oi-muted-2);margin-top:2px;">
+                                    @m.Quando · @m.AssetNome@(m.Automatico ? " · auto" : "")
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="oi-panel oi-panel-body">
+                    <div class="oi-gauge-title">@I18n.T("checksPerformed")</div>
+                    @foreach (var c in Model.Checagens)
+                    {
+                        <div style="padding:8px 0;border-bottom:1px solid var(--oi-border-4);">
+                            <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;">
+                                <span style="font-size:11.5px;color:#D4DDEA;font-weight:600;">@c.Nome</span>
+                                <span class="oi-mono" style="font-size:10px;color:@(c.Achados > 0 ? "#FF8A3D" : "var(--oi-accent)");white-space:nowrap;">
+                                    @c.Achados @I18n.T("findingsShort")
+                                </span>
+                            </div>
+                            <div style="font-size:10.5px;color:#7A8FAB;line-height:1.5;margin-top:3px;">@c.Descricao</div>
+                        </div>
+                    }
+                </div>
+                <div class="oi-panel oi-panel-body">
+                    <div class="oi-gauge-title">@I18n.T("portsChecked")</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                        @foreach (var p in Model.PortasVerificadas)
+                        {
+                            <span class="oi-mono" style="font-size:9px;border-radius:4px;padding:3px 7px;color:#8FA3BC;background:#0F1720;border:1px solid var(--oi-border)">@p</span>
+                        }
+                    </div>
                 </div>
             </div>
         </div>

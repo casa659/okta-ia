@@ -34,4 +34,14 @@ public class Asset
     public bool AutorizadoParaScan { get; set; }
     public DateTimeOffset? AutorizadoEm { get; set; }
     public DateTimeOffset? UltimoScanEm { get; set; }
+
+    // Revarredura automática pelo ScanAgendadorService no intervalo configurado. Só tem efeito
+    // junto com Real && AutorizadoParaScan — o agendador reaplica as três condições, então
+    // desmarcar aqui pausa o monitoramento sem revogar a autorização.
+    //
+    // Nasce FALSE de propósito, inclusive para ativos já autorizados: o scan manual é o
+    // diagnóstico (venda pontual), enquanto a revarredura recorrente é o serviço contratado.
+    // Ligar em massa faria a plataforma monitorar sozinha domínios de quem não contratou —
+    // custo e tráfego contra terceiro sem contrapartida.
+    public bool MonitoramentoContinuo { get; set; }
 }

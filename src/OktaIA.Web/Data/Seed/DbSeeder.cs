@@ -31,6 +31,37 @@ public static class DbSeeder
         await SeedRolePermissionsAsync(db, roleManager);
         await BackfillDigitalTwinPermissionAsync(db);
         await BackfillRebrandLoktaiaAsync(db);
+        await BackfillEmpresasDemoAsync(db);
+    }
+
+    // Nomes exatos das empresas fictícias criadas por SeedCompaniesAsync. Mantido separado da
+    // tupla do seed porque o backfill precisa deles mesmo quando o seed não roda (banco já
+    // populado, que é justamente o caso de produção).
+    private static readonly string[] EmpresasDemoNomes =
+    [
+        "Grupo Vector", "Hospital Santa Clara", "Banco Meridiano", "Prefeitura Digital",
+        "Loja Ativa", "Pagou Fintech", "NetSul Provedor", "Escritório Lemos",
+    ];
+
+    // Company.Demo nasceu depois que o banco de produção já tinha as 8 empresas fictícias, e
+    // SeedCompaniesAsync faz early-return quando já existe qualquer empresa — então elas nunca
+    // seriam marcadas sozinhas. Casa pelo NOME exato do seed: empresas criadas pelo operador
+    // (inclusive as de teste dele, que guardam domínios reais) não são tocadas. Idempotente.
+    private static async Task BackfillEmpresasDemoAsync(ApplicationDbContext db)
+    {
+        var pendentes = await db.Companies
+            .Where(c => !c.Demo && EmpresasDemoNomes.Contains(c.Nome))
+            .ToListAsync();
+        if (pendentes.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var empresa in pendentes)
+        {
+            empresa.Demo = true;
+        }
+        await db.SaveChangesAsync();
     }
 
     // Rebranding Okta-IA → L'okta IA (loktaia.com): SeedContactChannelsAsync só roda uma vez, então
@@ -256,6 +287,7 @@ public static class DbSeeder
                 Cnpj = $"12.345.678/0001-{10 + d.Score}",
                 StatusContrato = d.Status,
                 UsuariosCount = d.Usuarios,
+                Demo = true,   // empresa fictícia — a UI avisa que o ambiente não é real
             });
         }
 

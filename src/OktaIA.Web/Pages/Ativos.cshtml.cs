@@ -14,14 +14,14 @@ public class AtivosModel : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly I18nService _i18n;
-    private readonly SecurityScanService _scanner;
+    private readonly ScanExecutor _executor;
     private readonly TermoAutorizacaoPdfService _termoPdf;
 
-    public AtivosModel(ApplicationDbContext db, I18nService i18n, SecurityScanService scanner, TermoAutorizacaoPdfService termoPdf)
+    public AtivosModel(ApplicationDbContext db, I18nService i18n, ScanExecutor executor, TermoAutorizacaoPdfService termoPdf)
     {
         _db = db;
         _i18n = i18n;
-        _scanner = scanner;
+        _executor = executor;
         _termoPdf = termoPdf;
     }
 
@@ -100,6 +100,10 @@ public class AtivosModel : PageModel
             Real = true,
             AutorizadoParaScan = true,
             AutorizadoEm = agora,
+            // Desligado por padrão: a revarredura recorrente é o item que o cliente contrata.
+            // Cadastrar o ativo permite o scan manual (diagnóstico); o monitoramento contínuo é
+            // ligado depois, no chip da aba Scanner, quando o contrato existir.
+            MonitoramentoContinuo = false,
         });
         await _db.SaveChangesAsync();
 
@@ -125,53 +129,12 @@ public class AtivosModel : PageModel
             return RedirectToPage(new { empresa });
         }
 
-        var resultado = await _scanner.ExecutarAsync(asset.Nome);
-
-        var antigos = await _db.Vulnerabilities
-            .Where(v => v.CompanyId == asset.CompanyId && v.AssetNome == asset.Nome && v.FonteScan)
-            .ToListAsync();
-        _db.Vulnerabilities.RemoveRange(antigos);
-
-        foreach (var achado in resultado.Achados)
-        {
-            _db.Vulnerabilities.Add(new Vulnerability
-            {
-                CompanyId = asset.CompanyId,
-                FonteScan = true,
-                CategoriaScan = achado.Categoria,
-                RiscoPt = achado.RiscoPt,
-                RiscoEn = achado.RiscoEn,
-                RecomendacaoPt = achado.RecomendacaoPt,
-                RecomendacaoEn = achado.RecomendacaoEn,
-                InstrucoesPt = achado.InstrucoesPt,
-                InstrucoesEn = achado.InstrucoesEn,
-                Cve = "—",
-                Cvss = achado.Severidade switch { Severidade.Critica => 9.5m, Severidade.Alta => 7.5m, Severidade.Media => 5.0m, _ => 2.5m },
-                Componente = "Perímetro externo",
-                TituloPt = achado.TituloPt,
-                TituloEn = achado.TituloEn,
-                Cwe = "—",
-                AssetNome = asset.Nome,
-                ExposicaoPt = "Público",
-                ExposicaoEn = "Public",
-                PrioridadeIa = achado.Severidade switch { Severidade.Critica => 95, Severidade.Alta => 75, Severidade.Media => 45, _ => 20 },
-                StatusPt = "Aberto",
-                StatusEn = "Open",
-                Severidade = achado.Severidade,
-            });
-        }
-
-        if (!string.IsNullOrWhiteSpace(resultado.Ip))
-        {
-            asset.Ip = resultado.Ip;
-        }
-
-        asset.UltimoScanEm = DateTimeOffset.UtcNow;
-        await _db.SaveChangesAsync();
-        await AssetScoreCalculator.RecalcularAsync(_db, asset.CompanyId, asset.Nome);
+        // Mesmo caminho do agendador automático (ScanExecutor) — inclusive o registro das mudanças
+        // em relação à varredura anterior.
+        var resultado = await _executor.ExecutarAsync(asset, automatico: false);
 
         ScanDominio = asset.Nome;
-        ScanAchados = resultado.Achados.Count;
+        ScanAchados = resultado.Achados;
 
         return RedirectToPage(new { empresa });
     }

@@ -137,6 +137,13 @@
             </nav>
 
             <main class="oi-main">
+                @if (tenantAtual?.Demo == true)
+                {
+                    <div class="oi-demo-banner" role="status">
+                        <span class="oi-demo-banner-tag">@I18n.T("demoTag")</span>
+                        <span class="oi-demo-banner-text">@I18n.T("demoBannerText")</span>
+                    </div>
+                }
                 @RenderBody()
             </main>
 

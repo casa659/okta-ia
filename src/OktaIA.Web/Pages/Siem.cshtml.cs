@@ -11,11 +11,13 @@ public class SiemModel : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly I18nService _i18n;
+    private readonly CopilotService _copilot;
 
-    public SiemModel(ApplicationDbContext db, I18nService i18n)
+    public SiemModel(ApplicationDbContext db, I18nService i18n, CopilotService copilot)
     {
         _db = db;
         _i18n = i18n;
+        _copilot = copilot;
     }
 
     public record FacetItemView(string Chave, string Valor);
@@ -33,9 +35,9 @@ public class SiemModel : PageModel
     {
         var lang = _i18n.Lang;
         Query = "event.category:auth AND event.outcome:failure AND source.geo != \"BR\" | stats count by source.ip";
-        AskSiemPrompt = CopilotPrompts.For(lang)[3]; // "Qual servidor está mais lento agora?" — mesmo atalho do mockup
 
         var tenantAtual = await TenantResolver.ResolverAtualAsync(HttpContext, _db);
+        AskSiemPrompt = await _copilot.GerarEventosAsync(tenantAtual?.Id, lang);
 
         // Facet de severidade é real (contagem das últimas 24h); Fonte/Nuvem ficam com os
         // mesmos valores de referência do mockup — SecurityEvent não modela sistema de origem/

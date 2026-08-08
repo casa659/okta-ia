@@ -21,6 +21,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<I18nService>();
+builder.Services.AddScoped<CopilotService>();
+builder.Services.AddScoped<ScanExecutor>();
+builder.Services.AddHostedService<ScanAgendadorService>();
 builder.Services.AddScoped<AdminAuditService>();
 builder.Services.AddSingleton<RelatorioPdfService>();
 builder.Services.AddSingleton<PropostaComercialPdfService>();

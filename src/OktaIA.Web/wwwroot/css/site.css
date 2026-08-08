@@ -652,3 +652,33 @@ a:hover { color: var(--oi-accent-light); }
 .oi-twin-legend { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; margin-top: 8px; }
 .oi-twin-legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--oi-muted); }
 .oi-twin-legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+/* Faixa de aviso "dados de demonstração" — aparece no topo de qualquer tela do console quando o
+   tenant selecionado é uma empresa fictícia do seed (Company.Demo). Âmbar em vez de vermelho:
+   não é um erro nem um incidente, é um estado do ambiente; vermelho competiria visualmente com
+   os indicadores de severidade crítica das próprias telas. */
+.oi-demo-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: rgba(255, 201, 60, .07); border: 1px solid rgba(255, 201, 60, .28);
+  border-left: 3px solid #FFC93C; border-radius: 8px;
+  padding: 9px 14px; margin-bottom: 14px;
+}
+.oi-demo-banner-tag {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: #0B0F16; background: #FFC93C; border-radius: 4px; padding: 3px 7px; flex: 0 0 auto;
+}
+.oi-demo-banner-text { font-size: 12px; line-height: 1.5; color: #E4CE8E; }
+
+/* Chip liga/desliga do monitoramento contínuo por ativo (aba Scanner). Apagado quando desligado
+   pra que a fileira de ativos leia de relance quem está sob revarredura automática. */
+.oi-monitor-toggle {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+  color: #5A7191; background: #0F1720; border: 1px solid var(--oi-border); border-radius: 999px;
+  padding: 4px 9px; transition: color .15s, border-color .15s, background .15s;
+}
+.oi-monitor-toggle:hover { border-color: var(--oi-border-2); color: #8FA3BC; }
+.oi-monitor-toggle .oi-monitor-dot { width: 6px; height: 6px; border-radius: 50%; background: #3C4C60; flex: 0 0 6px; }
+.oi-monitor-toggle.oi-monitor-on { color: var(--oi-accent); border-color: #143A31; background: #0C1A18; }
+.oi-monitor-toggle.oi-monitor-on .oi-monitor-dot { background: var(--oi-accent); }

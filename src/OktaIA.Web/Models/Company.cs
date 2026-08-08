@@ -31,4 +31,12 @@ public class Company
     // ativo real em /Ativos, já vinculado a esta empresa. Sem regra de unicidade: uma empresa
     // pode não ter domínio, e nada impede o operador de trocar o valor sugerido.
     public string? Dominio { get; set; }
+
+    // Empresa fictícia do seed de demonstração (Grupo Vector, Hospital Santa Clara, etc.), com
+    // ativos, eventos, incidentes e CVEs inventados pra dar corpo às telas. Existe pra que a UI
+    // possa AVISAR que aquele ambiente não é real: sem o rótulo, um prospect vê "vpn-sp01 sob
+    // ataque de 3 ASNs russos" achando que é o ambiente dele — e a descoberta de que era enfeite
+    // custa a confiança na plataforma inteira, que é o produto que se está vendendo.
+    // Empresa criada pelo operador (Admin > Empresas) nasce com false.
+    public bool Demo { get; set; }
 }
