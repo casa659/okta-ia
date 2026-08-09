@@ -25,6 +25,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
 
+    // ---------- Plataforma de integração ----------
+    public DbSet<Conector> Conectores => Set<Conector>();
+    public DbSet<CredencialConector> CredenciaisConector => Set<CredencialConector>();
+    public DbSet<CursorSync> CursoresSync => Set<CursorSync>();
+    public DbSet<AlertaUnificado> AlertasUnificados => Set<AlertaUnificado>();
+    public DbSet<ExecucaoSync> ExecucoesSync => Set<ExecucaoSync>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -69,6 +76,44 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.HasIndex(rp => new { rp.RoleId, rp.AreaKey }).IsUnique();
             entity.HasOne(rp => rp.Role).WithMany().HasForeignKey(rp => rp.RoleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Conector>(entity =>
+        {
+            entity.Property(c => c.TipoAuth).HasConversion<string>();
+            entity.Property(c => c.Status).HasConversion<string>();
+            // O mesmo fabricante só pode estar instalado uma vez por empresa — instalar duas vezes
+            // duplicaria o sync e, com ele, todo alerta lido.
+            entity.HasIndex(c => new { c.CompanyId, c.Slug }).IsUnique();
+            entity.HasOne(c => c.Company).WithMany().HasForeignKey(c => c.CompanyId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(c => c.Credencial).WithOne(cr => cr.Conector!)
+                  .HasForeignKey<CredencialConector>(cr => cr.ConectorId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(c => c.Cursores).WithOne(cs => cs.Conector!)
+                  .HasForeignKey(cs => cs.ConectorId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<CursorSync>(entity =>
+        {
+            entity.Property(cs => cs.Escopo).HasConversion<string>();
+            entity.HasIndex(cs => new { cs.ConectorId, cs.Escopo }).IsUnique();
+        });
+
+        builder.Entity<AlertaUnificado>(entity =>
+        {
+            entity.Property(a => a.Severidade).HasConversion<string>();
+            // Chave de idempotência: reprocessar a mesma janela do fabricante não duplica alerta.
+            // É o que permite o sync ser retomável sem medo depois de uma falha no meio.
+            entity.HasIndex(a => new { a.ConectorId, a.IdExterno }).IsUnique();
+            entity.HasIndex(a => new { a.CompanyId, a.OcorridoEm });
+            entity.HasOne(a => a.Company).WithMany().HasForeignKey(a => a.CompanyId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(a => a.Conector).WithMany().HasForeignKey(a => a.ConectorId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ExecucaoSync>(entity =>
+        {
+            entity.Property(e => e.Escopo).HasConversion<string>();
+            entity.HasIndex(e => new { e.ConectorId, e.IniciadoEm });
+            entity.HasOne(e => e.Conector).WithMany().HasForeignKey(e => e.ConectorId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

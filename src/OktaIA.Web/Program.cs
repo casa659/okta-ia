@@ -6,6 +6,7 @@ using OktaIA.Web.Data;
 using OktaIA.Web.Data.Seed;
 using OktaIA.Web.Models;
 using OktaIA.Web.Services;
+using OktaIA.Web.Services.Integracoes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,8 @@ builder.Services.AddScoped<AdminAuditService>();
 builder.Services.AddSingleton<RelatorioPdfService>();
 builder.Services.AddSingleton<PropostaComercialPdfService>();
 builder.Services.AddSingleton<TermoAutorizacaoPdfService>();
+// Sem estado e sem dependência de request — a chave vem de configuração e não muda em execução.
+builder.Services.AddSingleton<ProtetorDeCredencial>();
 builder.Services.AddHttpClient<SecurityScanService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
