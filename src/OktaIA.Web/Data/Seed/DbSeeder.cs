@@ -30,6 +30,7 @@ public static class DbSeeder
         await SeedContactChannelsAsync(db);
         await SeedRolePermissionsAsync(db, roleManager);
         await BackfillDigitalTwinPermissionAsync(db);
+        await BackfillAlertasPermissionAsync(db);
         await BackfillRebrandLoktaiaAsync(db);
         await BackfillEmpresasDemoAsync(db);
     }
@@ -129,6 +130,31 @@ public static class DbSeeder
             .ToListAsync();
 
         foreach (var roleId in roleIdsComAtivos)
+        {
+            db.RolePermissions.Add(new RolePermission { RoleId = roleId, AreaKey = area });
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    // Mesma armadilha do backfill acima: área criada depois do primeiro deploy não é concedida a
+    // ninguém. Quem já podia ver "soc.vulnerabilidades" passa a ver "soc.alertas" — são as duas
+    // faces do mesmo trabalho (achado nosso × alerta da ferramenta do cliente).
+    private static async Task BackfillAlertasPermissionAsync(ApplicationDbContext db)
+    {
+        const string area = "soc.alertas";
+        if (await db.RolePermissions.AnyAsync(rp => rp.AreaKey == area))
+        {
+            return;
+        }
+
+        var roleIds = await db.RolePermissions
+            .Where(rp => rp.AreaKey == "soc.vulnerabilidades")
+            .Select(rp => rp.RoleId)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var roleId in roleIds)
         {
             db.RolePermissions.Add(new RolePermission { RoleId = roleId, AreaKey = area });
         }

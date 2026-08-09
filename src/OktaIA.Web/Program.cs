@@ -33,6 +33,7 @@ builder.Services.AddSingleton<TermoAutorizacaoPdfService>();
 builder.Services.AddSingleton<ProtetorDeCredencial>();
 builder.Services.AddScoped<RegistroDeConectores>();
 builder.Services.AddScoped<MotorDeSync>();
+builder.Services.AddHostedService<SyncAgendadorService>();
 
 builder.Services.AddHttpClient<WazuhConnector>(client =>
 {

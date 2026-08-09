@@ -15,6 +15,7 @@ public static class AreaCatalog
         new Area("soc.ativos", "Ativos", "/Ativos", "Centro de Operações · SOC"),
         new Area("soc.twin", "Digital Twin", "/DigitalTwin", "Centro de Operações · SOC"),
         new Area("soc.vulnerabilidades", "Vulnerabilidades", "/Vulnerabilidades", "Centro de Operações · SOC"),
+        new Area("soc.alertas", "Alertas", "/Alertas", "Centro de Operações · SOC"),
         new Area("soc.incidentes", "Incidentes", "/Incidentes", "Centro de Operações · SOC"),
         new Area("soc.siem", "SIEM", "/Siem", "Centro de Operações · SOC"),
         new Area("soc.ia", "IA", "/Ia", "Centro de Operações · SOC"),

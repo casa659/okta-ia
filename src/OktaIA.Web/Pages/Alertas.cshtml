@@ -1,0 +1,104 @@
+@page
+@using OktaIA.Web.Services
+@inject I18nService I18n
+@model AlertasModel
+@{
+    ViewData["Title"] = I18n.T("nav.alerts");
+}
+
+<div class="oi-content">
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:14px; gap:16px; flex-wrap:wrap;">
+        <div>
+            <h1 class="oi-dash-title">@I18n.T("alertsTitle")</h1>
+            <p class="oi-dash-sub">@I18n.T("alertsSub")</p>
+        </div>
+        <form method="get">
+            <select name="empresa" data-oi-autosubmit style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+                @foreach (var e in Model.EmpresasDisponiveis)
+                {
+                    <option value="@e.Id" selected="@(e.Id == Model.EmpresaSelecionadaId)">@e.Nome</option>
+                }
+            </select>
+        </form>
+    </div>
+
+    <div class="oi-kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));">
+        @foreach (var c in Model.Contadores)
+        {
+            <div class="oi-kpi-card" style="--oi-kpi-color:@c.Cor">
+                <div class="oi-kpi-label">@c.Rotulo</div>
+                <div class="oi-kpi-value-row"><span class="oi-kpi-value">@c.Valor</span></div>
+            </div>
+        }
+    </div>
+
+    @if (Model.SemConectores)
+    {
+        <div class="oi-panel" style="padding:26px; text-align:center;">
+            <p style="font-size:13.5px; color:#D4DFEC; margin:0 0 6px;">@I18n.T("alertsNoConnectors")</p>
+            <a asp-page="/Admin/Conectores" style="font-size:12.5px; color:#4D9BFF; text-decoration:none;">@I18n.T("alertsGoConnectors") →</a>
+        </div>
+    }
+    else
+    {
+        <form method="get" class="oi-panel" style="padding:12px 14px; margin-bottom:12px; display:flex; gap:9px; flex-wrap:wrap; align-items:center;">
+            <input type="hidden" name="empresa" value="@Model.EmpresaSelecionadaId" />
+            <input name="q" value="@Model.Busca" placeholder="@I18n.T("alertsSearch")"
+                   style="flex:1 1 220px; min-width:0; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:8px 10px; color:#EAF0F8; font-family:inherit; font-size:12px;" />
+            <select name="conector" style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+                <option value="">@I18n.T("alertsAllConnectors")</option>
+                @foreach (var c in Model.ConectoresDisponiveis)
+                {
+                    <option value="@c.Id" selected="@(c.Id == Model.ConectorFiltro)">@c.Nome</option>
+                }
+            </select>
+            <select name="severidade" style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+                <option value="">@I18n.T("alertsAllSeverities")</option>
+                @foreach (var s in new[] { OktaIA.Web.Models.Severidade.Critica, OktaIA.Web.Models.Severidade.Alta, OktaIA.Web.Models.Severidade.Media, OktaIA.Web.Models.Severidade.Baixa })
+                {
+                    <option value="@s" selected="@(s == Model.SeveridadeFiltro)">@SeverityStyle.Label(s, I18n.Lang)</option>
+                }
+            </select>
+            <button type="submit" class="adm-btn-ghost adm-accent" style="font-size:11px; padding:8px 12px;">@I18n.T("alertsFilter")</button>
+        </form>
+
+        <div class="oi-panel oi-table-scroll">
+            <div class="oi-asset-head" style="display:grid; grid-template-columns:88px minmax(220px,3fr) minmax(120px,1fr) minmax(110px,1fr) 104px;">
+                <span>@I18n.T("thSeverity")</span>
+                <span>@I18n.T("thAlert")</span>
+                <span>@I18n.T("thAsset")</span>
+                <span>@I18n.T("thSource")</span>
+                <span>@I18n.T("thWhen")</span>
+            </div>
+
+            @if (Model.Alertas.Count == 0)
+            {
+                <div style="padding:26px; text-align:center; font-size:13px; color:#8FA3BC;">@I18n.T("alertsEmpty")</div>
+            }
+
+            @foreach (var a in Model.Alertas)
+            {
+                <div class="oi-asset-row" style="display:grid; grid-template-columns:88px minmax(220px,3fr) minmax(120px,1fr) minmax(110px,1fr) 104px; align-items:center;">
+                    <span class="adm-pill" style="color:@a.Cor; background:@a.Fundo; font-size:8.5px; justify-self:start;">@a.SeveridadeRotulo</span>
+                    <div style="min-width:0;">
+                        <div class="oi-asset-name" style="white-space:normal;">@a.Titulo</div>
+                        @if (a.Categoria is not null || a.StatusOrigem is not null)
+                        {
+                            <div class="oi-asset-ip">@a.Categoria @(a.StatusOrigem is not null ? "· " + a.StatusOrigem : "")</div>
+                        }
+                    </div>
+                    <span class="oi-asset-stack">@(a.AtivoNome ?? "—")</span>
+                    <span class="oi-asset-stack">@a.Conector</span>
+                    <span class="oi-mono" style="font-size:11px; color:#8FA3BC;">@a.Quando</span>
+                </div>
+            }
+        </div>
+
+        @if (Model.TemMaisQuePagina)
+        {
+            <p style="font-size:11.5px; color:#5A7191; margin-top:10px;">
+                @I18n.T("alertsShowing") @Model.Alertas.Count @I18n.T("alertsOf") @Model.TotalFiltrado.ToString("N0") — @I18n.T("alertsRefine")
+            </p>
+        }
+    }
+</div>
