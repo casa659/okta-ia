@@ -47,9 +47,11 @@
             <a asp-page="/Autenticador" class="adm-site-link">Autenticador</a>
             <a asp-page="/TrocarSenha" class="adm-site-link">Senha</a>
             <a href="/" class="adm-site-link">Site</a>
+            @* O avatar ficava DENTRO do botão de logout: clicar nas iniciais deslogava, porque
+               parece um menu de usuário e não um botão de sair. Agora só o texto "Sair" envia. *@
+            <span class="adm-avatar" title="@(usuario?.NomeCompleto ?? "")">@(usuario?.Iniciais ?? "?")</span>
             <form method="post" asp-page="/Login" asp-page-handler="Logout" style="display:contents;">
                 <button type="submit" class="adm-logout-btn">
-                    <span class="adm-avatar">@(usuario?.Iniciais ?? "?")</span>
                     <span style="font-size:12px;">Sair</span>
                 </button>
             </form>

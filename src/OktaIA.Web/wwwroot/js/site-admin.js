@@ -15,6 +15,31 @@
     });
   });
 
+  // ---------- Dialog genérico ----------
+  // O mesmo handler existe em site.js, mas o layout do Admin carrega só este arquivo — por isso
+  // botão com data-adm-open-dialog não fazia nada nas telas de Admin.
+  document.querySelectorAll('[data-adm-open-dialog]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var dialog = document.getElementById(btn.getAttribute('data-adm-open-dialog'));
+      if (dialog) dialog.showModal();
+    });
+  });
+  document.querySelectorAll('dialog').forEach(function (dialog) {
+    dialog.querySelectorAll('[data-adm-dialog-close]').forEach(function (btn) {
+      btn.addEventListener('click', function () { dialog.close(); });
+    });
+    dialog.addEventListener('click', function (ev) {
+      if (ev.target === dialog) dialog.close();
+    });
+  });
+
+  // ---------- Select que submete sozinho ao trocar (filtro de empresa) ----------
+  document.querySelectorAll('[data-adm-autosubmit]').forEach(function (select) {
+    select.addEventListener('change', function () {
+      if (select.form) select.form.submit();
+    });
+  });
+
   // ---------- Confirmação em ações destrutivas (excluir/desativar) ----------
   document.querySelectorAll('form[data-adm-confirm]').forEach(function (form) {
     form.addEventListener('submit', function (ev) {

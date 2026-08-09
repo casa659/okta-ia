@@ -1,66 +1,175 @@
 @page
 @model OktaIA.Web.Pages.Admin.ConectoresModel
-@using OktaIA.Web.Services
 @{
     ViewData["Title"] = "Conectores";
 }
 
-<div class="adm-page-head">
-    <h1>Conectores instalados</h1>
-    <p>Todo conector implementa o mesmo contrato · ciclo de vida gerenciado pelo núcleo</p>
-</div>
-
-<div class="adm-card" style="margin-bottom:14px;">
-    <div style="padding:13px 16px; border-bottom:1px solid rgba(120,170,255,.09); display:flex; align-items:center; gap:11px;">
-        <span style="font-size:13px; font-weight:600;">Contrato do conector</span>
-        <span class="oi-mono" style="font-size:9px; color:#8FC0FF; background:rgba(77,155,255,.10); border-radius:4px; padding:2px 7px;">IConnector v2</span>
+<div class="adm-page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+    <div>
+        <h1>Conectores instalados</h1>
+        <p>Integrações reais desta empresa · todo conector implementa o mesmo contrato</p>
     </div>
-    @foreach (var i in AdminCatalog.ConnectorInterface)
-    {
-        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr)); gap:14px; padding:11px 16px; border-bottom:1px solid rgba(120,170,255,.055);">
-            <span class="oi-mono" style="font-size:11.5px; color:#00E0A4;">@i.M</span>
-            <span style="font-size:12.5px; color:#B4C4D8;">@i.D</span>
-            <span class="oi-mono" style="font-size:10px; color:#5A7191; text-align:right;">@i.R</span>
-        </div>
-    }
+    <form method="get">
+        <select name="empresa" data-adm-autosubmit style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+            @foreach (var e in Model.EmpresasDisponiveis)
+            {
+                <option value="@e.Id" selected="@(e.Id == Model.EmpresaSelecionadaId)">@e.Nome</option>
+            }
+        </select>
+    </form>
 </div>
 
-<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr)); gap:11px;">
-    @foreach (var c in AdminCatalog.Connectors)
+@if (Model.Mensagem is not null)
+{
+    <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid @(Model.MensagemOk ? "#00E0A4" : "#FF3B5C");">
+        <span style="font-size:13px; color:#D4DFEC;">@Model.Mensagem</span>
+    </div>
+}
+
+@if (!Model.CofreConfigurado)
+{
+    <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid #FF8A3D;">
+        <span style="font-size:13px; color:#D4DFEC;">
+            <strong style="color:#FF8A3D;">Cofre de credenciais não configurado.</strong>
+            Defina o App Setting <span class="oi-mono">Integracoes:ChaveCriptografia</span> (32 bytes em base64)
+            antes de instalar qualquer conector — sem ela nenhuma credencial pode ser gravada ou lida.
+        </span>
+    </div>
+}
+
+@if (Model.Instalados.Count == 0)
+{
+    <div class="adm-card" style="padding:22px; margin-bottom:14px; text-align:center;">
+        <span style="font-size:13px; color:#8FA3BC;">Nenhum conector instalado nesta empresa ainda.</span>
+    </div>
+}
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr)); gap:11px; margin-bottom:22px;">
+    @foreach (var c in Model.Instalados)
     {
-        var healthColor = c.Health switch { "healthy" => "#00E0A4", "degraded" => "#FFC93C", _ => "#FF3B5C" };
-        var uptimeColor = c.Uptime >= 95 ? "#00E0A4" : c.Uptime > 0 ? "#FFC93C" : "#FF3B5C";
         <div class="adm-card" style="padding:16px 17px;">
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-                <span style="width:6px; height:6px; border-radius:50%; background:@healthColor; flex:0 0 6px;"></span>
-                <span style="font-size:13.5px; font-weight:600; letter-spacing:-.014em;">@c.N</span>
-                <span class="oi-mono" style="font-size:9px; color:#4A5D78;">v@c.Ver</span>
-                <span style="margin-left:auto;"><span class="adm-pill" style="color:@healthColor; background:@(healthColor)1F; font-size:8.5px;">@c.Health.ToUpperInvariant()</span></span>
+                <span style="width:6px; height:6px; border-radius:50%; background:@c.Cor; flex:0 0 6px;"></span>
+                <span style="font-size:13.5px; font-weight:600; letter-spacing:-.014em;">@c.Nome</span>
+                <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@c.Categoria</span>
+                <span style="margin-left:auto;"><span class="adm-pill" style="color:@c.Cor; background:@(c.Cor)1F; font-size:8.5px;">@c.StatusRotulo</span></span>
             </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(78px,100%),1fr)); gap:10px; margin-bottom:12px;">
+
+            <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(90px,100%),1fr)); gap:10px; margin-bottom:12px;">
                 <div>
-                    <div class="oi-mono" style="font-size:8px; color:#4A5D78; letter-spacing:.1em; margin-bottom:4px;">UPTIME</div>
-                    <div class="oi-mono" style="font-size:13px; font-weight:600; color:@uptimeColor;">@(c.Uptime)%</div>
+                    <div class="oi-mono" style="font-size:8px; color:#4A5D78; letter-spacing:.1em; margin-bottom:4px;">ÚLTIMO SYNC</div>
+                    <div class="oi-mono" style="font-size:12.5px; color:#B4C4D8;">@c.UltimoSync</div>
                 </div>
                 <div>
-                    <div class="oi-mono" style="font-size:8px; color:#4A5D78; letter-spacing:.1em; margin-bottom:4px;">SYNC</div>
-                    <div class="oi-mono" style="font-size:13px; color:#B4C4D8;">@c.Sync</div>
+                    <div class="oi-mono" style="font-size:8px; color:#4A5D78; letter-spacing:.1em; margin-bottom:4px;">ALERTAS</div>
+                    <div class="oi-mono" style="font-size:12.5px; color:#B4C4D8;">@c.Alertas</div>
                 </div>
                 <div>
-                    <div class="oi-mono" style="font-size:8px; color:#4A5D78; letter-spacing:.1em; margin-bottom:4px;">VOLUME</div>
-                    <div class="oi-mono" style="font-size:13px; color:#B4C4D8;">@c.Vol</div>
+                    <div class="oi-mono" style="font-size:8px; color:#4A5D78; letter-spacing:.1em; margin-bottom:4px;">CREDENCIAL</div>
+                    <div class="oi-mono" style="font-size:12.5px; color:#B4C4D8;">@(c.Referencia ?? "—")</div>
                 </div>
             </div>
-            <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px;">
-                @foreach (var cap in c.Caps)
+
+            @if (c.UrlBase is not null)
+            {
+                <div class="oi-mono" style="font-size:10px; color:#5A7191; margin-bottom:10px; word-break:break-all;">@c.UrlBase</div>
+            }
+
+            @if (c.UltimoErro is not null)
+            {
+                <div style="font-size:11.5px; color:#FF8098; background:rgba(255,59,92,.07); border-radius:6px; padding:8px 10px; margin-bottom:10px;">@c.UltimoErro</div>
+            }
+
+            <div style="display:flex; flex-wrap:wrap; gap:6px; padding-top:11px; border-top:1px solid rgba(120,170,255,.07);">
+                <form method="post" asp-page-handler="Testar" asp-route-id="@c.Id" asp-route-empresa="@Model.EmpresaSelecionadaId">
+                    <button type="submit" class="adm-btn-ghost" style="font-size:10px; padding:6px 9px;">Testar conexão</button>
+                </form>
+                <form method="post" asp-page-handler="Sincronizar" asp-route-id="@c.Id" asp-route-empresa="@Model.EmpresaSelecionadaId">
+                    <button type="submit" class="adm-btn-ghost adm-accent" style="font-size:10px; padding:6px 9px;">Sincronizar agora</button>
+                </form>
+                <form method="post" asp-page-handler="Pausar" asp-route-id="@c.Id" asp-route-empresa="@Model.EmpresaSelecionadaId">
+                    <button type="submit" class="adm-btn-ghost" style="font-size:10px; padding:6px 9px;">@(c.Status == OktaIA.Web.Models.StatusConector.Pausado ? "Retomar" : "Pausar")</button>
+                </form>
+                @if (User.IsInRole("Admin"))
                 {
-                    <span class="oi-mono" style="font-size:8.5px; color:#8FC0FF; background:rgba(77,155,255,.09); border:1px solid rgba(77,155,255,.20); border-radius:4px; padding:2px 7px;">@cap</span>
+                    <button type="button" class="adm-btn-ghost" style="font-size:10px; padding:6px 9px; color:#FF8098; border-color:rgba(255,59,92,.35);" data-adm-open-dialog="adm-dialog-del-conector-@c.Id">Remover</button>
                 }
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; padding-top:11px; border-top:1px solid rgba(120,170,255,.07);">
-                <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@c.Auth</span>
-                <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@c.Vendor</span>
             </div>
         </div>
     }
 </div>
+
+@if (Model.Disponiveis.Count > 0)
+{
+    <div class="adm-page-head" style="margin-top:6px;">
+        <h1 style="font-size:15px;">Disponíveis para instalar</h1>
+        <p>Adaptadores que a plataforma realmente sabe integrar</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr)); gap:11px;">
+        @foreach (var d in Model.Disponiveis)
+        {
+            <div class="adm-card" style="padding:16px 17px;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <span style="font-size:13.5px; font-weight:600;">@d.Nome</span>
+                    <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@d.Categoria</span>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px;">
+                    @foreach (var e in d.Escopos)
+                    {
+                        <span class="oi-mono" style="font-size:8.5px; color:#8FC0FF; background:rgba(77,155,255,.09); border:1px solid rgba(77,155,255,.20); border-radius:4px; padding:2px 7px;">@e.ToString().ToLowerInvariant()</span>
+                    }
+                </div>
+                <button type="button" class="adm-btn-primary" style="font-size:11px; padding:7px 12px;" data-adm-open-dialog="adm-dialog-add-conector-@d.Slug" @(Model.CofreConfigurado ? "" : "disabled")>Instalar</button>
+            </div>
+        }
+    </div>
+}
+
+@foreach (var d in Model.Disponiveis)
+{
+    <dialog id="adm-dialog-add-conector-@d.Slug" class="adm-dialog">
+        <h2>Instalar @d.Nome</h2>
+        <p style="font-size:12.5px; color:#8FA3BC; margin:0 0 12px;">
+            As credenciais são geradas <strong>pelo cliente</strong>, no console dele, e ficam cifradas aqui.
+            Use sempre um usuário somente-leitura.
+        </p>
+        <form method="post" asp-page-handler="Instalar" asp-route-slug="@d.Slug" asp-route-empresaId="@Model.EmpresaSelecionadaId">
+            @if (d.ExigeUrlBase)
+            {
+                <label>URL do serviço</label>
+                <input name="urlBase" placeholder="https://10.0.0.5:9200" />
+            }
+            @foreach (var campo in d.CamposCredencial)
+            {
+                <label>@campo.Rotulo</label>
+                <input name="cred_@campo.Chave" type="@(campo.Segredo ? "password" : "text")" autocomplete="off" />
+            }
+            <div class="adm-dialog-actions">
+                <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
+                <button type="submit" class="adm-btn-primary">Instalar</button>
+            </div>
+        </form>
+    </dialog>
+}
+
+@if (User.IsInRole("Admin"))
+{
+    foreach (var c in Model.Instalados)
+    {
+        <dialog id="adm-dialog-del-conector-@c.Id" class="adm-dialog">
+            <h2>Remover conector</h2>
+            <p style="font-size:14px; color:#EAF0F8; margin:0 0 6px;"><strong style="color:#FF8098;">@c.Nome</strong></p>
+            <p style="font-size:12.5px; color:#8FA3BC; margin:0 0 12px;">
+                Some junto a credencial, o cursor, o histórico de execuções e
+                <strong style="color:#D4DFEC;">@c.Alertas alerta(s)</strong> já ingerido(s). Não tem desfazer.
+            </p>
+            <form method="post" asp-page-handler="Remover" asp-route-id="@c.Id" asp-route-empresa="@Model.EmpresaSelecionadaId">
+                <div class="adm-dialog-actions">
+                    <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
+                    <button type="submit" class="adm-btn-primary" style="background:#FF3B5C; border-color:#FF3B5C;">Remover definitivamente</button>
+                </div>
+            </form>
+        </dialog>
+    }
+}
