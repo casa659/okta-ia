@@ -31,6 +31,26 @@ builder.Services.AddSingleton<PropostaComercialPdfService>();
 builder.Services.AddSingleton<TermoAutorizacaoPdfService>();
 // Sem estado e sem dependência de request — a chave vem de configuração e não muda em execução.
 builder.Services.AddSingleton<ProtetorDeCredencial>();
+builder.Services.AddScoped<RegistroDeConectores>();
+builder.Services.AddScoped<MotorDeSync>();
+
+builder.Services.AddHttpClient<WazuhConnector>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    // Instalação padrão do Wazuh Indexer usa certificado autoassinado, e ele fica na rede interna
+    // do cliente. Aceitar isso é OPT-IN explícito por configuração: numa plataforma de segurança,
+    // desligar validação de TLS em silêncio seria exatamente o tipo de coisa que auditamos nos
+    // outros. Fora do laboratório, o certo é o cliente instalar um certificado confiável.
+    ServerCertificateCustomValidationCallback =
+        builder.Configuration.GetValue("Integracoes:Wazuh:IgnorarCertificado", false)
+            ? HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            : null,
+});
+// Registrado também pela interface pra que o RegistroDeConectores enxergue todos os adaptadores.
+builder.Services.AddTransient<IConnector>(sp => sp.GetRequiredService<WazuhConnector>());
 builder.Services.AddHttpClient<SecurityScanService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
