@@ -53,6 +53,13 @@ public record PerguntaDoDiagnostico
     public CondicaoDeExibicao? SomenteSe { get; init; }
 
     /// <summary>
+    /// Perguntas em que a resposta boa é NÃO ("existem sistemas fora de suporte?", "dado de produção
+    /// é usado em teste?"). Sem esta marca o cálculo leria o "sim" como controle presente e
+    /// premiaria exatamente o que é o problema.
+    /// </summary>
+    public bool RespostaBoaEhNao { get; init; }
+
+    /// <summary>
     /// Peso no cálculo de cobertura. 0 = não entra na conta (perguntas de contexto e de detalhe).
     /// Controles cuja ausência costuma ser a causa raiz de um incidente pesam mais.
     /// </summary>

@@ -1,0 +1,103 @@
+@page
+@model OktaIA.Web.Pages.Admin.DiagnosticosModel
+@{
+    ViewData["Title"] = "Diagnósticos";
+}
+
+<div class="adm-page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+    <div>
+        <h1>Diagnósticos de segurança</h1>
+        <p>Levantamento conduzido na reunião · vira mapa de lacunas, plano de ação e proposta</p>
+    </div>
+    <form method="get">
+        <select name="empresa" data-adm-autosubmit style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+            @foreach (var e in Model.EmpresasDisponiveis)
+            {
+                <option value="@e.Id" selected="@(e.Id == Model.EmpresaSelecionadaId)">@e.Nome</option>
+            }
+        </select>
+    </form>
+</div>
+
+@if (Model.Mensagem is not null)
+{
+    <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid @(Model.MensagemOk ? "#00E0A4" : "#FF3B5C");">
+        <span style="font-size:13px; color:#D4DFEC;">@Model.Mensagem</span>
+    </div>
+}
+
+<div class="adm-card" style="padding:17px 18px; margin-bottom:18px;">
+    <div style="font-size:13.5px; font-weight:600; margin-bottom:4px;">Novo diagnóstico</div>
+    <div style="font-size:11.5px; color:#7A8FAB; margin-bottom:13px;">
+        Quem responde é o cliente; quem preenche é você. Registrar o respondente importa —
+        um levantamento sem fonte não sustenta a conversa seguinte.
+    </div>
+    <form method="post" asp-page-handler="Criar" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr)); gap:10px; align-items:end;">
+        <input type="hidden" name="empresaId" value="@Model.EmpresaSelecionadaId" />
+        <label style="display:block;">
+            <span style="display:block; font-size:10.5px; color:#7A8FAB; margin-bottom:5px;">Título</span>
+            <input name="titulo" required placeholder="Diagnóstico inicial" class="adm-input"
+                   style="width:100%; box-sizing:border-box; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:9px 11px; color:#EAF0F8; font-family:inherit; font-size:12.5px;" />
+        </label>
+        <label style="display:block;">
+            <span style="display:block; font-size:10.5px; color:#7A8FAB; margin-bottom:5px;">Respondente</span>
+            <input name="respondente" placeholder="Nome de quem respondeu"
+                   style="width:100%; box-sizing:border-box; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:9px 11px; color:#EAF0F8; font-family:inherit; font-size:12.5px;" />
+        </label>
+        <label style="display:block;">
+            <span style="display:block; font-size:10.5px; color:#7A8FAB; margin-bottom:5px;">Cargo</span>
+            <input name="cargo" placeholder="Gerente de TI"
+                   style="width:100%; box-sizing:border-box; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:9px 11px; color:#EAF0F8; font-family:inherit; font-size:12.5px;" />
+        </label>
+        <button type="submit" class="adm-btn" style="padding:9px 16px;">Começar</button>
+    </form>
+</div>
+
+@if (Model.Itens.Count == 0)
+{
+    <div class="adm-card" style="padding:22px; text-align:center;">
+        <span style="font-size:13px; color:#8FA3BC;">Nenhum diagnóstico para @(Model.EmpresaNome ?? "esta empresa") ainda.</span>
+    </div>
+}
+
+<div style="display:grid; gap:10px;">
+    @foreach (var d in Model.Itens)
+    {
+        <div class="adm-card" style="padding:15px 17px;">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:11px;">
+                <span style="width:6px; height:6px; border-radius:50%; background:@d.Cor; flex:0 0 6px;"></span>
+                <a href="/Admin/Diagnostico?id=@d.Id" style="font-size:13.5px; font-weight:600; color:#EAF0F8; text-decoration:none;">@d.Titulo</a>
+                <span class="adm-pill" style="color:@d.Cor; background:@(d.Cor)1F; font-size:8.5px;">@d.StatusRotulo</span>
+                <span class="oi-mono" style="font-size:9.5px; color:#4A5D78;">@d.CriadoEm.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                @if (d.Respondente is not null)
+                {
+                    <span style="font-size:10.5px; color:#7A8FAB;">respondido por @d.Respondente</span>
+                }
+                <span style="margin-left:auto; display:flex; gap:8px;">
+                    <a href="/Admin/Diagnostico?id=@d.Id" class="adm-btn" style="padding:6px 12px; font-size:11px;">Abrir</a>
+                    @if (d.Status != OktaIA.Web.Models.StatusDiagnostico.Arquivado)
+                    {
+                        <form method="post" asp-page-handler="Arquivar" style="display:inline;">
+                            <input type="hidden" name="id" value="@d.Id" />
+                            <input type="hidden" name="empresaId" value="@Model.EmpresaSelecionadaId" />
+                            <button type="submit" class="adm-btn" style="padding:6px 12px; font-size:11px; color:#7A8FAB;">Arquivar</button>
+                        </form>
+                    }
+                </span>
+            </div>
+
+            <div style="display:flex; gap:22px; flex-wrap:wrap; font-size:11px; color:#7A8FAB;">
+                <span>Cobertura <strong style="color:#EAF0F8; font-size:13px;">@d.Cobertura%</strong></span>
+                <span>Maturidade <strong style="color:#EAF0F8; font-size:13px;">@(d.Maturidade?.ToString("0.0") ?? "—")</strong><span style="color:#4A5D78;">/5</span></span>
+                <span>Preenchido <strong style="color:#EAF0F8; font-size:13px;">@d.Completude%</strong></span>
+                <span>@d.Respostas respostas</span>
+            </div>
+        </div>
+    }
+</div>
+
+<p style="font-size:10.5px; color:#4A5D78; margin-top:18px; line-height:1.6;">
+    Maturidade em branco não é zero: significa que ainda não há controle implantado o suficiente
+    para julgar como ele é gerenciado. Diagnóstico concluído mostra o número congelado na conclusão;
+    em andamento, recalcula a cada abertura.
+</p>

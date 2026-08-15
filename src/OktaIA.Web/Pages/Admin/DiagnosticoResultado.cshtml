@@ -1,0 +1,232 @@
+@page
+@using OktaIA.Web.Models
+@model OktaIA.Web.Pages.Admin.DiagnosticoResultadoModel
+@{
+    ViewData["Title"] = "Resultado do diagnóstico";
+    var d = Model.Diagnostico!;
+    var r = Model.Resultado!;
+    var declaradas = r.PorOrigem.GetValueOrDefault(OrigemDaInformacao.Declarado);
+    var totalOrigens = r.PorOrigem.Values.Sum();
+}
+
+<div class="adm-page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+    <div>
+        <h1>@d.Titulo</h1>
+        <p>@Model.EmpresaNome · @(d.ConcluidoEm is { } c ? $"concluído em {c.ToLocalTime():dd/MM/yyyy}" : "ainda em andamento")</p>
+    </div>
+    <div style="display:flex; gap:8px;">
+        <a href="/Admin/Diagnostico?id=@d.Id" class="adm-btn" style="padding:8px 14px; font-size:11.5px;">Editar respostas</a>
+        <a href="/Admin/Diagnosticos?empresa=@d.CompanyId" class="adm-btn" style="padding:8px 14px; font-size:11.5px;">Voltar</a>
+    </div>
+</div>
+
+@if (Model.Mensagem is not null)
+{
+    <div class="adm-card" style="padding:12px 16px; margin-bottom:14px; border-left:2px solid @(Model.MensagemOk ? "#00E0A4" : "#FF8A3D");">
+        <span style="font-size:12.5px; color:#D4DFEC;">@Model.Mensagem</span>
+    </div>
+}
+
+@* Os quatro números. Cobertura e maturidade medem coisas diferentes de propósito. *@
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr)); gap:11px; margin-bottom:14px;">
+    <div class="adm-card" style="padding:16px 18px;">
+        <div style="font-size:9.5px; color:#7A8FAB; letter-spacing:.06em;">COBERTURA</div>
+        <div style="font-size:26px; font-weight:600; color:#EAF0F8;">@r.Cobertura<span style="font-size:13px; color:#4A5D78;">%</span></div>
+        <div style="font-size:10.5px; color:#5A7191; margin-top:3px;">dos controles esperados existem</div>
+    </div>
+    <div class="adm-card" style="padding:16px 18px;">
+        <div style="font-size:9.5px; color:#7A8FAB; letter-spacing:.06em;">MATURIDADE</div>
+        <div style="font-size:26px; font-weight:600; color:#EAF0F8;">@(r.Maturidade?.ToString("0.0") ?? "—")<span style="font-size:13px; color:#4A5D78;">/5</span></div>
+        <div style="font-size:10.5px; color:#5A7191; margin-top:3px;">quão bem gerenciado é o que existe</div>
+    </div>
+    <div class="adm-card" style="padding:16px 18px;">
+        <div style="font-size:9.5px; color:#7A8FAB; letter-spacing:.06em;">USO DO INVESTIMENTO</div>
+        <div style="font-size:26px; font-weight:600; color:#EAF0F8;">@(r.UsoDoInvestimento?.ToString() ?? "—")<span style="font-size:13px; color:#4A5D78;">%</span></div>
+        <div style="font-size:10.5px; color:#5A7191; margin-top:3px;">do que já foi pago está em uso</div>
+    </div>
+    <div class="adm-card" style="padding:16px 18px;">
+        <div style="font-size:9.5px; color:#7A8FAB; letter-spacing:.06em;">PREENCHIDO</div>
+        <div style="font-size:26px; font-weight:600; color:#EAF0F8;">@r.Completude<span style="font-size:13px; color:#4A5D78;">%</span></div>
+        <div style="font-size:10.5px; color:#5A7191; margin-top:3px;">das perguntas aplicáveis</div>
+    </div>
+</div>
+
+@* A ressalva de origem tem o mesmo peso visual dos números — não é rodapé. *@
+<div class="adm-card" style="padding:14px 17px; margin-bottom:18px; border-left:2px solid @(declaradas == totalOrigens && totalOrigens > 0 ? "#FF8A3D" : "#4D9BFF");">
+    <div style="font-size:12px; color:#D4DFEC; line-height:1.65;">
+        @if (totalOrigens == 0)
+        {
+            <span>Nenhuma resposta registrada ainda.</span>
+        }
+        else
+        {
+            <strong style="color:#EAF0F8;">De onde vêm estes números:</strong>
+            <span>
+                @string.Join(", ", r.PorOrigem.OrderByDescending(x => x.Value)
+                    .Select(x => $"{x.Value} {OktaIA.Web.Pages.Admin.DiagnosticoResultadoModel.RotuloDaOrigem(x.Key)}")).
+            </span>
+            @if (declaradas == totalOrigens)
+            {
+                <span style="color:#FF8A3D;">
+                    Tudo aqui foi informado pelo cliente, sem verificação técnica — trate como
+                    levantamento, não como medição.
+                </span>
+            }
+        }
+    </div>
+</div>
+
+<div class="adm-card" style="padding:0; margin-bottom:18px;">
+    <div style="padding:15px 18px 11px; font-size:13.5px; font-weight:600;">Por domínio</div>
+    @foreach (var dom in r.Dominios)
+    {
+        <div style="display:flex; align-items:center; gap:14px; padding:9px 18px; border-top:1px solid rgba(120,170,255,.07); flex-wrap:wrap;">
+            <span style="font-size:12.5px; color:#D4DFEC; flex:0 0 190px;">@dom.Dominio.Nome</span>
+            <span style="flex:1 1 140px; min-width:100px; height:5px; border-radius:3px; background:rgba(120,170,255,.1); position:relative; overflow:hidden;">
+                <span style="position:absolute; inset:0 auto 0 0; width:@dom.Cobertura%; background:@(dom.Cobertura >= 70 ? "#00E0A4" : dom.Cobertura >= 40 ? "#F5D547" : "#FF3B5C");"></span>
+            </span>
+            <span class="oi-mono" style="font-size:11px; color:#8FA3BC; flex:0 0 44px; text-align:right;">@dom.Cobertura%</span>
+            <span style="font-size:11px; color:#7A8FAB; flex:0 0 90px;">maturidade @(dom.Maturidade?.ToString("0.0") ?? "—")</span>
+            <span class="oi-mono" style="font-size:9.5px; color:#4A5D78;">@dom.PerguntasRespondidas/@dom.PerguntasVisiveis</span>
+        </div>
+    }
+</div>
+
+<div class="adm-card" style="padding:0; margin-bottom:18px;">
+    <div style="padding:15px 18px 11px;">
+        <div style="font-size:13.5px; font-weight:600;">Matriz de controles</div>
+        <div style="font-size:11px; color:#7A8FAB; margin-top:2px;">@r.ControlesAusentes ausentes · @r.ControlesParciais parciais</div>
+    </div>
+    @foreach (var dom in r.Dominios.Where(x => x.Matriz.Count > 0))
+    {
+        <div style="padding:9px 18px; border-top:1px solid rgba(120,170,255,.07);">
+            <div class="oi-mono" style="font-size:9.5px; color:#4A5D78; margin-bottom:6px;">@dom.Dominio.Nome.ToUpperInvariant()</div>
+            @foreach (var linha in dom.Matriz)
+            {
+                <div style="display:flex; align-items:center; gap:10px; padding:3px 0; flex-wrap:wrap;">
+                    <span style="font-size:8.5px; font-weight:600; letter-spacing:.05em; flex:0 0 62px;
+                                 color:@OktaIA.Web.Pages.Admin.DiagnosticoResultadoModel.CorDaSituacao(linha.Situacao);">
+                        @OktaIA.Web.Pages.Admin.DiagnosticoResultadoModel.RotuloDaSituacao(linha.Situacao)
+                    </span>
+                    <span style="font-size:11.5px; color:#B9C8DA; flex:1 1 240px;">@linha.Pergunta.Texto</span>
+                    <span style="font-size:9.5px; color:#4A5D78;">@OktaIA.Web.Pages.Admin.DiagnosticoResultadoModel.RotuloDaOrigem(linha.Origem)</span>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<div class="adm-card" style="padding:0; margin-bottom:18px;">
+    <div style="padding:15px 18px 11px;">
+        <div style="font-size:13.5px; font-weight:600;">Riscos priorizados</div>
+        <div style="font-size:11px; color:#7A8FAB; margin-top:2px;">
+            @Model.Riscos.Count achados, ordenados por gravidade. Cada um nasce de uma resposta — nada é inferido sem dado.
+        </div>
+    </div>
+    @if (Model.Riscos.Count == 0)
+    {
+        <div style="padding:18px; text-align:center; font-size:12px; color:#5A7191;">Nenhuma lacuna identificada com as respostas atuais.</div>
+    }
+    @foreach (var risco in Model.Riscos.Take(30))
+    {
+        var cor = OktaIA.Web.Pages.Admin.DiagnosticoResultadoModel.CorDaGravidade(risco.Gravidade);
+        <div style="padding:12px 18px; border-top:1px solid rgba(120,170,255,.07);">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:5px;">
+                <span class="oi-mono" style="font-size:9.5px; color:#4A5D78;">@risco.Prioridade.ToString("00")</span>
+                <span class="adm-pill" style="color:@cor; background:@(cor)1F; font-size:8.5px;">@risco.Gravidade.ToString().ToUpperInvariant()</span>
+                <span style="font-size:12.5px; color:#EAF0F8;">@risco.Titulo</span>
+                <span style="margin-left:auto; font-size:9.5px; color:#4A5D78;">@OktaIA.Web.Pages.Admin.DiagnosticoResultadoModel.RotuloDaOrigem(risco.Origem)</span>
+            </div>
+            @if (risco.SeNaoTratar is not null)
+            {
+                <div style="font-size:11.5px; color:#8FA3BC; line-height:1.6; margin-bottom:3px;">@risco.SeNaoTratar</div>
+            }
+            @if (risco.Recomendacao is not null)
+            {
+                <div style="font-size:11.5px; color:#00E0A4; line-height:1.6;">→ @risco.Recomendacao</div>
+            }
+        </div>
+    }
+</div>
+
+<div class="adm-card" style="padding:17px 18px; margin-bottom:26px;">
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:11px;">
+        <div style="font-size:13.5px; font-weight:600;">Leitura do diagnóstico</div>
+        @if (Model.Analise is { } a && a.Modelo is not null)
+        {
+            <span class="oi-mono" style="font-size:9px; color:#4A5D78;">@a.Modelo · @a.GeradaEm.ToLocalTime().ToString("dd/MM HH:mm")</span>
+        }
+        <form method="post" asp-page-handler="Analisar" style="margin-left:auto;">
+            <input type="hidden" name="id" value="@d.Id" />
+            <button type="submit" class="adm-btn" style="padding:7px 15px; font-size:11.5px;" disabled="@(!Model.IaConfigurada)">
+                @(Model.Analise is null ? "Gerar leitura" : "Gerar de novo")
+            </button>
+        </form>
+    </div>
+
+    @if (!Model.IaConfigurada)
+    {
+        <div style="font-size:11.5px; color:#FF8A3D; line-height:1.6;">
+            Chave da API não configurada neste servidor — o serviço recusa operar em vez de fingir
+            que analisou. Defina <span class="oi-mono">Anthropic:ApiKey</span> nas configurações do
+            App Service.
+        </div>
+    }
+    else if (Model.Analise is null)
+    {
+        <div style="font-size:11.5px; color:#7A8FAB; line-height:1.6;">
+            Nenhuma leitura gerada ainda. O modelo recebe as respostas, os números e a origem de cada
+            informação — e é instruído a nunca escrever como se tivesse medido o que foi apenas declarado.
+        </div>
+    }
+    else if (Model.Analise.Resultado == ResultadoAnalise.Recusado)
+    {
+        <div style="font-size:11.5px; color:#FF8A3D; line-height:1.6;">
+            O modelo recusou analisar este conteúdo@(Model.Analise.MotivoRecusa is { } m ? $" (categoria: {m})" : "").
+            Isso acontece com material de segurança e não indica erro no diagnóstico — os números e
+            os riscos acima continuam válidos, porque não dependem do modelo.
+        </div>
+    }
+    else if (Model.Analise.Resultado == ResultadoAnalise.Falhou)
+    {
+        <div style="font-size:11.5px; color:#FF3B5C; line-height:1.6;">Não foi possível gerar: @Model.Analise.Erro</div>
+    }
+    else
+    {
+        <div style="font-size:12.5px; color:#D4DFEC; line-height:1.75; white-space:pre-wrap;">@Model.Analise.ResumoExecutivo</div>
+
+        @if (Model.Analise.LeituraDoInvestimento is { Length: > 0 } inv)
+        {
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(120,170,255,.07);">
+                <div style="font-size:10px; color:#7A8FAB; letter-spacing:.06em; margin-bottom:5px;">O QUE JÁ FOI PAGO</div>
+                <div style="font-size:12px; color:#B9C8DA; line-height:1.7; white-space:pre-wrap;">@inv</div>
+            </div>
+        }
+        @if (Model.Analise.Inconsistencias is { Length: > 0 } inc)
+        {
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(120,170,255,.07);">
+                <div style="font-size:10px; color:#F5D547; letter-spacing:.06em; margin-bottom:5px;">CONTRADIÇÕES ENTRE RESPOSTAS</div>
+                <div style="font-size:12px; color:#B9C8DA; line-height:1.7; white-space:pre-wrap;">@inc</div>
+            </div>
+        }
+        @if (Model.Analise.ResumoTecnico is { Length: > 0 } tec)
+        {
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(120,170,255,.07);">
+                <div style="font-size:10px; color:#7A8FAB; letter-spacing:.06em; margin-bottom:5px;">LEITURA TÉCNICA</div>
+                <div style="font-size:12px; color:#B9C8DA; line-height:1.7; white-space:pre-wrap;">@tec</div>
+            </div>
+        }
+        @if (Model.Analise.PerguntasAdicionais is { Length: > 0 } perg)
+        {
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(120,170,255,.07);">
+                <div style="font-size:10px; color:#7A8FAB; letter-spacing:.06em; margin-bottom:5px;">O QUE FALTOU PERGUNTAR</div>
+                <div style="font-size:12px; color:#B9C8DA; line-height:1.7; white-space:pre-wrap;">@perg</div>
+            </div>
+        }
+
+        <div class="oi-mono" style="font-size:9px; color:#3E5273; margin-top:14px;">
+            @Model.Analise.TokensEntrada entrada · @Model.Analise.TokensSaida saída ·
+            @Model.Analise.TokensCacheLidos do cache · @Model.Analise.DuracaoMs ms
+        </div>
+    }
+</div>

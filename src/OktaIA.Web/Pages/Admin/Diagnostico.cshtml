@@ -1,0 +1,314 @@
+@page
+@using OktaIA.Web.Models
+@using OktaIA.Web.Services.Diagnostico
+@model OktaIA.Web.Pages.Admin.DiagnosticoModel
+@{
+    ViewData["Title"] = Model.Diagnostico?.Titulo ?? "Diagnóstico";
+    var d = Model.Diagnostico!;
+    var r = Model.Resultado!;
+    var concluido = d.Status == StatusDiagnostico.Concluido;
+}
+
+<div class="adm-page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+    <div>
+        <h1>@d.Titulo</h1>
+        <p>
+            @Model.EmpresaNome
+            @if (d.Respondente is not null) { <span>· respondido por @d.Respondente@(d.RespondenteCargo is not null ? $" ({d.RespondenteCargo})" : "")</span> }
+        </p>
+    </div>
+    <div style="display:flex; gap:20px; align-items:flex-end; flex-wrap:wrap;">
+        <div style="text-align:right;">
+            <div style="font-size:9.5px; color:#7A8FAB; letter-spacing:.06em;">COBERTURA</div>
+            <div style="font-size:20px; font-weight:600; color:#EAF0F8;">@r.Cobertura<span style="font-size:12px; color:#4A5D78;">%</span></div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:9.5px; color:#7A8FAB; letter-spacing:.06em;">MATURIDADE</div>
+            <div style="font-size:20px; font-weight:600; color:#EAF0F8;">@(r.Maturidade?.ToString("0.0") ?? "—")<span style="font-size:12px; color:#4A5D78;">/5</span></div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:9.5px; color:#7A8FAB; letter-spacing:.06em;">PREENCHIDO</div>
+            <div style="font-size:20px; font-weight:600; color:#EAF0F8;">@r.Completude<span style="font-size:12px; color:#4A5D78;">%</span></div>
+        </div>
+        <a href="/Admin/Diagnosticos?empresa=@d.CompanyId" class="adm-btn" style="padding:8px 14px; font-size:11.5px;">Voltar</a>
+    </div>
+</div>
+
+@if (Model.Mensagem is not null)
+{
+    <div class="adm-card" style="padding:11px 15px; margin-bottom:12px; border-left:2px solid @(Model.MensagemOk ? "#00E0A4" : "#FF3B5C");">
+        <span style="font-size:12.5px; color:#D4DFEC;">@Model.Mensagem</span>
+    </div>
+}
+
+@if (concluido)
+{
+    <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid #00E0A4; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <span style="font-size:12.5px; color:#D4DFEC;">
+            Diagnóstico concluído em @d.ConcluidoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"). Os números estão congelados.
+        </span>
+        <span style="margin-left:auto; display:flex; gap:8px;">
+            <a href="/Admin/DiagnosticoResultado?id=@d.Id" class="adm-btn" style="padding:6px 13px; font-size:11px;">Ver resultado</a>
+            <form method="post" asp-page-handler="Reabrir" style="display:inline;">
+                <input type="hidden" name="id" value="@d.Id" />
+                <button type="submit" class="adm-btn" style="padding:6px 13px; font-size:11px; color:#7A8FAB;">Reabrir para corrigir</button>
+            </form>
+        </span>
+    </div>
+}
+
+@* Trilha de domínios. O contador ao lado de cada um é o que diz ao consultor onde ele parou. *@
+<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px;">
+    @foreach (var dom in Model.DominiosVisiveis)
+    {
+        var (feitas, total) = Model.Progresso(dom);
+        var atual = Model.DominioAtual?.Codigo == dom.Codigo;
+        var completo = total > 0 && feitas == total;
+        <a href="?id=@d.Id&d=@dom.Codigo"
+           style="text-decoration:none; padding:6px 11px; border-radius:7px; font-size:11px;
+                  border:1px solid @(atual ? "rgba(77,155,255,.55)" : "rgba(120,170,255,.14)");
+                  background:@(atual ? "rgba(77,155,255,.12)" : "rgba(5,10,18,.55)");
+                  color:@(atual ? "#EAF0F8" : completo ? "#00E0A4" : "#8FA3BC");">
+            @dom.Nome <span class="oi-mono" style="font-size:9px; opacity:.65;">@feitas/@total</span>
+        </a>
+    }
+    <a href="?id=@d.Id&d=@OktaIA.Web.Pages.Admin.DiagnosticoModel.PassoFerramentas"
+       style="text-decoration:none; padding:6px 11px; border-radius:7px; font-size:11px;
+              border:1px solid @(Model.NoPassoDeFerramentas ? "rgba(0,224,164,.5)" : "rgba(120,170,255,.14)");
+              background:@(Model.NoPassoDeFerramentas ? "rgba(0,224,164,.1)" : "rgba(5,10,18,.55)");
+              color:@(Model.NoPassoDeFerramentas ? "#EAF0F8" : "#8FA3BC");">
+        Ferramentas <span class="oi-mono" style="font-size:9px; opacity:.65;">@d.Ferramentas.Count</span>
+    </a>
+</div>
+
+@if (Model.NoPassoDeFerramentas)
+{
+    <div class="adm-card" style="padding:17px 18px; margin-bottom:14px;">
+        <div style="font-size:13.5px; font-weight:600; margin-bottom:4px;">O que a empresa já possui</div>
+        <div style="font-size:11.5px; color:#7A8FAB; margin-bottom:14px; line-height:1.6;">
+            Este inventário é o que sustenta o argumento de aproveitar o investimento existente.
+            Ter a ferramenta não é o mesmo que estar protegido — as quatro marcações abaixo são
+            exatamente onde a conversa costuma virar.
+        </div>
+
+        <form method="post" asp-page-handler="Ferramenta" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr)); gap:10px; align-items:end;">
+            <input type="hidden" name="id" value="@d.Id" />
+            <label>
+                <span style="display:block; font-size:10.5px; color:#7A8FAB; margin-bottom:5px;">Domínio</span>
+                <select name="dominioCodigo" style="width:100%; box-sizing:border-box; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:9px 10px; color:#EAF0F8; font-family:inherit; font-size:12px;">
+                    @foreach (var dom in Model.DominiosVisiveis.Where(x => x.Pontua))
+                    {
+                        <option value="@dom.Codigo">@dom.Nome</option>
+                    }
+                </select>
+            </label>
+            <label>
+                <span style="display:block; font-size:10.5px; color:#7A8FAB; margin-bottom:5px;">Categoria</span>
+                <input name="categoria" required placeholder="EDR, Firewall, Backup" style="width:100%; box-sizing:border-box; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:9px 10px; color:#EAF0F8; font-family:inherit; font-size:12px;" />
+            </label>
+            <label>
+                <span style="display:block; font-size:10.5px; color:#7A8FAB; margin-bottom:5px;">Fabricante</span>
+                <input name="fabricante" required placeholder="Fortinet" style="width:100%; box-sizing:border-box; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:9px 10px; color:#EAF0F8; font-family:inherit; font-size:12px;" />
+            </label>
+            <label>
+                <span style="display:block; font-size:10.5px; color:#7A8FAB; margin-bottom:5px;">Produto</span>
+                <input name="produto" placeholder="FortiGate 60F" style="width:100%; box-sizing:border-box; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:9px 10px; color:#EAF0F8; font-family:inherit; font-size:12px;" />
+            </label>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:11px; color:#8FA3BC; grid-column:1/-1;">
+                <label style="display:flex; gap:5px; align-items:center;"><input type="checkbox" name="licenciado" value="true" /> licenciada</label>
+                <label style="display:flex; gap:5px; align-items:center;"><input type="checkbox" name="atualizado" value="true" /> atualizada</label>
+                <label style="display:flex; gap:5px; align-items:center;"><input type="checkbox" name="monitorado" value="true" /> monitorada</label>
+                <label style="display:flex; gap:5px; align-items:center;"><input type="checkbox" name="alertasTratados" value="true" /> alertas tratados</label>
+                <label style="display:flex; gap:5px; align-items:center;"><input type="checkbox" name="integrada" value="true" /> integrada ao L'Okta IA</label>
+                <button type="submit" class="adm-btn" style="padding:7px 15px; font-size:11.5px; margin-left:auto;">Adicionar</button>
+            </div>
+        </form>
+    </div>
+
+    @if (d.Ferramentas.Count > 0)
+    {
+        <div class="adm-card" style="padding:8px 0; margin-bottom:14px;">
+            @foreach (var f in d.Ferramentas)
+            {
+                <div style="display:flex; align-items:center; gap:12px; padding:10px 18px; border-bottom:1px solid rgba(120,170,255,.07); flex-wrap:wrap;">
+                    <span style="font-size:12.5px; color:#EAF0F8; font-weight:600;">@f.Fabricante @f.Produto</span>
+                    <span class="oi-mono" style="font-size:9.5px; color:#4A5D78;">@f.Categoria</span>
+                    <span style="display:flex; gap:7px; font-size:9.5px;">
+                        <span style="color:@(f.Licenciado ? "#00E0A4" : "#5A7191");">licença</span>
+                        <span style="color:@(f.Atualizado ? "#00E0A4" : "#5A7191");">atualizada</span>
+                        <span style="color:@(f.Monitorado ? "#00E0A4" : "#5A7191");">monitorada</span>
+                        <span style="color:@(f.AlertasTratados ? "#00E0A4" : "#5A7191");">alertas tratados</span>
+                        <span style="color:@(f.IntegradaAoLokta ? "#4D9BFF" : "#5A7191");">integrada</span>
+                    </span>
+                    <form method="post" asp-page-handler="RemoverFerramenta" style="margin-left:auto;">
+                        <input type="hidden" name="id" value="@d.Id" />
+                        <input type="hidden" name="ferramentaId" value="@f.Id" />
+                        <button type="submit" class="adm-btn" style="padding:4px 10px; font-size:10px; color:#7A8FAB;">Remover</button>
+                    </form>
+                </div>
+            }
+            <div style="padding:11px 18px; font-size:11px; color:#7A8FAB;">
+                Uso do investimento: <strong style="color:#EAF0F8;">@(r.UsoDoInvestimento?.ToString() ?? "—")%</strong>
+                · integradas ao L'Okta IA: <strong style="color:#EAF0F8;">@(r.Integracao?.ToString() ?? "—")%</strong>
+            </div>
+        </div>
+    }
+
+    @if (!concluido)
+    {
+        <form method="post" asp-page-handler="Concluir">
+            <input type="hidden" name="id" value="@d.Id" />
+            <button type="submit" class="adm-btn" style="padding:10px 20px; font-size:12.5px; background:rgba(0,224,164,.14); border-color:rgba(0,224,164,.4); color:#00E0A4;">
+                Concluir diagnóstico
+            </button>
+            <span style="font-size:11px; color:#7A8FAB; margin-left:12px;">
+                Congela os números e gera o mapa de riscos. Dá para reabrir depois.
+            </span>
+        </form>
+    }
+}
+else if (Model.DominioAtual is { } dominio)
+{
+    <form method="post" asp-page-handler="Salvar" data-diag-form>
+        <input type="hidden" name="id" value="@d.Id" />
+        <input type="hidden" name="d" value="@dominio.Codigo" />
+
+        <div class="adm-card" style="padding:18px 20px; margin-bottom:14px;">
+            <div style="font-size:14px; font-weight:600; margin-bottom:3px;">@dominio.Nome</div>
+            <div style="font-size:11.5px; color:#7A8FAB; margin-bottom:18px;">@dominio.Resumo</div>
+
+            @foreach (var p in dominio.Perguntas)
+            {
+                var resposta = Model.Respostas.GetValueOrDefault(p.Codigo);
+                var visivel = CalculadoraDoDiagnostico.Visivel(p.SomenteSe, Model.Escolhas);
+                var marcadas = (resposta?.Texto ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                @* Atributos da condição montados antes: injetar `@if` dentro da tag é armadilha
+                   conhecida do Razor — compila e renderiza de forma imprevisível. *@
+                var condAttrs = p.SomenteSe is { } cond
+                    ? $" data-cond-de=\"{cond.PerguntaCodigo}\" data-cond-valores=\"{string.Join(",", cond.Valores)}\""
+                    : "";
+                <div data-diag-pergunta="@p.Codigo" @Html.Raw(condAttrs)
+                     style="padding:13px 0; border-top:1px solid rgba(120,170,255,.07); @(visivel ? "" : "display:none;")">
+
+                    <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+                        <div style="flex:1 1 280px; min-width:0;">
+                            <label style="font-size:12.5px; color:#D4DFEC;">@p.Texto</label>
+                            @if (p.Ajuda is not null)
+                            {
+                                <div style="font-size:10.5px; color:#5A7191; margin-top:3px; line-height:1.5;">@p.Ajuda</div>
+                            }
+                            @if (p.Frameworks.Length > 0)
+                            {
+                                <div class="oi-mono" style="font-size:9px; color:#3E5273; margin-top:4px;">@string.Join(" · ", p.Frameworks)</div>
+                            }
+                        </div>
+
+                        <div style="flex:0 1 auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            @switch (p.Tipo)
+                            {
+                                case TipoDePergunta.Controle:
+                                    <div style="display:flex; gap:4px;">
+                                        @foreach (var op in p.Opcoes)
+                                        {
+                                            var rotulo = op switch
+                                            {
+                                                CatalogoDeDominios.Sim => "sim",
+                                                CatalogoDeDominios.Parcial => "parcial",
+                                                CatalogoDeDominios.Nao => "não",
+                                                _ => "não sei",
+                                            };
+                                            var cor = op switch
+                                            {
+                                                CatalogoDeDominios.Sim => "#00E0A4",
+                                                CatalogoDeDominios.Parcial => "#F5D547",
+                                                CatalogoDeDominios.Nao => "#FF3B5C",
+                                                _ => "#7A8FAB",
+                                            };
+                                            <label style="cursor:pointer;">
+                                                <input type="radio" name="opcao[@p.Codigo]" value="@op"
+                                                       checked="@(resposta?.Opcao == op)" data-diag-opcao style="display:none;" />
+                                                <span style="display:inline-block; padding:5px 11px; border-radius:7px; font-size:11px;
+                                                             border:1px solid @(resposta?.Opcao == op ? cor : "rgba(120,170,255,.14)");
+                                                             background:@(resposta?.Opcao == op ? cor + "1F" : "transparent");
+                                                             color:@(resposta?.Opcao == op ? cor : "#8FA3BC");">@rotulo</span>
+                                            </label>
+                                        }
+                                    </div>
+                                    break;
+
+                                case TipoDePergunta.Escolha:
+                                    <select name="opcao[@p.Codigo]" data-diag-opcao style="background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:7px 10px; color:#EAF0F8; font-family:inherit; font-size:12px; min-width:170px;">
+                                        <option value="">—</option>
+                                        @foreach (var op in p.Opcoes)
+                                        {
+                                            <option value="@op" selected="@(resposta?.Opcao == op)">@op</option>
+                                        }
+                                    </select>
+                                    break;
+
+                                case TipoDePergunta.Multipla:
+                                    <div style="display:flex; gap:10px; flex-wrap:wrap; max-width:460px;">
+                                        @foreach (var op in p.Opcoes)
+                                        {
+                                            <label style="display:flex; gap:5px; align-items:center; font-size:11px; color:#8FA3BC;">
+                                                <input type="checkbox" name="multipla[@p.Codigo]" value="@op" checked="@(marcadas.Contains(op))" />
+                                                @op
+                                            </label>
+                                        }
+                                    </div>
+                                    break;
+
+                                case TipoDePergunta.Numero:
+                                    <input type="number" name="numero[@p.Codigo]" value="@resposta?.Numero" min="0"
+                                           style="width:110px; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:7px 10px; color:#EAF0F8; font-family:inherit; font-size:12px;" />
+                                    break;
+
+                                default:
+                                    <input name="texto[@p.Codigo]" value="@resposta?.Texto"
+                                           style="width:260px; max-width:100%; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:7px 10px; color:#EAF0F8; font-family:inherit; font-size:12px;" />
+                                    break;
+                            }
+
+                            @* A origem é o que impede o relatório de passar por medição. *@
+                            @if (p.Peso > 0 && p.Tipo == TipoDePergunta.Controle)
+                            {
+                                <select name="origem[@p.Codigo]" title="De onde veio esta informação"
+                                        style="background:rgba(5,10,18,.55); border:1px solid rgba(120,170,255,.1); border-radius:7px; padding:5px 7px; color:#7A8FAB; font-family:inherit; font-size:10px;">
+                                    @foreach (var o in new[] { OrigemDaInformacao.Declarado, OrigemDaInformacao.Evidenciado, OrigemDaInformacao.Validado, OrigemDaInformacao.NaoAplicavel })
+                                    {
+                                        <option value="@o" selected="@(resposta?.Origem == o)">@(o switch {
+                                            OrigemDaInformacao.Declarado => "declarado",
+                                            OrigemDaInformacao.Evidenciado => "evidenciado",
+                                            OrigemDaInformacao.Validado => "validado",
+                                            _ => "não se aplica" })</option>
+                                    }
+                                </select>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:26px;">
+            @if (Model.PassoAnterior is not null)
+            {
+                <a href="?id=@d.Id&d=@Model.PassoAnterior" class="adm-btn" style="padding:9px 16px; font-size:12px; color:#8FA3BC;">Anterior</a>
+            }
+            <button type="submit" class="adm-btn" style="padding:9px 16px; font-size:12px;">Salvar</button>
+            @if (Model.ProximoPasso is not null)
+            {
+                <button type="submit" name="proximo" value="@Model.ProximoPasso" class="adm-btn"
+                        style="padding:9px 18px; font-size:12px; background:rgba(77,155,255,.14); border-color:rgba(77,155,255,.4); color:#4D9BFF;">
+                    Salvar e continuar
+                </button>
+            }
+            <span style="font-size:10.5px; color:#5A7191; margin-left:6px;">
+                Salva a cada domínio — a reunião pode parar a qualquer momento.
+            </span>
+        </div>
+    </form>
+}
+
+<script src="~/js/diagnostico.js" asp-append-version="true"></script>

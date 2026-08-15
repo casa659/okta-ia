@@ -357,6 +357,10 @@ public static class AdminCatalog
         }),
         new NavGroup("COMERCIAL", new[]
         {
+            // Fica em COMERCIAL porque é o que de fato é: levantamento que termina em proposta.
+            // ⚠️ A área `admin.assessment` nasce concedida só a Admin — perfil personalizado não a
+            // recebe sozinho. Se a equipe crescer, conceder em /Admin/Perfis.
+            new NavItem("assessment", "/Admin/Diagnosticos", "35", "Diagnósticos"),
             new NavItem("billing", "/Admin/Faturamento", "22", "Faturamento", "2", "#FF8A3D"),
         }),
     };

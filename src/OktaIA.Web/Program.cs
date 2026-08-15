@@ -6,6 +6,7 @@ using OktaIA.Web.Data;
 using OktaIA.Web.Data.Seed;
 using OktaIA.Web.Models;
 using OktaIA.Web.Services;
+using OktaIA.Web.Services.Diagnostico;
 using OktaIA.Web.Services.Integracoes;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -65,6 +66,10 @@ builder.Services.AddSingleton<ProtetorDeCredencial>();
 builder.Services.AddScoped<RegistroDeConectores>();
 builder.Services.AddScoped<MotorDeSync>();
 builder.Services.AddHostedService<SyncAgendadorService>();
+
+// Análise do diagnóstico por modelo de linguagem. Sem a chave configurada o serviço recusa operar
+// e a tela avisa — mesma filosofia do envio de e-mail: nunca fingir que analisou.
+builder.Services.AddScoped<IAnalisadorDeDiagnostico, AnalisadorDeDiagnostico>();
 
 builder.Services.AddHttpClient<WazuhConnector>(client =>
 {
