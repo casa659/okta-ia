@@ -272,12 +272,28 @@ public static class CalculadoraDoDiagnostico
                 // risco, com o texto dizendo que a ausência de resposta É o achado.
                 var incerto = resposta.Opcao == CatalogoDeDominios.NaoSei;
 
+                // O título muda com o caso, porque as três situações são achados diferentes e uma
+                // frase só descreveria mal duas delas:
+                //
+                //   não      → a afirmação do catálogo:  "Sistemas críticos sem backup"
+                //   parcial  → a mesma, qualificada:     "... — cobertura parcial"
+                //   não sei  → a PERGUNTA, porque aqui o achado é literalmente ela ter ficado sem
+                //              resposta. Afirmar a ausência do controle seria inventar: ninguém
+                //              disse que não existe, disseram que não sabem.
+                //
+                // Sem TituloDoRisco cai no texto da pergunta, como era antes — assim uma pergunta
+                // nova sem frase escrita ainda gera risco, em vez de aparecer com título vazio.
+                var afirmacao = pergunta.TituloDoRisco ?? pergunta.Texto;
+                var titulo = incerto
+                    ? $"Sem visibilidade: {pergunta.Texto}"
+                    : nota == 0.5m ? $"{afirmacao} — cobertura parcial" : afirmacao;
+
                 riscos.Add(new DiagnosticoRisco
                 {
                     DiagnosticoId = diagnostico.Id,
                     DominioCodigo = dominio.Codigo,
                     PerguntaCodigo = pergunta.Codigo,
-                    Titulo = incerto ? $"Sem visibilidade: {pergunta.Texto}" : pergunta.Texto,
+                    Titulo = titulo,
                     Descricao = incerto
                         ? "Não foi possível confirmar a existência deste controle no levantamento. A ausência de resposta indica que ninguém acompanha o item hoje."
                         : pergunta.Ajuda ?? pergunta.Texto,

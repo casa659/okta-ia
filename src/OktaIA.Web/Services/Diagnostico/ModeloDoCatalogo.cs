@@ -71,6 +71,21 @@ public record PerguntaDoDiagnostico
     /// </summary>
     public Models.GravidadeRisco? RiscoSeNao { get; init; }
 
+    /// <summary>
+    /// O achado escrito como AFIRMAÇÃO, para virar o título do risco no relatório.
+    ///
+    /// Existe porque o título saía do texto da pergunta, e um relatório listando "01 CRÍTICO —
+    /// Existe cópia offline ou fora do domínio?" faz o leitor responder mentalmente em vez de ler
+    /// um achado. Pergunta é instrumento de coleta; risco é conclusão, e as duas coisas não podem
+    /// ser a mesma frase.
+    ///
+    /// ⚠️ Descreve a AUSÊNCIA do controle, no presente e sem adjetivo de susto ("Backup sem cópia
+    /// fora do domínio", não "Backup gravemente exposto a ransomware"). A gravidade já é dita pela
+    /// etiqueta ao lado; repeti-la no texto soa a venda por medo, que é o que derruba a confiança
+    /// do leitor técnico no documento inteiro.
+    /// </summary>
+    public string? TituloDoRisco { get; init; }
+
     /// <summary>Consequência provável quando o controle não existe. Linguagem de risco, não de susto.</summary>
     public string? SeNaoTratar { get; init; }
 
