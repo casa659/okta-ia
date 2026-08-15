@@ -41,6 +41,10 @@ public class DiagnosticoResultadoModel : PageModel
     public DiagnosticoAnalise? Analise { get; private set; }
     public bool IaConfigurada => _analisador.Configurado;
 
+    /// <summary>O desenho do ambiente, camada a camada. É a tela que se mostra ao diretor.</summary>
+    public List<CamadaDaArquitetura> Mapa { get; private set; } = [];
+    public string Narrativa { get; private set; } = "";
+
     [TempData] public string? Mensagem { get; set; }
     [TempData] public bool MensagemOk { get; set; }
 
@@ -125,6 +129,8 @@ public class DiagnosticoResultadoModel : PageModel
 
         EmpresaNome = Diagnostico.Company?.Nome;
         Resultado = CalculadoraDoDiagnostico.Calcular(Diagnostico);
+        Mapa = MapaDaArquitetura.Montar(Diagnostico);
+        Narrativa = MapaDaArquitetura.Narrativa(Mapa, Resultado, Diagnostico.Ferramentas.Count);
 
         Riscos = await _db.DiagnosticoRiscos
             .Where(r => r.DiagnosticoId == id)

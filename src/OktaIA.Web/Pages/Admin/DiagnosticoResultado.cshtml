@@ -80,6 +80,67 @@
     </div>
 </div>
 
+@* O desenho do ambiente. É a tela que se leva para a reunião com a diretoria: um percentual não
+   diz se o buraco é o backup ou a borda — o mapa diz. *@
+<div class="adm-card" style="padding:17px 18px; margin-bottom:18px;">
+    <div style="font-size:13.5px; font-weight:600; margin-bottom:3px;">Mapa do ambiente</div>
+    <div style="font-size:11px; color:#7A8FAB; margin-bottom:15px;">
+        Da internet ao monitoramento, como o levantamento enxerga cada camada
+    </div>
+
+    <div style="display:flex; gap:6px; align-items:stretch; overflow-x:auto; padding-bottom:6px;">
+        @for (var i = 0; i < Model.Mapa.Count; i++)
+        {
+            var camada = Model.Mapa[i];
+            var cor = OktaIA.Web.Services.Diagnostico.MapaDaArquitetura.Cor(camada.Estado);
+            var apagada = camada.Estado == OktaIA.Web.Services.Diagnostico.EstadoDaCamada.NaoSeAplica
+                       || camada.Estado == OktaIA.Web.Services.Diagnostico.EstadoDaCamada.NaoAvaliado;
+
+            <div style="flex:1 1 0; min-width:112px; border-radius:9px; padding:11px 10px;
+                        border:1px solid @(apagada ? "rgba(120,170,255,.12)" : cor + "55");
+                        background:@(apagada ? "rgba(5,10,18,.45)" : cor + "12");">
+                <div style="font-size:7.5px; font-weight:600; letter-spacing:.06em; color:@cor; margin-bottom:5px;">
+                    @OktaIA.Web.Services.Diagnostico.MapaDaArquitetura.Rotulo(camada.Estado)
+                </div>
+                <div style="font-size:12px; color:#EAF0F8; font-weight:600; margin-bottom:6px;">@camada.Nome</div>
+                @if (!apagada)
+                {
+                    <div style="height:4px; border-radius:2px; background:rgba(120,170,255,.12); overflow:hidden; margin-bottom:5px;">
+                        <div style="height:100%; width:@camada.Cobertura%; background:@cor;"></div>
+                    </div>
+                    <div class="oi-mono" style="font-size:9px; color:#5A7191;">@camada.Cobertura% · @camada.Respondidas/@camada.Total</div>
+                }
+                else
+                {
+                    <div class="oi-mono" style="font-size:9px; color:#4A5D78;">—</div>
+                }
+            </div>
+
+            @if (i < Model.Mapa.Count - 1)
+            {
+                <div style="display:flex; align-items:center; color:#3E5273; font-size:12px; flex:0 0 auto;">→</div>
+            }
+        }
+    </div>
+
+    @if (Model.Narrativa is { Length: > 0 })
+    {
+        <div style="margin-top:15px; padding:12px 14px; border-radius:8px; background:rgba(77,155,255,.07); border-left:2px solid rgba(77,155,255,.4);">
+            <div style="font-size:12.5px; color:#D4DFEC; line-height:1.7;">@Model.Narrativa</div>
+        </div>
+    }
+
+    @* As lacunas mais graves por camada, para a conversa não parar no diagnóstico. *@
+    @foreach (var camada in Model.Mapa.Where(c => c.MaiorLacuna is not null))
+    {
+        <div style="display:flex; gap:10px; align-items:baseline; margin-top:9px; flex-wrap:wrap;">
+            <span style="font-size:9px; font-weight:600; letter-spacing:.05em; flex:0 0 88px;
+                         color:@OktaIA.Web.Services.Diagnostico.MapaDaArquitetura.Cor(camada.Estado);">@camada.Nome.ToUpperInvariant()</span>
+            <span style="font-size:11.5px; color:#8FA3BC; flex:1 1 240px;">@camada.MaiorLacuna</span>
+        </div>
+    }
+</div>
+
 <div class="adm-card" style="padding:0; margin-bottom:18px;">
     <div style="padding:15px 18px 11px; font-size:13.5px; font-weight:600;">Por domínio</div>
     @foreach (var dom in r.Dominios)

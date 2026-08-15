@@ -924,6 +924,53 @@ public class PropostaComercialPdfService
                 .FontSize(9).FontColor("#1C2836").LineHeight(1.55f);
         }
 
+        // O mapa do ambiente. Um percentual não diz se o buraco é o backup ou a borda; o desenho
+        // diz — e é ele que sustenta a conversa com quem decide.
+        var mapa = Services.Diagnostico.MapaDaArquitetura.Montar(diagnostico);
+        if (mapa.Count > 0)
+        {
+            body.Item().PaddingTop(14).Text("O ambiente, camada a camada")
+                .FontSize(9).Bold().FontColor("#0B1220");
+
+            // Duas faixas de cinco: dez caixas numa linha só ficam ilegíveis em A4.
+            foreach (var faixa in new[] { mapa.Take(5).ToList(), mapa.Skip(5).ToList() })
+            {
+                if (faixa.Count == 0) { continue; }
+
+                body.Item().PaddingTop(6).Row(row =>
+                {
+                    foreach (var camada in faixa)
+                    {
+                        var cor = camada.Estado switch
+                        {
+                            Services.Diagnostico.EstadoDaCamada.Protegido => BrandGreen,
+                            Services.Diagnostico.EstadoDaCamada.Parcial => BrandYellow,
+                            Services.Diagnostico.EstadoDaCamada.Descoberto => BrandRed,
+                            _ => TextMuted2,
+                        };
+
+                        row.RelativeItem().PaddingRight(5).Border(1).BorderColor(Colors.Grey.Lighten2)
+                            .BorderTop(3).BorderColor(cor).Padding(7).Column(c =>
+                        {
+                            c.Item().Text(camada.Nome).FontSize(8).Bold().FontColor("#1C2836");
+                            c.Item().PaddingTop(2).Text(Services.Diagnostico.MapaDaArquitetura.Rotulo(camada.Estado))
+                                .FontSize(6.5f).Bold().FontColor(cor).LetterSpacing(0.04f);
+                        });
+                    }
+                });
+            }
+
+            var naoAvaliadas = mapa.Count(c => c.Estado == Services.Diagnostico.EstadoDaCamada.NaoAvaliado);
+            if (naoAvaliadas > 0)
+            {
+                // Dito na cara: camada sem resposta não é camada sem problema.
+                body.Item().PaddingTop(6).Text(
+                    $"{naoAvaliadas} camada(s) não foram avaliadas neste levantamento. Isso não significa que estejam bem — "
+                    + "significa que ainda não olhamos, e fazê-lo é parte do trabalho proposto.")
+                    .FontSize(8).FontColor(TextMuted).Italic();
+            }
+        }
+
         if (riscos.Count > 0)
         {
             body.Item().PaddingTop(12).Text("Lacunas de maior gravidade identificadas")
