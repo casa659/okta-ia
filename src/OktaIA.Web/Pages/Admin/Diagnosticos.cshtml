@@ -74,13 +74,29 @@
                     <span style="font-size:10.5px; color:#7A8FAB;">respondido por @d.Respondente</span>
                 }
                 <span style="margin-left:auto; display:flex; gap:8px;">
-                    <a href="/Admin/Diagnostico?id=@d.Id" class="adm-btn" style="padding:6px 12px; font-size:11px;">Abrir</a>
+                    @* Fechado o levantamento, o que se quer abrir é o RELATÓRIO — o questionário
+                       vira consulta. Por isso ele vem primeiro e destacado; "Abrir" continua ali
+                       para conferir ou corrigir uma resposta. *@
+                    @if (d.TemRelatorio)
+                    {
+                        <a href="/Admin/DiagnosticoResultado?id=@d.Id" class="adm-btn"
+                           style="padding:6px 12px; font-size:11px; background:rgba(0,224,164,.14); border-color:rgba(0,224,164,.4); color:#00E0A4;">Relatório</a>
+                    }
+                    <a href="/Admin/Diagnostico?id=@d.Id" class="adm-btn" style="padding:6px 12px; font-size:11px;">@(d.TemRelatorio ? "Respostas" : "Abrir")</a>
                     @if (d.Status != OktaIA.Web.Models.StatusDiagnostico.Arquivado)
                     {
                         <form method="post" asp-page-handler="Arquivar" style="display:inline;">
                             <input type="hidden" name="id" value="@d.Id" />
                             <input type="hidden" name="empresaId" value="@Model.EmpresaSelecionadaId" />
                             <button type="submit" class="adm-btn" style="padding:6px 12px; font-size:11px; color:#7A8FAB;">Arquivar</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="Desarquivar" style="display:inline;">
+                            <input type="hidden" name="id" value="@d.Id" />
+                            <input type="hidden" name="empresaId" value="@Model.EmpresaSelecionadaId" />
+                            <button type="submit" class="adm-btn" style="padding:6px 12px; font-size:11px; color:#7A8FAB;">Desarquivar</button>
                         </form>
                     }
                     @* Excluir usa o confirm que já existe no site-admin.js. A frase nomeia o que

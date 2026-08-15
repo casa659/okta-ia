@@ -7,6 +7,12 @@
     var d = Model.Diagnostico!;
     var r = Model.Resultado!;
     var concluido = d.Status == StatusDiagnostico.Concluido;
+    var arquivado = d.Status == StatusDiagnostico.Arquivado;
+
+    // "Tem relatório" vem do CARIMBO de conclusão, não do status atual. Arquivar sobrescreve o
+    // status, e amarrar o acesso ao relatório em Status == Concluido fazia o levantamento inteiro
+    // desaparecer da vista ao ser arquivado — o dado continuava lá, sem porta para chegar nele.
+    var temRelatorio = d.ConcluidoEm is not null;
 }
 
 <div class="adm-page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
@@ -41,17 +47,24 @@
     </div>
 }
 
-@if (concluido)
+@if (temRelatorio)
 {
-    <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid #00E0A4; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+    <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid @(arquivado ? "#5A7191" : "#00E0A4"); display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
         <span style="font-size:12.5px; color:#D4DFEC;">
-            Diagnóstico concluído em @d.ConcluidoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"). Os números estão congelados.
+            @if (arquivado)
+            {
+                <text>Arquivado, mas o levantamento continua inteiro: concluído em @d.ConcluidoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"), com os números congelados daquele dia.</text>
+            }
+            else
+            {
+                <text>Diagnóstico concluído em @d.ConcluidoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"). Os números estão congelados.</text>
+            }
         </span>
         <span style="margin-left:auto; display:flex; gap:8px;">
-            <a href="/Admin/DiagnosticoResultado?id=@d.Id" class="adm-btn" style="padding:6px 13px; font-size:11px;">Ver resultado</a>
+            <a href="/Admin/DiagnosticoResultado?id=@d.Id" class="adm-btn" style="padding:6px 13px; font-size:11px;">Ver relatório</a>
             <form method="post" asp-page-handler="Reabrir" style="display:inline;">
                 <input type="hidden" name="id" value="@d.Id" />
-                <button type="submit" class="adm-btn" style="padding:6px 13px; font-size:11px; color:#7A8FAB;">Reabrir para corrigir</button>
+                <button type="submit" class="adm-btn" style="padding:6px 13px; font-size:11px; color:#7A8FAB;">@(arquivado ? "Desarquivar e corrigir" : "Reabrir para corrigir")</button>
             </form>
         </span>
     </div>
@@ -154,7 +167,9 @@
         </div>
     }
 
-    @if (!concluido)
+    @* Arquivado já tem relatório: o caminho certo é "Desarquivar e corrigir" na faixa acima,
+       não concluir de novo por baixo do arquivamento. *@
+    @if (!concluido && !arquivado)
     {
         <form method="post" asp-page-handler="Concluir">
             <input type="hidden" name="id" value="@d.Id" />

@@ -30,7 +30,8 @@ public class DiagnosticosModel : PageModel
     public record LinhaDiagnostico(
         int Id, string Titulo, StatusDiagnostico Status, string StatusRotulo, string Cor,
         DateTimeOffset CriadoEm, string CriadoPor, string? Respondente,
-        int Cobertura, decimal? Maturidade, int Completude, int Respostas);
+        int Cobertura, decimal? Maturidade, int Completude, int Respostas,
+        bool TemRelatorio);
 
     public List<LinhaDiagnostico> Itens { get; private set; } = [];
     public List<(int Id, string Nome)> EmpresasDisponiveis { get; private set; } = [];
@@ -99,6 +100,41 @@ public class DiagnosticosModel : PageModel
             await _auditoria.RegistrarAsync("diagnostico.arquivado",
                 diagnostico.Titulo, User.Identity?.Name ?? "—");
             Mensagem = "Diagnóstico arquivado.";
+            MensagemOk = true;
+        }
+
+        return RedirectToPage(new { empresa = empresa?.Id });
+    }
+
+    /// <summary>
+    /// Devolve um arquivado à lista ativa.
+    ///
+    /// Volta para Concluído se ele já tinha sido fechado algum dia — o carimbo `ConcluidoEm` é
+    /// que sabe disso, porque o arquivamento apaga o status mas não o carimbo. Sem isso, um
+    /// levantamento fechado voltaria como "em andamento" e pediria para ser concluído de novo,
+    /// o que descongelaria números que o cliente já viu.
+    /// </summary>
+    public async Task<IActionResult> OnPostDesarquivarAsync(int id, int? empresaId)
+    {
+        var empresa = await TenantResolver.ResolverComFiltroAsync(HttpContext, _db, empresaId);
+        var diagnostico = empresa is null
+            ? null
+            : await _db.Diagnosticos.FirstOrDefaultAsync(d => d.Id == id && d.CompanyId == empresa.Id);
+
+        if (diagnostico is null)
+        {
+            Mensagem = "Diagnóstico não encontrado.";
+            MensagemOk = false;
+        }
+        else
+        {
+            diagnostico.Status = diagnostico.ConcluidoEm is not null
+                ? StatusDiagnostico.Concluido
+                : StatusDiagnostico.EmAndamento;
+            await _db.SaveChangesAsync();
+            await _auditoria.RegistrarAsync("diagnostico.desarquivado",
+                diagnostico.Titulo, User.Identity?.Name ?? "—");
+            Mensagem = "Diagnóstico devolvido à lista.";
             MensagemOk = true;
         }
 
@@ -175,7 +211,11 @@ public class DiagnosticosModel : PageModel
                 resultado?.Cobertura ?? d.Cobertura ?? 0,
                 resultado?.Maturidade ?? d.Maturidade,
                 resultado?.Completude ?? 100,
-                d.Respostas.Count);
+                d.Respostas.Count,
+                // Pelo carimbo, não pelo status: arquivar sobrescreve o status, e o relatório
+                // de um levantamento arquivado continua existindo — e continua sendo o que o
+                // consultor quer abrir meses depois.
+                d.ConcluidoEm is not null);
         }).ToList();
     }
 
