@@ -32,6 +32,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AlertaUnificado> AlertasUnificados => Set<AlertaUnificado>();
     public DbSet<ExecucaoSync> ExecucoesSync => Set<ExecucaoSync>();
 
+    // ---------- Diagnóstico de segurança (assessment) ----------
+    public DbSet<Diagnostico> Diagnosticos => Set<Diagnostico>();
+    public DbSet<DiagnosticoResposta> DiagnosticoRespostas => Set<DiagnosticoResposta>();
+    public DbSet<DiagnosticoFerramenta> DiagnosticoFerramentas => Set<DiagnosticoFerramenta>();
+    public DbSet<DiagnosticoRisco> DiagnosticoRiscos => Set<DiagnosticoRisco>();
+    public DbSet<DiagnosticoAcao> DiagnosticoAcoes => Set<DiagnosticoAcao>();
+    public DbSet<DiagnosticoAnalise> DiagnosticoAnalises => Set<DiagnosticoAnalise>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -114,6 +122,58 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.Escopo).HasConversion<string>();
             entity.HasIndex(e => new { e.ConectorId, e.IniciadoEm });
             entity.HasOne(e => e.Conector).WithMany().HasForeignKey(e => e.ConectorId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ---------- Diagnóstico de segurança ----------
+
+        builder.Entity<Diagnostico>(entity =>
+        {
+            entity.Property(d => d.Status).HasConversion<string>();
+            entity.Property(d => d.Maturidade).HasPrecision(3, 1);
+            entity.HasIndex(d => new { d.CompanyId, d.CriadoEm });
+            // Some junto com a empresa: diagnóstico é levantamento DELA, não tem valor solto.
+            entity.HasOne(d => d.Company).WithMany().HasForeignKey(d => d.CompanyId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(d => d.Respostas).WithOne(r => r.Diagnostico!).HasForeignKey(r => r.DiagnosticoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(d => d.Ferramentas).WithOne(f => f.Diagnostico!).HasForeignKey(f => f.DiagnosticoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(d => d.Riscos).WithOne(r => r.Diagnostico!).HasForeignKey(r => r.DiagnosticoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(d => d.Acoes).WithOne(a => a.Diagnostico!).HasForeignKey(a => a.DiagnosticoId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<DiagnosticoResposta>(entity =>
+        {
+            entity.Property(r => r.Situacao).HasConversion<string>();
+            entity.Property(r => r.Origem).HasConversion<string>();
+            // Uma resposta por pergunta por diagnóstico. Sem isto, salvar a mesma tela duas vezes
+            // deixaria duas respostas divergentes para o mesmo controle e o cálculo escolheria uma
+            // delas em silêncio.
+            entity.HasIndex(r => new { r.DiagnosticoId, r.PerguntaCodigo }).IsUnique();
+        });
+
+        builder.Entity<DiagnosticoFerramenta>(entity =>
+        {
+            entity.HasIndex(f => new { f.DiagnosticoId, f.DominioCodigo });
+        });
+
+        builder.Entity<DiagnosticoRisco>(entity =>
+        {
+            entity.Property(r => r.Gravidade).HasConversion<string>();
+            entity.Property(r => r.Origem).HasConversion<string>();
+            entity.HasIndex(r => new { r.DiagnosticoId, r.Prioridade });
+        });
+
+        builder.Entity<DiagnosticoAcao>(entity =>
+        {
+            entity.Property(a => a.Horizonte).HasConversion<string>();
+            entity.Property(a => a.Encaminhamento).HasConversion<string>();
+            // Apagar um risco não pode apagar a ação: o plano já pode ter sido entregue ao cliente.
+            entity.HasOne(a => a.Risco).WithMany().HasForeignKey(a => a.RiscoId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        builder.Entity<DiagnosticoAnalise>(entity =>
+        {
+            entity.Property(a => a.Resultado).HasConversion<string>();
+            entity.HasIndex(a => new { a.DiagnosticoId, a.GeradaEm });
+            entity.HasOne(a => a.Diagnostico).WithMany().HasForeignKey(a => a.DiagnosticoId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
