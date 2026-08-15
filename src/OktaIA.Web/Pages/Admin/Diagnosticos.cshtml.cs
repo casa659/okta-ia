@@ -31,7 +31,7 @@ public class DiagnosticosModel : PageModel
         int Id, string Titulo, StatusDiagnostico Status, string StatusRotulo, string Cor,
         DateTimeOffset CriadoEm, string CriadoPor, string? Respondente,
         int Cobertura, decimal? Maturidade, int Completude, int Respostas,
-        bool TemRelatorio);
+        bool TemRelatorio, bool EhExemplo);
 
     public List<LinhaDiagnostico> Itens { get; private set; } = [];
     public List<(int Id, string Nome)> EmpresasDisponiveis { get; private set; } = [];
@@ -162,6 +162,13 @@ public class DiagnosticosModel : PageModel
             Mensagem = "Diagnóstico não encontrado.";
             MensagemOk = false;
         }
+        else if (diagnostico.CriadoPor == "seed")
+        {
+            // A tela já esconde o botão, mas esconder botão não é proteger: o POST continua
+            // alcançável por quem montar o formulário na mão ou repetir uma requisição antiga.
+            Mensagem = "O diagnóstico de exemplo não pode ser excluído — ele é a demonstração do módulo.";
+            MensagemOk = false;
+        }
         else
         {
             var titulo = diagnostico.Titulo;
@@ -215,7 +222,8 @@ public class DiagnosticosModel : PageModel
                 // Pelo carimbo, não pelo status: arquivar sobrescreve o status, e o relatório
                 // de um levantamento arquivado continua existindo — e continua sendo o que o
                 // consultor quer abrir meses depois.
-                d.ConcluidoEm is not null);
+                d.ConcluidoEm is not null,
+                d.CriadoPor == "seed");
         }).ToList();
     }
 

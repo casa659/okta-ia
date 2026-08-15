@@ -99,14 +99,20 @@
                             <button type="submit" class="adm-btn" style="padding:6px 12px; font-size:11px; color:#7A8FAB;">Desarquivar</button>
                         </form>
                     }
-                    @* Excluir usa o confirm que já existe no site-admin.js. A frase nomeia o que
-                       será perdido: "tem certeza?" não ajuda ninguém a decidir. *@
-                    <form method="post" asp-page-handler="Excluir" style="display:inline;"
-                          data-adm-confirm="Excluir &quot;@d.Titulo&quot; e as @d.Respostas respostas, o inventário de ferramentas e o mapa de riscos? Isso não pode ser desfeito — para apenas tirar da lista, use Arquivar.">
-                        <input type="hidden" name="id" value="@d.Id" />
-                        <input type="hidden" name="empresaId" value="@Model.EmpresaSelecionadaId" />
-                        <button type="submit" class="adm-btn" style="padding:6px 12px; font-size:11px; color:#FF3B5C;">Excluir</button>
-                    </form>
+                    @* O exemplo não tem Excluir: ele é a demonstração do módulo, e apagá-lo no meio
+                       de uma reunião não teria como ser desfeito ali na hora. Para tirá-lo de vez,
+                       remove-se o seed. *@
+                    @if (!d.EhExemplo)
+                    {
+                        @* Excluir usa o confirm que já existe no site-admin.js. A frase nomeia o que
+                           será perdido: "tem certeza?" não ajuda ninguém a decidir. *@
+                        <form method="post" asp-page-handler="Excluir" style="display:inline;"
+                              data-adm-confirm="Excluir &quot;@d.Titulo&quot; e as @d.Respostas respostas, o inventário de ferramentas e o mapa de riscos? Isso não pode ser desfeito — para apenas tirar da lista, use Arquivar.">
+                            <input type="hidden" name="id" value="@d.Id" />
+                            <input type="hidden" name="empresaId" value="@Model.EmpresaSelecionadaId" />
+                            <button type="submit" class="adm-btn" style="padding:6px 12px; font-size:11px; color:#FF3B5C;">Excluir</button>
+                        </form>
+                    }
                 </span>
             </div>
 

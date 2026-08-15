@@ -24,14 +24,17 @@ public class DiagnosticoResultadoModel : PageModel
     private readonly IAnalisadorDeDiagnostico _analisador;
     private readonly AdminAuditService _auditoria;
     private readonly PropostaComercialPdfService _proposta;
+    private readonly DiagnosticoPdfService _relatorio;
 
     public DiagnosticoResultadoModel(ApplicationDbContext db, IAnalisadorDeDiagnostico analisador,
-        AdminAuditService auditoria, PropostaComercialPdfService proposta)
+        AdminAuditService auditoria, PropostaComercialPdfService proposta,
+        DiagnosticoPdfService relatorio)
     {
         _db = db;
         _analisador = analisador;
         _auditoria = auditoria;
         _proposta = proposta;
+        _relatorio = relatorio;
     }
 
     public Models.Diagnostico? Diagnostico { get; private set; }
@@ -115,6 +118,38 @@ public class DiagnosticoResultadoModel : PageModel
         return File(pdf, "application/pdf", nome);
     }
 
+    /// <summary>
+    /// O relatório do diagnóstico em PDF — o documento técnico que fica com o cliente.
+    ///
+    /// Existe separado da proposta porque os leitores são outros: a proposta vai para quem assina e
+    /// mostra o que sustenta a venda; este vai para quem vai executar, e traz a matriz inteira,
+    /// todos os riscos e a origem de cada resposta — inclusive o que não favorece ninguém.
+    /// </summary>
+    public async Task<IActionResult> OnGetRelatorioAsync(int id)
+    {
+        if (!await CarregarAsync(id)) { return RedirectToPage("/Admin/Diagnosticos"); }
+
+        var pdf = _relatorio.Gerar(Diagnostico!, EmpresaNome ?? "Cliente", Resultado!, Mapa,
+            Riscos, Analise, Narrativa);
+
+        await _auditoria.RegistrarAsync("diagnostico.relatorio",
+            $"{EmpresaNome} · {Diagnostico!.Titulo}", User.Identity?.Name ?? "—");
+
+        // A data do levantamento é opcional no modelo; sem o fallback o nome sairia terminado em
+        // hífen, e um arquivo desses num e-mail para o cliente parece erro de sistema.
+        var data = Diagnostico.RealizadoEm
+                   ?? DateOnly.FromDateTime((Diagnostico.ConcluidoEm ?? Diagnostico.CriadoEm).LocalDateTime);
+        var nome = $"diagnostico-seguranca-{Slug(EmpresaNome)}-{data:yyyy-MM-dd}.pdf";
+        return File(pdf, "application/pdf", nome);
+    }
+
+    private static string Slug(string? nome)
+    {
+        if (string.IsNullOrWhiteSpace(nome)) { return "cliente"; }
+        var limpo = new string(nome.Select(c => char.IsLetterOrDigit(c) ? c : '-').ToArray());
+        return string.Join("-", limpo.Split('-', StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
+    }
+
     private async Task<bool> CarregarAsync(int id)
     {
         var visiveis = await TenantResolver.EmpresasVisiveis(HttpContext, _db).Select(c => c.Id).ToListAsync();
@@ -152,37 +187,13 @@ public class DiagnosticoResultadoModel : PageModel
         return true;
     }
 
-    public static string CorDaGravidade(GravidadeRisco g) => g switch
-    {
-        GravidadeRisco.Critico => "#FF3B5C",
-        GravidadeRisco.Alto => "#FF8A3D",
-        GravidadeRisco.Medio => "#F5D547",
-        _ => "#7A8FAB",
-    };
+    // Os textos moram em RotulosDoDiagnostico, porque o PDF usa os mesmos. Estes atalhos ficam
+    // para a view não precisar mudar — e para ninguém ser tentado a redefinir o rótulo aqui.
+    public static string CorDaGravidade(GravidadeRisco g) => RotulosDoDiagnostico.CorDaGravidade(g);
 
-    public static string RotuloDaOrigem(OrigemDaInformacao o) => o switch
-    {
-        OrigemDaInformacao.Declarado => "declarado pelo cliente",
-        OrigemDaInformacao.Evidenciado => "com evidência anexada",
-        OrigemDaInformacao.Validado => "validado tecnicamente",
-        OrigemDaInformacao.NaoAplicavel => "não se aplica",
-        _ => "não avaliado",
-    };
+    public static string RotuloDaOrigem(OrigemDaInformacao o) => RotulosDoDiagnostico.Origem(o);
 
-    public static string RotuloDaSituacao(SituacaoDoControle s) => s switch
-    {
-        SituacaoDoControle.Tem => "TEM",
-        SituacaoDoControle.Parcial => "PARCIAL",
-        SituacaoDoControle.NaoTem => "NÃO TEM",
-        SituacaoDoControle.NaoAplicavel => "N/A",
-        _ => "—",
-    };
+    public static string RotuloDaSituacao(SituacaoDoControle s) => RotulosDoDiagnostico.Situacao(s);
 
-    public static string CorDaSituacao(SituacaoDoControle s) => s switch
-    {
-        SituacaoDoControle.Tem => "#00E0A4",
-        SituacaoDoControle.Parcial => "#F5D547",
-        SituacaoDoControle.NaoTem => "#FF3B5C",
-        _ => "#5A7191",
-    };
+    public static string CorDaSituacao(SituacaoDoControle s) => RotulosDoDiagnostico.CorDaSituacao(s);
 }

@@ -15,6 +15,12 @@
         <p>@Model.EmpresaNome · @(d.ConcluidoEm is { } c ? $"concluído em {c.ToLocalTime():dd/MM/yyyy}" : "ainda em andamento")</p>
     </div>
     <div style="display:flex; gap:8px;">
+        @* Dois documentos, leitores diferentes: o relatório é o levantamento inteiro para quem vai
+           executar; a proposta é o recorte que sustenta a venda, para quem assina. *@
+        <a href="?id=@d.Id&handler=Relatorio" class="adm-btn"
+           style="padding:8px 14px; font-size:11.5px; background:rgba(77,155,255,.13); border-color:rgba(77,155,255,.38); color:#4D9BFF;">
+            Baixar relatório PDF
+        </a>
         <a href="?id=@d.Id&handler=Proposta" class="adm-btn"
            style="padding:8px 14px; font-size:11.5px; background:rgba(0,224,164,.13); border-color:rgba(0,224,164,.38); color:#00E0A4;">
             Gerar proposta

@@ -59,6 +59,7 @@ builder.Services.AddHostedService<ScanAgendadorService>();
 builder.Services.AddScoped<AdminAuditService>();
 builder.Services.AddSingleton<RelatorioPdfService>();
 builder.Services.AddSingleton<PropostaComercialPdfService>();
+builder.Services.AddSingleton<DiagnosticoPdfService>();
 builder.Services.AddSingleton<TermoAutorizacaoPdfService>();
 builder.Services.AddSingleton<RoteiroPdfService>();
 // Sem estado e sem dependência de request — a chave vem de configuração e não muda em execução.
