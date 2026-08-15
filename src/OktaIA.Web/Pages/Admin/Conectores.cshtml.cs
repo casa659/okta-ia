@@ -257,25 +257,17 @@ public class ConectoresModel : PageModel
     /// padrão de Ativos e Vulnerabilidades. Um MSSP configura conector de 30 clientes sem ficar
     /// trocando a organização inteira a cada um.
     /// </summary>
+    // Delegado ao TenantResolver de propósito: conta de cliente é presa à própria empresa e o
+    // parâmetro  é descartado. Resolver isso aqui, em cinco cópias, era como o furo
+    // sobreviveria à correção do resolvedor.
     private async Task<Company?> ResolverEmpresaAsync(int? empresaParam)
-    {
-        if (empresaParam.HasValue)
-        {
-            var escolhida = await _db.Companies.FirstOrDefaultAsync(c => c.Id == empresaParam.Value && c.Ativo);
-            if (escolhida is not null)
-            {
-                return escolhida;
-            }
-        }
-
-        return await TenantResolver.ResolverAtualAsync(HttpContext, _db);
-    }
+        => await TenantResolver.ResolverComFiltroAsync(HttpContext, _db, empresaParam);
 
     private async Task CarregarAsync(int? empresaParam = null)
     {
         CofreConfigurado = _protetor.Configurado;
 
-        EmpresasDisponiveis = (await _db.Companies.Where(c => c.Ativo).OrderBy(c => c.Nome)
+        EmpresasDisponiveis = (await TenantResolver.EmpresasVisiveis(HttpContext, _db).OrderBy(c => c.Nome)
                 .Select(c => new { c.Id, c.Nome }).ToListAsync())
             .Select(c => (c.Id, c.Nome)).ToList();
 

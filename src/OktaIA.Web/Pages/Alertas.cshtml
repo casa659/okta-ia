@@ -59,16 +59,24 @@
                     <option value="@s" selected="@(s == Model.SeveridadeFiltro)">@SeverityStyle.Label(s, I18n.Lang)</option>
                 }
             </select>
+            <select name="status" style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+                <option value="">Toda a triagem</option>
+                @foreach (var s in new[] { OktaIA.Web.Models.StatusTriagem.Novo, OktaIA.Web.Models.StatusTriagem.EmAndamento, OktaIA.Web.Models.StatusTriagem.Resolvido, OktaIA.Web.Models.StatusTriagem.FalsoPositivo })
+                {
+                    <option value="@s" selected="@(s == Model.StatusFiltro)">@AlertasModel.RotuloStatus(s)</option>
+                }
+            </select>
             <button type="submit" class="adm-btn-ghost adm-accent" style="font-size:11px; padding:8px 12px;">@I18n.T("alertsFilter")</button>
         </form>
 
         <div class="oi-panel oi-table-scroll">
-            <div class="oi-asset-head" style="display:grid; grid-template-columns:88px minmax(220px,3fr) minmax(120px,1fr) minmax(110px,1fr) 104px;">
+            <div class="oi-asset-head" style="display:grid; grid-template-columns:88px minmax(200px,3fr) minmax(110px,1fr) minmax(100px,1fr) 104px 112px;">
                 <span>@I18n.T("thSeverity")</span>
                 <span>@I18n.T("thAlert")</span>
                 <span>@I18n.T("thAsset")</span>
                 <span>@I18n.T("thSource")</span>
                 <span>@I18n.T("thWhen")</span>
+                <span>Triagem</span>
             </div>
 
             @if (Model.Alertas.Count == 0)
@@ -78,7 +86,7 @@
 
             @foreach (var a in Model.Alertas)
             {
-                <div class="oi-asset-row" style="display:grid; grid-template-columns:88px minmax(220px,3fr) minmax(120px,1fr) minmax(110px,1fr) 104px; align-items:center;">
+                <div class="oi-asset-row" style="display:grid; grid-template-columns:88px minmax(200px,3fr) minmax(110px,1fr) minmax(100px,1fr) 104px 112px; align-items:center;">
                     <span class="adm-pill" style="color:@a.Cor; background:@a.Fundo; font-size:8.5px; justify-self:start;">@a.SeveridadeRotulo</span>
                     <div style="min-width:0;">
                         <div class="oi-asset-name" style="white-space:normal;">@a.Titulo</div>
@@ -90,7 +98,43 @@
                     <span class="oi-asset-stack">@(a.AtivoNome ?? "—")</span>
                     <span class="oi-asset-stack">@a.Conector</span>
                     <span class="oi-mono" style="font-size:11px; color:#8FA3BC;">@a.Quando</span>
+                    <span class="adm-pill" style="color:@a.StatusCor; background:rgba(120,170,255,.08); font-size:8.5px; justify-self:start;">@a.StatusRotulo</span>
                 </div>
+
+                @* <details> em vez de JS: a CSP desta aplicação bloqueia handler inline, e um
+                   formulário nativo evita depender de script para uma ação que grava dados. *@
+                <details class="oi-triagem">
+                    <summary>
+                        Triar
+                        @if (a.Responsavel is not null)
+                        {
+                            <span style="color:#8FA3BC;">· @a.Responsavel</span>
+                        }
+                        @if (a.TriadoEm is not null)
+                        {
+                            <span style="color:#5A7191;">· @a.TriadoEm @(a.TriadoPor is not null ? "por " + a.TriadoPor : "")</span>
+                        }
+                    </summary>
+                    <form method="post" asp-page-handler="Triar" class="oi-triagem-form">
+                        <input type="hidden" name="id" value="@a.Id" />
+                        <input type="hidden" name="empresa" value="@Model.EmpresaSelecionadaId" />
+                        @* Filtros viajam junto para o redirect devolver a MESMA lista. *@
+                        <input type="hidden" name="conector" value="@Model.ConectorFiltro" />
+                        <input type="hidden" name="severidade" value="@Model.SeveridadeFiltro" />
+                        <input type="hidden" name="q" value="@Model.Busca" />
+                        <input type="hidden" name="statusFiltro" value="@Model.StatusFiltro" />
+
+                        <select name="status">
+                            @foreach (var s in new[] { OktaIA.Web.Models.StatusTriagem.Novo, OktaIA.Web.Models.StatusTriagem.EmAndamento, OktaIA.Web.Models.StatusTriagem.Resolvido, OktaIA.Web.Models.StatusTriagem.FalsoPositivo })
+                            {
+                                <option value="@s" selected="@(s == a.Status)">@AlertasModel.RotuloStatus(s)</option>
+                            }
+                        </select>
+                        <input name="responsavel" value="@a.Responsavel" placeholder="Responsável" />
+                        <input name="nota" value="@a.NotaTriagem" placeholder="O que foi feito" style="flex:1 1 240px;" />
+                        <button type="submit" class="adm-btn-ghost adm-accent">Gravar</button>
+                    </form>
+                </details>
             }
         </div>
 

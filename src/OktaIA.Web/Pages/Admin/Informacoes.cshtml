@@ -1,0 +1,321 @@
+@page
+@model OktaIA.Web.Pages.Admin.InformacoesModel
+@{
+    ViewData["Title"] = "Informações";
+}
+
+<div class="adm-page-head">
+    <h1>Implantação de conectores</h1>
+    <p>Checklist de execução · pare no primeiro item que falhar</p>
+</div>
+
+<div class="inf-wrap">
+
+    <nav class="inf-toc" aria-label="Índice">
+        <div class="inf-toc-label">Índice</div>
+        <div class="inf-toc-sub">Vale para qualquer fabricante</div>
+        <a href="#pedir">1 · Pedir ao cliente</a>
+        <a href="#rede">2 · Liberar a rede</a>
+        <a href="#implantar">3 · Implantar</a>
+        <a href="#status">4 · Ler o status</a>
+        <a href="#erros">5 · Quando falha</a>
+        <a href="#automatico">6 · Depois de no ar</a>
+        <div class="inf-toc-sub">Por fabricante</div>
+        <a href="#wazuh">7 · Wazuh</a>
+        <a href="#catalogo">8 · O que integramos</a>
+        <div class="inf-toc-sub">Para o time de produto</div>
+        <a href="#novo">9 · Fabricante novo</a>
+        <a href="#nunca">10 · Nunca fazer</a>
+    </nav>
+
+    <div class="inf-body">
+
+        @if (!Model.CofreConfigurado)
+        {
+            <div class="inf-alerta inf-alerta-erro">
+                <strong>Bloqueado.</strong> A chave de criptografia não está disponível nesta instalação.
+                Nenhuma credencial pode ser gravada. Resolva antes de agendar implantação.
+            </div>
+        }
+
+        <div class="inf-alerta">
+            <strong>Regra que vale para tudo abaixo:</strong> acesso somente-leitura, credencial criada
+            pelo cliente, nada instalado no ambiente dele.
+        </div>
+
+        <div class="inf-alerta inf-alerta-atencao">
+            <strong>Seções 1 a 6 valem para qualquer fabricante.</strong> Os valores concretos — qual
+            componente, qual porta, que credencial pedir — mudam de um para outro e estão na seção do
+            fabricante. Hoje só o <strong>Wazuh</strong> está implementado. Não reaproveite os dados
+            dele para outro produto.
+        </div>
+
+        <section id="pedir">
+            <h2>1 · Pedir ao cliente</h2>
+            <p>Os três de uma vez, na abertura. O terceiro é o que atrasa.</p>
+            <ul class="inf-check">
+                <li><strong>Conta de serviço somente-leitura</strong> — dedicada à integração, com acesso restrito ao que precisamos ler. Nunca a conta pessoal de um funcionário.</li>
+                <li><strong>Como chegamos na ferramenta</strong> — endereço da API, se for produto instalado na casa dele; ou o consentimento no portal do fabricante, se for produto em nuvem.</li>
+                <li><strong>Liberação de rede</strong> — só quando o produto é instalado na casa dele. Ver seção 2.</li>
+            </ul>
+            <div class="inf-alerta">
+                O que exatamente pedir depende do fabricante: um Wazuh pede endereço e usuário; um
+                Defender pede que o Global Admin do cliente aceite um consentimento. <strong>Confira a
+                seção do fabricante antes de abrir a conversa</strong> — chegar pedindo a coisa errada
+                custa credibilidade logo no primeiro contato.
+            </div>
+            <p>Envie o documento de requisitos antes da reunião técnica: ele já traz isso na linguagem do cliente, com os IPs a liberar.</p>
+        </section>
+
+        <section id="rede">
+            <h2>2 · Liberar a rede</h2>
+            <div class="inf-alerta inf-alerta-atencao">
+                <strong>Só se aplica a produto instalado na casa do cliente</strong> (Wazuh, FortiGate,
+                pfSense). Fabricante em nuvem — Defender, Sentinel, CrowdStrike — <strong>não tem
+                liberação de firewall</strong>: o cliente consente no portal dele e nós falamos com a
+                nuvem do fabricante. Pedir abertura de porta nesse caso expõe desconhecimento.
+            </div>
+            <p>Escolha do cliente. Se ele não decidir, a implantação não anda.</p>
+            <table class="inf-tabela">
+                <thead><tr><th>Opção</th><th>Custo</th><th>Quando usar</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Publicar com allowlist</strong></td><td>Abre uma porta, restrita aos nossos IPs</td><td>Padrão. Mais rápido.</td></tr>
+                    <tr><td><strong>VPN site-to-site</strong></td><td>Projeto de rede dos dois lados</td><td>Cliente que não expõe nada.</td></tr>
+                    <tr><td><strong>Coletor na rede dele</strong></td><td>—</td><td><strong>Não existe.</strong> Registrar e não prometer prazo.</td></tr>
+                </tbody>
+            </table>
+            <div class="inf-alerta">
+                Entregue a <strong>lista completa</strong> de IPs de saída, não só os ativos hoje. O
+                provedor troca o conjunto em reinícios — liberar só os atuais funciona até parar
+                sozinho, num dia em que ninguém mexeu em nada.
+            </div>
+        </section>
+
+        <section id="implantar">
+            <h2>3 · Implantar</h2>
+            <ul class="inf-check">
+                <li><strong>Empresa selecionada</strong> no seletor da tela de Conectores (muda só aquela tela, não a organização global).</li>
+                <li><strong>Conector instalado</strong> — URL do serviço + credencial do cliente. O que você digitar é cifrado e nunca mais reexibido.</li>
+                <li><strong>Testar conexão → verde.</strong> Não avance sem isso.</li>
+                <li><strong>Sincronizar 1ª vez</strong> → traz os alertas dos últimos 7 dias.</li>
+                <li><strong>Sincronizar 2ª vez</strong> → tem que inserir <strong>zero</strong>. Se inserir de novo, é defeito: reporte, não contorne.</li>
+                <li><strong>Conferir na tela de Alertas</strong>, com a mesma empresa selecionada.</li>
+            </ul>
+            <p><strong>Falhou algum item? Pare ali.</strong> Item pendente vira problema do cliente na semana seguinte.</p>
+        </section>
+
+        <section id="status">
+            <h2>4 · Ler o status</h2>
+            <table class="inf-tabela">
+                <thead><tr><th>Status</th><th>Significa</th><th>Ação</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="inf-pill" style="--c:#4A5D78">NÃO CONECTADO</span></td><td>Credencial nunca validada.</td><td>Testar conexão.</td></tr>
+                    <tr><td><span class="inf-pill" style="--c:#00E0A4">ATIVO</span></td><td>Funcionando. Único status que sincroniza sozinho.</td><td>Nenhuma.</td></tr>
+                    <tr><td><span class="inf-pill" style="--c:#FFC93C">PAUSADO</span></td><td>Pausado de propósito. Credencial intacta.</td><td>Retomar quando fizer sentido.</td></tr>
+                    <tr><td><span class="inf-pill" style="--c:#FF3B5C">ERRO</span></td><td>Última tentativa falhou. Mensagem no card.</td><td>Ver seção 5.</td></tr>
+                </tbody>
+            </table>
+            <p><strong>ERRO</strong> e <strong>NÃO CONECTADO</strong> ficam fora da fila automática de propósito: insistir contra credencial errada faz o fabricante bloquear nosso IP.</p>
+        </section>
+
+        <section id="erros">
+            <h2>5 · Quando falha</h2>
+            <table class="inf-tabela">
+                <thead><tr><th>Mensagem</th><th>Causa</th><th>Resolve com</th></tr></thead>
+                <tbody>
+                    <tr><td>Usuário ou senha recusados</td><td>Credencial errada, expirada ou sem permissão nos índices.</td><td>Cliente</td></tr>
+                    <tr><td>Falha ao alcançar / tempo esgotado</td><td>Firewall não liberou nossos IPs.</td><td>Rede do cliente</td></tr>
+                    <tr><td>Erro de certificado</td><td>Autoassinado, padrão em instalação nova.</td><td>Cliente instalar certificado válido. Aceitar autoassinado é exceção, não permanente.</td></tr>
+                    <tr><td>Conectado, mas sem índices</td><td>Integração ok; a ferramenta dele não gerou alertas.</td><td>Ninguém — explicar</td></tr>
+                    <tr><td>Sincroniza e traz zero</td><td>Cursor no fim, nada novo desde então.</td><td>Normal. Só investigar se o cliente afirma que houve incidente.</td></tr>
+                </tbody>
+            </table>
+            <div class="inf-alerta">
+                Separe sempre <strong>"não conseguimos ler"</strong> de <strong>"lemos e não havia
+                nada"</strong>. As duas terminam com a tela vazia, mas só a primeira é problema nosso.
+                Confundir as duas em reunião custa a confiança do cliente.
+            </div>
+        </section>
+
+        <section id="automatico">
+            <h2>6 · Depois de no ar</h2>
+            <ul class="inf-lista">
+                <li>Sincroniza sozinho a cada <strong>15 minutos</strong>, sem ninguém clicar.</li>
+                <li>Leitura <strong>incremental</strong>: só o que surgiu desde a última vez. Posição gravada a cada página, então falha no meio não faz reler tudo.</li>
+                <li>Reprocessar a mesma janela <strong>não duplica</strong> alerta.</li>
+                <li><strong>Pausar</strong> interrompe a recorrência sem revogar credencial. Use em suspensão de contrato ou janela de manutenção.</li>
+            </ul>
+        </section>
+
+        <section id="wazuh">
+            <h2>7 · Wazuh</h2>
+            <p><strong>Produto instalado na casa do cliente.</strong> Exige liberação de rede (seção 2).</p>
+
+            <div class="inf-alerta inf-alerta-atencao">
+                <strong>O erro que mais acontece:</strong> pedir o endereço do <strong>Manager</strong>
+                (porta 55000). Ele serve agentes, integridade de arquivos e vulnerabilidades —
+                <strong>não tem os alertas</strong>. O alerta fica no <strong>Wazuh Indexer</strong>, que
+                é um OpenSearch, normalmente na porta <strong>9200</strong>. Peça o Indexer.
+            </div>
+
+            <p>O que pedir, com estas palavras:</p>
+            <ul class="inf-check">
+                <li><strong>Endereço do Wazuh Indexer</strong> — <code>https://host:9200</code>.</li>
+                <li><strong>Usuário e senha somente-leitura</strong> no Indexer, com permissão nos índices <code>wazuh-alerts-*</code>. Sem escrita, sem acesso a outros índices.</li>
+                <li><strong>Certificado</strong> — instalação nova usa autoassinado. O ideal é o cliente trocar por um válido para o mesmo nome de host que ele informar.</li>
+            </ul>
+
+            <table class="inf-tabela">
+                <thead><tr><th>Campo no formulário</th><th>O que vai nele</th></tr></thead>
+                <tbody>
+                    <tr><td>URL do serviço</td><td><code>https://host:9200</code> — endereço do Indexer</td></tr>
+                    <tr><td>Usuário do Indexer</td><td>a conta de serviço que o cliente criou</td></tr>
+                    <tr><td>Senha</td><td>cifrada na gravação, nunca reexibida</td></tr>
+                </tbody>
+            </table>
+
+            <p>O que traz: <strong>alertas</strong>. Inventário de agentes e vulnerabilidades ficam na API do Manager e ainda não são lidos.</p>
+        </section>
+
+        <section id="catalogo">
+            <h2>8 · O que integramos</h2>
+            <p>Lista lida do código — o que a plataforma <strong>realmente</strong> integra hoje, não o catálogo de vitrine do Marketplace.</p>
+            @if (Model.Adaptadores.Count == 0)
+            {
+                <div class="inf-alerta inf-alerta-erro">Nenhum adaptador registrado nesta instalação.</div>
+            }
+            else
+            {
+                <table class="inf-tabela">
+                    <thead><tr><th>Fabricante</th><th>Categoria</th><th>Auth</th><th>Exige URL</th><th>Traz</th><th>Pede</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in Model.Adaptadores)
+                        {
+                            <tr>
+                                <td><strong>@a.Nome</strong></td>
+                                <td>@a.Categoria</td>
+                                <td>@a.TipoAuth.ToString().ToLowerInvariant()</td>
+                                <td>@(a.ExigeUrlBase ? "sim" : "não")</td>
+                                <td>@string.Join(", ", a.Escopos.Select(e => e.ToString().ToLowerInvariant()))</td>
+                                <td>@string.Join(", ", a.CamposCredencial.Select(c => c.Rotulo))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+
+        </section>
+
+        <section id="novo">
+            <h2>9 · Fabricante novo</h2>
+            <p>Uma classe. Nem a tela nem o motor de sincronização mudam.</p>
+            <ul class="inf-check">
+                <li>Implementar <code>IConnector</code> em <code>Services/Integracoes</code>.</li>
+                <li>Declarar em <code>Capacidades</code>: slug, categoria, tipo de auth, escopos, se exige URL e <strong>quais campos de credencial</strong> o formulário deve pedir.</li>
+                <li><code>TestarConexaoAsync</code> — a pergunta mais barata que prove credencial e rede ao mesmo tempo, sem gravar nada.</li>
+                <li><code>SincronizarAsync</code> — devolver página de alertas + próximo cursor. Tradução de severidade numa função isolada.</li>
+                <li>Registrar no DI <strong>também pela interface</strong>, senão o registro de conectores não enxerga.</li>
+                <li><strong>Validar contra instância real</strong> antes de dar como pronto.</li>
+            </ul>
+            <div class="inf-alerta">
+                Compilar não prova nada em adaptador HTTP. No primeiro conector, o teste com dado real
+                mostrou que um campo tido como garantido existia em <strong>1 de 186</strong> alertas.
+                Nome de campo lido em documentação é hipótese; resposta observada é fato.
+            </div>
+        </section>
+
+        <section id="nunca">
+            <h2>10 · Nunca fazer</h2>
+            <ul class="inf-lista inf-lista-nao">
+                <li>Acessar ambiente de cliente sem autorização documentada — é crime, além de LGPD.</li>
+                <li>Pedir conta de administrador quando somente-leitura resolve.</li>
+                <li>Usar credencial pessoal de funcionário. Quando a pessoa sai, a integração cai e ninguém lembra por quê.</li>
+                <li>Deixar validação de TLS desligada como estado permanente.</li>
+                <li>Prometer o coletor instalado na rede do cliente — não existe.</li>
+                <li>Anotar credencial fora da plataforma: planilha, bloco de notas, mensagem.</li>
+            </ul>
+        </section>
+
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .inf-wrap { display: grid; grid-template-columns: 196px minmax(0, 1fr); gap: 26px; align-items: start; }
+        @@media (max-width: 900px) { .inf-wrap { grid-template-columns: 1fr; } .inf-toc { position: static !important; } }
+
+        .inf-toc {
+            position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px;
+            background: rgba(12,20,30,.6); border: 1px solid rgba(120,170,255,.10);
+            border-radius: 10px; padding: 14px 12px;
+        }
+        .inf-toc-label {
+            font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; letter-spacing: .12em;
+            text-transform: uppercase; color: #4A5D78; margin-bottom: 8px; padding-left: 8px;
+        }
+        .inf-toc a {
+            font-size: 12px; color: #8FA3BC; text-decoration: none; padding: 6px 8px;
+            border-radius: 6px; border-left: 2px solid transparent;
+        }
+        .inf-toc a:hover, .inf-toc a:focus-visible { color: #EAF0F8; background: rgba(120,170,255,.07); border-left-color: #00E0A4; }
+
+        .inf-body { min-width: 0; display: flex; flex-direction: column; gap: 28px; }
+        .inf-body section { scroll-margin-top: 18px; }
+        .inf-body h2 {
+            font-size: 16px; font-weight: 650; letter-spacing: -.012em; color: #EAF0F8;
+            margin: 0 0 9px; padding-bottom: 8px; border-bottom: 1px solid rgba(120,170,255,.10);
+        }
+        .inf-body p { font-size: 13px; line-height: 1.6; color: #B4C4D8; margin: 0 0 10px; max-width: 74ch; }
+        .inf-body strong { color: #EAF0F8; }
+        .inf-body code {
+            font-family: 'IBM Plex Mono', monospace; font-size: .88em; color: #8FC0FF;
+            background: rgba(77,155,255,.09); border: 1px solid rgba(77,155,255,.18);
+            border-radius: 4px; padding: 1px 5px;
+        }
+
+        /* Checklist: caixa vazia porque estes itens são conferidos durante a execução. */
+        .inf-check { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+        .inf-check li {
+            position: relative; padding: 10px 14px 10px 38px;
+            background: rgba(12,20,30,.5); border: 1px solid rgba(120,170,255,.09); border-radius: 8px;
+            font-size: 13px; line-height: 1.55; color: #B4C4D8;
+        }
+        .inf-check li::before {
+            content: ''; position: absolute; left: 13px; top: 12px; width: 13px; height: 13px;
+            border: 1.5px solid #3C5064; border-radius: 3px;
+        }
+
+        .inf-lista { margin: 0 0 10px; padding-left: 18px; }
+        .inf-lista li { font-size: 13px; line-height: 1.58; color: #B4C4D8; margin-bottom: 6px; max-width: 74ch; }
+        .inf-lista-nao { list-style: none; padding-left: 0; }
+        .inf-lista-nao li { position: relative; padding-left: 24px; }
+        .inf-lista-nao li::before { content: '✕'; position: absolute; left: 4px; top: 0; color: #FF8098; font-size: 12px; }
+
+        .inf-tabela { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 0 0 10px; display: block; overflow-x: auto; }
+        .inf-tabela th, .inf-tabela td { text-align: left; padding: 8px 12px; border-bottom: 1px solid rgba(120,170,255,.08); vertical-align: top; color: #B4C4D8; }
+        .inf-tabela th {
+            font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .1em;
+            text-transform: uppercase; color: #4A5D78; font-weight: 600; white-space: nowrap;
+        }
+
+        .inf-pill {
+            display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 8.5px;
+            letter-spacing: .06em; color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent);
+            border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+            border-radius: 999px; padding: 2px 8px; white-space: nowrap;
+        }
+
+        .inf-alerta {
+            font-size: 12.5px; line-height: 1.58; color: #B4C4D8; background: rgba(77,155,255,.05);
+            border: 1px solid rgba(77,155,255,.16); border-left-width: 2px; border-left-color: #4D9BFF;
+            border-radius: 8px; padding: 11px 14px; margin: 0 0 10px; max-width: 78ch;
+        }
+        .inf-toc-sub {
+            font-family: 'IBM Plex Mono', monospace; font-size: 7.5px; letter-spacing: .1em;
+            text-transform: uppercase; color: #3C5064; margin: 10px 0 3px; padding-left: 8px;
+        }
+        .inf-toc-sub:first-of-type { margin-top: 0; }
+        .inf-alerta-atencao { background: rgba(255,138,61,.06); border-color: rgba(255,138,61,.24); border-left-color: #FF8A3D; }
+        .inf-alerta-erro { background: rgba(255,59,92,.06); border-color: rgba(255,59,92,.22); border-left-color: #FF3B5C; }
+    </style>
+}

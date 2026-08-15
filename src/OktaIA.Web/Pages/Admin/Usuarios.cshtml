@@ -76,7 +76,7 @@
             <span class="adm-pill" style="color:@(ativo ? "#00E0A4" : "#FF3B5C"); background:@(ativo ? "#00E0A41F" : "#FF3B5C1F");">@(ativo ? "ATIVO" : "INATIVO")</span>
             <div class="adm-row-actions">
                 <button type="button" class="adm-btn-ghost" data-adm-editar-usuario
-                        data-id="@usuario.Id" data-nome="@(usuario.NomeCompleto ?? "")" data-email="@usuario.Email" data-papeis="@string.Join(",", papeis)">Editar</button>
+                        data-id="@usuario.Id" data-nome="@(usuario.NomeCompleto ?? "")" data-email="@usuario.Email" data-papeis="@string.Join(",", papeis)" data-empresa="@(usuario.CompanyId?.ToString() ?? "")">Editar</button>
                 @if (ativo)
                 {
                     <form method="post" asp-page-handler="Desativar" asp-route-id="@usuario.Id" data-adm-confirm="Desativar @(usuario.NomeCompleto ?? usuario.Email)? A pessoa não vai mais conseguir entrar.">
@@ -105,6 +105,18 @@
         <input asp-for="EditInput.NomeCompleto" />
         <label>E-mail</label>
         <input asp-for="EditInput.Email" type="email" />
+        <label>Empresa do cliente</label>
+        <select asp-for="EditInput.CompanyId">
+            <option value="">— Usuário interno (vê todas as empresas) —</option>
+            @foreach (var e in Model.EmpresasDisponiveis)
+            {
+                <option value="@e.Id">@e.Nome</option>
+            }
+        </select>
+        <p style="font-size:11.5px; color:#5A7191; margin:2px 0 10px;">
+            Escolher uma empresa transforma esta conta em <strong>acesso de cliente</strong>: fica presa
+            a ela, sem seletor de organização. Passa a valer no próximo login do usuário.
+        </p>
         <label>Perfis</label>
         <div class="adm-checkbox-group" data-adm-editar-usuario-papeis>
             @foreach (var p in Model.PapeisDisponiveis)

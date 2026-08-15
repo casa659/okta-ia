@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using OktaIA.Web.Data;
 using OktaIA.Web.Models;
 using OktaIA.Web.Services;
 
@@ -16,12 +17,14 @@ public class UsuariosModel : PageModel
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
     private readonly AdminAuditService _audit;
+    private readonly ApplicationDbContext _db;
 
-    public UsuariosModel(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, AdminAuditService audit)
+    public UsuariosModel(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, AdminAuditService audit, ApplicationDbContext db)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _audit = audit;
+        _db = db;
     }
 
     [BindProperty]
@@ -34,6 +37,7 @@ public class UsuariosModel : PageModel
     public string? SenhaTemporaria { get; set; }
     public string? UsuarioAtualId { get; private set; }
     public List<string> PapeisDisponiveis { get; private set; } = new();
+    public List<(int Id, string Nome)> EmpresasDisponiveis { get; private set; } = new();
     public List<(ApplicationUser Usuario, List<string> Papeis, bool Ativo)> Usuarios { get; private set; } = new();
 
     public async Task OnGetAsync()
@@ -122,6 +126,10 @@ public class UsuariosModel : PageModel
         usuario.UserName = EditInput.Email;
         usuario.NormalizedEmail = _userManager.NormalizeEmail(EditInput.Email);
         usuario.NormalizedUserName = _userManager.NormalizeName(EditInput.Email);
+        // Vínculo com empresa: define se a conta é interna (nulo) ou de cliente (presa àquela empresa).
+        // A claim que prende o acesso é recriada no próximo login — trocar isto NÃO derruba a
+        // sessão atual do usuário, então quem já estiver logado mantém o escopo antigo até relogar.
+        usuario.CompanyId = EditInput.CompanyId;
 
         var resultado = await _userManager.UpdateAsync(usuario);
         if (!resultado.Succeeded)
@@ -216,6 +224,10 @@ public class UsuariosModel : PageModel
         var usuarioAtual = await _userManager.GetUserAsync(User);
         UsuarioAtualId = usuarioAtual?.Id;
 
+        EmpresasDisponiveis = (await _db.Companies.Where(c => c.Ativo).OrderBy(c => c.Nome)
+            .Select(c => new { c.Id, c.Nome }).ToListAsync())
+            .Select(c => (c.Id, c.Nome)).ToList();
+
         PapeisDisponiveis = await _roleManager.Roles
             .Where(r => r.Name != null)
             .OrderBy(r => r.Name)
@@ -265,5 +277,8 @@ public class UsuariosModel : PageModel
         public string Email { get; set; } = "";
 
         public List<string> Papeis { get; set; } = new();
+
+        /// <summary>Vazio = usuário interno (vê todas as empresas). Preenchido = conta de cliente, presa a ela.</summary>
+        public int? CompanyId { get; set; }
     }
 }

@@ -26,7 +26,7 @@ public class EmpresasModel : PageModel
     public async Task OnGetAsync()
     {
         var lang = _i18n.Lang;
-        var empresas = await _db.Companies.Where(c => c.Ativo).OrderBy(c => c.Id).ToListAsync();
+        var empresas = await TenantResolver.EmpresasVisiveis(HttpContext, _db).OrderBy(c => c.Id).ToListAsync();
         const string accent = "#00E0A4";
 
         // Empresas seed (demo) têm Company.ScoreRisco/AtivosCount/VulnsCount/IncidentesCount/

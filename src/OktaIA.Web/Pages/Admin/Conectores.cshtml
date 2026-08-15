@@ -135,16 +135,30 @@
             Use sempre um usuário somente-leitura.
         </p>
         <form method="post" asp-page-handler="Instalar" asp-route-slug="@d.Slug" asp-route-empresaId="@Model.EmpresaSelecionadaId">
+            @* O navegador enche estes campos com o login DA PLATAFORMA se achar que é um formulário
+               de acesso — e aí grava-se a credencial errada, cifrada, sem como reexibir pra conferir.
+               Aconteceu de verdade. `autocomplete="off"` não resolve: o Chrome ignora em par
+               usuário+senha há anos. O que funciona é marcar o campo secreto como "new-password",
+               que faz o navegador tratar o formulário como criação de senha e não oferecer o login
+               salvo. Os demais campos ficam fora do heurístico por não virem antes de um "password"
+               comum. *@
             @if (d.ExigeUrlBase)
             {
                 <label>URL do serviço</label>
-                <input name="urlBase" placeholder="https://10.0.0.5:9200" />
+                <input name="urlBase" placeholder="https://10.0.0.5:9200" autocomplete="off" spellcheck="false" />
             }
             @foreach (var campo in d.CamposCredencial)
             {
                 <label>@campo.Rotulo</label>
-                <input name="cred_@campo.Chave" type="@(campo.Segredo ? "password" : "text")" autocomplete="off" />
+                <input name="cred_@campo.Chave"
+                       type="@(campo.Segredo ? "password" : "text")"
+                       autocomplete="new-password"
+                       autocapitalize="off" autocorrect="off" spellcheck="false" />
             }
+            <p style="font-size:11.5px; color:#5A7191; margin:2px 0 10px;">
+                Confira que os campos acima têm a credencial <strong>do cliente</strong>. Se o navegador
+                preencheu com o seu login da plataforma, apague e digite de novo.
+            </p>
             <div class="adm-dialog-actions">
                 <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
                 <button type="submit" class="adm-btn-primary">Instalar</button>

@@ -57,6 +57,8 @@
         dialogEditarUsuario.querySelector('[name="EditInput.Id"]').value = btn.getAttribute('data-id') || '';
         dialogEditarUsuario.querySelector('[name="EditInput.NomeCompleto"]').value = btn.getAttribute('data-nome') || '';
         dialogEditarUsuario.querySelector('[name="EditInput.Email"]').value = btn.getAttribute('data-email') || '';
+        var selEmpresa = dialogEditarUsuario.querySelector('[name="EditInput.CompanyId"]');
+        if (selEmpresa) { selEmpresa.value = btn.getAttribute('data-empresa') || ''; }
         var papeisSelecionados = (btn.getAttribute('data-papeis') || '').split(',').filter(Boolean);
         dialogEditarUsuario.querySelectorAll('[name="EditInput.Papeis"]').forEach(function (cb) {
           cb.checked = papeisSelecionados.indexOf(cb.value) !== -1;

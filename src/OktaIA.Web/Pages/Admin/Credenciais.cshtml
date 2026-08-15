@@ -1,55 +1,128 @@
 @page
 @model OktaIA.Web.Pages.Admin.CredenciaisModel
-@using OktaIA.Web.Services
 @{
     ViewData["Title"] = "Credenciais";
 }
 
 <div class="adm-page-head">
     <h1>Cofre de credenciais</h1>
-    <p>Segredos cifrados em repouso · nenhum conector recebe a credencial em claro</p>
+    <p>Segredos dos conectores · cifrados em repouso, nunca reexibidos</p>
 </div>
 
-<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(196px,100%),1fr)); gap:11px; margin-bottom:14px;">
-    <div class="adm-kpi" style="border-left:2px solid #00E0A4;">
-        <div class="adm-kpi-label">Cifragem</div>
-        <div class="oi-mono" style="font-size:15px; font-weight:600; color:#00E0A4;">AES-256-GCM</div>
-        <div style="font-size:11px; color:#6B7F9B; margin-top:4px;">chave mestra em HSM</div>
+@if (Model.Mensagem is not null)
+{
+    <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid @(Model.MensagemOk ? "#00E0A4" : "#FF3B5C");">
+        <span style="font-size:13px; color:#D4DFEC;">@Model.Mensagem</span>
     </div>
-    <div class="adm-kpi" style="border-left:2px solid #4D9BFF;">
-        <div class="adm-kpi-label">Segredos</div>
-        <div class="oi-mono" style="font-size:15px; font-weight:600; color:#4D9BFF;">7 ativos</div>
-        <div style="font-size:11px; color:#6B7F9B; margin-top:4px;">1 revogada pelo fornecedor</div>
+}
+
+@if (!Model.CofreConfigurado)
+{
+    <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid #FF8A3D;">
+        <span style="font-size:13px; color:#D4DFEC;">
+            <strong style="color:#FF8A3D;">Cofre não configurado.</strong>
+            A chave de criptografia não está disponível nesta instalação — nenhuma credencial pode ser
+            lida ou gravada.
+        </span>
     </div>
-    <div class="adm-kpi" style="border-left:2px solid #FFC93C;">
-        <div class="adm-kpi-label">Rotação</div>
-        <div class="oi-mono" style="font-size:15px; font-weight:600; color:#FFC93C;">1 pendente</div>
-        <div style="font-size:11px; color:#6B7F9B; margin-top:4px;">política de 90 dias</div>
-    </div>
-    <div class="adm-kpi" style="border-left:2px solid #8A7BFF;">
-        <div class="adm-kpi-label">Acessos hoje</div>
-        <div class="oi-mono" style="font-size:15px; font-weight:600; color:#8A7BFF;">4.128</div>
-        <div style="font-size:11px; color:#6B7F9B; margin-top:4px;">todos auditados</div>
-    </div>
+}
+
+<div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid #4D9BFF;">
+    <span style="font-size:12.5px; color:#B4C4D8;">
+        <strong style="color:#EAF0F8;">Rotacionar substitui só o segredo.</strong> Conector, cursor e
+        alertas já ingeridos ficam intactos, e a sincronização continua de onde parou — diferente de
+        remover e instalar de novo, que apaga o histórico do cliente junto.
+    </span>
 </div>
 
-<div class="adm-card">
-    <div class="adm-table-head" style="grid-template-columns:2fr 1.2fr 1.4fr 1.2fr 110px;">
-        <span>Credencial</span><span>Tipo</span><span>Proteção</span><span>Rotação</span><span>Status</span>
+@if (Model.Credenciais.Count == 0)
+{
+    <div class="adm-card" style="padding:26px; text-align:center;">
+        <span style="font-size:13px; color:#8FA3BC;">Nenhuma credencial guardada — não há conector instalado.</span>
     </div>
-    @foreach (var v in AdminCatalog.Vault)
+}
+else
+{
+    <div class="adm-card" style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+            <thead>
+                <tr>
+                    <th style="text-align:left; padding:10px 14px; border-bottom:1px solid rgba(120,170,255,.10); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#4A5D78;">Empresa</th>
+                    <th style="text-align:left; padding:10px 14px; border-bottom:1px solid rgba(120,170,255,.10); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#4A5D78;">Conector</th>
+                    <th style="text-align:left; padding:10px 14px; border-bottom:1px solid rgba(120,170,255,.10); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#4A5D78;">Referência</th>
+                    <th style="text-align:left; padding:10px 14px; border-bottom:1px solid rgba(120,170,255,.10); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#4A5D78;">Guardada em</th>
+                    <th style="text-align:left; padding:10px 14px; border-bottom:1px solid rgba(120,170,255,.10); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#4A5D78;">Rotacionada</th>
+                    <th style="text-align:left; padding:10px 14px; border-bottom:1px solid rgba(120,170,255,.10); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:#4A5D78;">Status</th>
+                    <th style="padding:10px 14px; border-bottom:1px solid rgba(120,170,255,.10);"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model.Credenciais)
+                {
+                    <tr>
+                        <td style="padding:11px 14px; border-bottom:1px solid rgba(120,170,255,.06); color:#EAF0F8;">@c.Empresa</td>
+                        <td style="padding:11px 14px; border-bottom:1px solid rgba(120,170,255,.06); color:#B4C4D8;">@c.Conector</td>
+                        <td style="padding:11px 14px; border-bottom:1px solid rgba(120,170,255,.06);">
+                            <span class="oi-mono" style="color:#8FC0FF;">@(c.Referencia ?? "—")</span>
+                            <div style="font-size:10px; color:#4A5D78; margin-top:2px;">segredo nunca exibido</div>
+                        </td>
+                        <td style="padding:11px 14px; border-bottom:1px solid rgba(120,170,255,.06); color:#8FA3BC;">
+                            @c.CriadaEm
+                            @if (c.CriadaPor is not null)
+                            {
+                                <div style="font-size:10px; color:#4A5D78; margin-top:2px;">por @c.CriadaPor</div>
+                            }
+                        </td>
+                        <td style="padding:11px 14px; border-bottom:1px solid rgba(120,170,255,.06); color:#8FA3BC;">@c.Rotacionada</td>
+                        <td style="padding:11px 14px; border-bottom:1px solid rgba(120,170,255,.06);">
+                            <span class="adm-pill" style="color:@c.Cor; background:@(c.Cor)1F; font-size:8.5px;">@c.StatusRotulo</span>
+                        </td>
+                        <td style="padding:11px 14px; border-bottom:1px solid rgba(120,170,255,.06); text-align:right;">
+                            @if (User.IsInRole("Admin") && c.Campos.Count > 0)
+                            {
+                                <button type="button" class="adm-btn-ghost" style="font-size:10px; padding:6px 10px;"
+                                        data-adm-open-dialog="adm-dialog-rot-@c.ConectorId"
+                                        @(Model.CofreConfigurado ? "" : "disabled")>Rotacionar</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@if (User.IsInRole("Admin"))
+{
+    foreach (var c in Model.Credenciais.Where(x => x.Campos.Count > 0))
     {
-        var statusMap = new Dictionary<string, (string L, string C)> { ["ok"] = ("VÁLIDA", "#00E0A4"), ["atencao"] = ("ROTACIONAR", "#FFC93C"), ["erro"] = ("INVÁLIDA", "#FF3B5C") };
-        var (label, color) = statusMap[v.Status];
-        <div class="adm-table-row" style="grid-template-columns:2fr 1.2fr 1.4fr 1.2fr 110px;">
-            <div>
-                <div style="font-size:12.5px; color:#D4DFEC;">@v.N</div>
-                <div class="oi-mono" style="font-size:9px; color:#4A5D78; margin-top:2px;">@v.Slug</div>
-            </div>
-            <span class="oi-mono" style="font-size:10px; color:#8296B0;">@v.Kind</span>
-            <span class="oi-mono" style="font-size:10px; color:#00E0A4;">@v.Enc</span>
-            <span class="oi-mono" style="font-size:10px; color:#8296B0;">@v.Rot</span>
-            <span class="adm-pill" style="color:@color; background:@(color)1F;">@label</span>
-        </div>
+        <dialog id="adm-dialog-rot-@c.ConectorId" class="adm-dialog">
+            <h2>Rotacionar credencial</h2>
+            <p style="font-size:13.5px; color:#EAF0F8; margin:0 0 4px;"><strong>@c.Conector</strong> · @c.Empresa</p>
+            <p style="font-size:12.5px; color:#8FA3BC; margin:0 0 12px;">
+                Digite a credencial <strong style="color:#D4DFEC;">nova</strong>, gerada pelo cliente. A
+                anterior é substituída e não pode ser recuperada. Alertas e cursor não são afetados.
+            </p>
+            <form method="post" asp-page-handler="Rotacionar" asp-route-conectorId="@c.ConectorId">
+                @* Mesmo cuidado da tela de Conectores: sem isto o navegador preenche com o login
+                   DA PLATAFORMA e grava-se a credencial errada, cifrada, sem como conferir. *@
+                @foreach (var campo in c.Campos)
+                {
+                    <label>@campo.Rotulo</label>
+                    <input name="cred_@campo.Chave"
+                           type="@(campo.Segredo ? "password" : "text")"
+                           autocomplete="new-password"
+                           autocapitalize="off" autocorrect="off" spellcheck="false" />
+                }
+                <p style="font-size:11.5px; color:#5A7191; margin:2px 0 10px;">
+                    Confira que os campos têm a credencial do cliente. Se o navegador preencheu com o
+                    seu login, apague e digite de novo.
+                </p>
+                <div class="adm-dialog-actions">
+                    <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
+                    <button type="submit" class="adm-btn-primary">Substituir</button>
+                </div>
+            </form>
+        </dialog>
     }
-</div>
+}

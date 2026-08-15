@@ -1,6 +1,23 @@
 namespace OktaIA.Web.Models;
 
 /// <summary>
+/// Estado da TRIAGEM — nosso, não do fabricante. Fica separado de <c>StatusOrigem</c> de propósito:
+/// o Wazuh dizer "New" não significa que ninguém aqui olhou, e um analista marcar "Resolvido" aqui
+/// não muda nada lá. Misturar os dois campos apagaria justamente a pergunta que o gestor faz —
+/// "alguém tratou isso?".
+///
+/// FalsoPositivo é estado de primeira classe, e não um "resolvido" disfarçado: um alerta que nunca
+/// foi ameaça não deveria contar como trabalho feito nem como risco eliminado.
+/// </summary>
+public enum StatusTriagem
+{
+    Novo = 0,
+    EmAndamento = 1,
+    Resolvido = 2,
+    FalsoPositivo = 3,
+}
+
+/// <summary>
 /// Alerta vindo de QUALQUER fabricante, já normalizado para uma forma só. Esta classe é o coração
 /// da proposta da plataforma: se um alerta do Defender e um do Wazuh não virarem a mesma forma,
 /// a IA não tem o que correlacionar e o gestor volta a ter N abas separadas — que é exatamente o
@@ -49,7 +66,23 @@ public class AlertaUnificado
     /// <summary>Status como o fabricante chama ("New", "InProgress", "Resolved") — texto cru, sem tradução.</summary>
     public string? StatusOrigem { get; set; }
 
-    public bool Resolvido { get; set; }
+    // ── Triagem ──────────────────────────────────────────────────────────────
+    // Substitui o antigo `bool Resolvido`, que existia no modelo mas NUNCA era lido nem escrito por
+    // ninguém — dois estados não davam conta da pergunta real ("alguém está tratando?").
+
+    public StatusTriagem Status { get; set; } = StatusTriagem.Novo;
+
+    /// <summary>Quem ficou responsável por tratar. Texto livre: pode ser alguém de fora da plataforma.</summary>
+    public string? Responsavel { get; set; }
+
+    /// <summary>O que foi feito/concluído. É o que transforma "resolvido" em algo auditável.</summary>
+    public string? NotaTriagem { get; set; }
+
+    /// <summary>Quando a triagem mudou pela última vez — e não quando o alerta chegou.</summary>
+    public DateTimeOffset? TriadoEm { get; set; }
+
+    /// <summary>Usuário da plataforma que fez a última mudança. Autoria não é a mesma coisa que responsável.</summary>
+    public string? TriadoPor { get; set; }
 
     /// <summary>
     /// Payload original em JSON. Serve pra auditoria e pra depurar mapeamento errado sem precisar

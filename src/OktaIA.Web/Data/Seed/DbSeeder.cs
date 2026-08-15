@@ -31,6 +31,7 @@ public static class DbSeeder
         await SeedRolePermissionsAsync(db, roleManager);
         await BackfillDigitalTwinPermissionAsync(db);
         await BackfillAlertasPermissionAsync(db);
+        await BackfillInformacoesPermissionAsync(db);
         await BackfillRebrandLoktaiaAsync(db);
         await BackfillEmpresasDemoAsync(db);
     }
@@ -150,6 +151,30 @@ public static class DbSeeder
 
         var roleIds = await db.RolePermissions
             .Where(rp => rp.AreaKey == "soc.vulnerabilidades")
+            .Select(rp => rp.RoleId)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var roleId in roleIds)
+        {
+            db.RolePermissions.Add(new RolePermission { RoleId = roleId, AreaKey = area });
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    // Mesma armadilha dos dois backfills acima. Quem já podia mexer em conectores passa a enxergar o
+    // manual de implantação — de nada adianta a página existir se quem implanta não a vê.
+    private static async Task BackfillInformacoesPermissionAsync(ApplicationDbContext db)
+    {
+        const string area = "admin.infoconectores";
+        if (await db.RolePermissions.AnyAsync(rp => rp.AreaKey == area))
+        {
+            return;
+        }
+
+        var roleIds = await db.RolePermissions
+            .Where(rp => rp.AreaKey == "admin.connectors")
             .Select(rp => rp.RoleId)
             .Distinct()
             .ToListAsync();

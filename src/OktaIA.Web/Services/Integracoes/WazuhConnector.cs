@@ -60,7 +60,14 @@ public class WazuhConnector : IConnector
 
             if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                return new ResultadoTeste(false, "Usuário ou senha recusados pelo Wazuh Indexer.", latencia);
+                // Dizer QUAL usuário foi recusado: a senha nunca aparece, mas o usuário sim — e é ele
+                // que denuncia o erro mais comum, o navegador ter preenchido o campo com o login da
+                // própria plataforma em vez da credencial do cliente. Sem o nome na mensagem, o
+                // sintoma joga a suspeita no cliente e só o banco revela o que foi gravado.
+                var usuario = ctx.Credencial.GetValueOrDefault("usuario");
+                var quem = string.IsNullOrWhiteSpace(usuario) ? "" : $" (usuário \"{usuario}\")";
+                return new ResultadoTeste(false,
+                    $"Usuário ou senha recusados pelo Wazuh Indexer{quem}.", latencia);
             }
 
             if (!resp.IsSuccessStatusCode)

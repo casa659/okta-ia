@@ -208,25 +208,17 @@ public class AtivosModel : PageModel
 
     // Empresa explicitamente escolhida no filtro local da página tem prioridade; senão cai no
     // tenant global do cabeçalho — mesmo padrão usado em Vulnerabilidades.
+    // Delegado ao TenantResolver de propósito: conta de cliente é presa à própria empresa e o
+    // parâmetro  é descartado. Resolver isso aqui, em cinco cópias, era como o furo
+    // sobreviveria à correção do resolvedor.
     private async Task<Company?> ResolverEmpresaAsync(int? empresaParam)
-    {
-        if (empresaParam.HasValue)
-        {
-            var empresa = await _db.Companies.FirstOrDefaultAsync(c => c.Id == empresaParam.Value && c.Ativo);
-            if (empresa is not null)
-            {
-                return empresa;
-            }
-        }
-
-        return await TenantResolver.ResolverAtualAsync(HttpContext, _db);
-    }
+        => await TenantResolver.ResolverComFiltroAsync(HttpContext, _db, empresaParam);
 
     private async Task CarregarAsync(int? empresaParam = null)
     {
         const string accent = "#00E0A4";
         var empresaAtual = await ResolverEmpresaAsync(empresaParam);
-        EmpresasDisponiveis = (await _db.Companies.Where(c => c.Ativo).OrderBy(c => c.Nome)
+        EmpresasDisponiveis = (await TenantResolver.EmpresasVisiveis(HttpContext, _db).OrderBy(c => c.Nome)
             .Select(c => new { c.Id, c.Nome, c.Dominio }).ToListAsync())
             .Select(c => (c.Id, c.Nome, c.Dominio)).ToList();
         EmpresaSelecionadaId = empresaAtual?.Id;

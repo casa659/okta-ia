@@ -10,6 +10,36 @@ using OktaIA.Web.Services.Integracoes;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ---------- Azure Key Vault ----------
+// Segredo de verdade (hoje a chave que cifra as credenciais dos conectores) sai do App Setting e
+// passa a vir do cofre: deixa de existir como texto puro em configuração, ganha rotação e log de
+// acesso. A autenticação é por identidade gerenciada do App Service — nenhuma credencial de acesso
+// ao cofre fica no código ou na configuração.
+//
+// Registrado DEPOIS das fontes padrão, então o cofre tem precedência sobre o App Setting; enquanto
+// os dois existirem, o valor é o mesmo e a troca é indolor.
+//
+// Nome no cofre usa "--" onde a configuração usa ":" (Key Vault não aceita ":"):
+//   Integracoes--ChaveCriptografia  ->  Integracoes:ChaveCriptografia
+//
+// Falha ao alcançar o cofre NÃO derruba o site: sem isto, um problema de rede ou de permissão no
+// Azure tiraria o console inteiro do ar por causa de um segredo que só a tela de conectores usa.
+// A tela de conectores já avisa sozinha quando a chave não está disponível.
+var cofreUri = builder.Configuration["Integracoes:KeyVaultUri"];
+if (!string.IsNullOrWhiteSpace(cofreUri))
+{
+    try
+    {
+        builder.Configuration.AddAzureKeyVault(
+            new Uri(cofreUri),
+            new Azure.Identity.DefaultAzureCredential());
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[KeyVault] Não foi possível carregar o cofre {cofreUri}: {ex.Message}");
+    }
+}
+
 builder.Services.AddRazorPages(options =>
 {
     // Roda em toda página Razor do site — a própria filter decide se a página está no
@@ -29,6 +59,7 @@ builder.Services.AddScoped<AdminAuditService>();
 builder.Services.AddSingleton<RelatorioPdfService>();
 builder.Services.AddSingleton<PropostaComercialPdfService>();
 builder.Services.AddSingleton<TermoAutorizacaoPdfService>();
+builder.Services.AddSingleton<RoteiroPdfService>();
 // Sem estado e sem dependência de request — a chave vem de configuração e não muda em execução.
 builder.Services.AddSingleton<ProtetorDeCredencial>();
 builder.Services.AddScoped<RegistroDeConectores>();
@@ -65,6 +96,9 @@ builder.Services
         options.Password.RequireNonAlphanumeric = false;
         options.SignIn.RequireConfirmedAccount = false;
     })
+    // Carimba a empresa do usuário como claim no cookie de autenticação — é o que prende conta de
+    // cliente à própria organização em TODO caminho de login (senha, 2FA, lembrar dispositivo).
+    .AddClaimsPrincipalFactory<FabricaDeClaimsDoUsuario>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 

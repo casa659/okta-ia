@@ -25,21 +25,27 @@
                     <p class="oi-report-desc">@r.Descricao</p>
                     <div class="oi-report-foot">
                         <span class="oi-report-last">@r.Ultimo</span>
-                        <span class="oi-report-gen">@I18n.T("generate") →</span>
+                        @if (r.Disponivel)
+                        {
+                            @* O único relatório que existe é gerado na tela de Vulnerabilidades —
+                               mandar pra lá em vez de exibir um "Gerar" que não gera nada. *@
+                            <a asp-page="/Vulnerabilidades" class="oi-report-gen" style="text-decoration:none;">@I18n.T("generate") →</a>
+                        }
                     </div>
                 </div>
             }
         </div>
 
         <div class="oi-exec-card">
+            @* Sem o selo "AI": o texto é montado por consulta ao banco, não gerado por modelo.
+               Alegar IA aqui seria mais uma afirmação que não se sustenta. *@
             <div class="oi-panel-head">
-                <span class="oi-brief-badge">AI</span>
-                <span class="oi-panel-title" style="margin:0 0 0 8px">@I18n.T("execPreview")</span>
+                <span class="oi-panel-title" style="margin:0">@I18n.T("execPreview")</span>
             </div>
             <div class="oi-exec-body">
-                <div class="oi-exec-period">@I18n.T("period")</div>
-                <h3 class="oi-exec-head">@I18n.T("execHead")</h3>
-                <p class="oi-exec-text">@I18n.T("execBody")</p>
+                <div class="oi-exec-period">@Model.PeriodoRotulo</div>
+                <h3 class="oi-exec-head">@Model.ResumoTitulo</h3>
+                <p class="oi-exec-text">@Model.ResumoTexto</p>
                 <div class="oi-exec-stats">
                     @foreach (var e in Model.ExecStats)
                     {

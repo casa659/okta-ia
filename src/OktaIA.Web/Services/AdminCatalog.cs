@@ -339,6 +339,7 @@ public static class AdminCatalog
         }),
         new NavGroup("PLATAFORMA DE INTEGRAÇÃO", new[]
         {
+            new NavItem("infoconectores", "/Admin/Informacoes", "25", "Informações"),
             new NavItem("market", "/Admin/Marketplace", "26", "Marketplace", "18", "#00E0A4"),
             new NavItem("connectors", "/Admin/Conectores", "27", "Conectores", "1", "#FF3B5C"),
             new NavItem("vault", "/Admin/Credenciais", "28", "Credenciais"),

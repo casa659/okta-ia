@@ -11,7 +11,7 @@
     var usuario = User.Identity?.IsAuthenticated == true ? await UserManager.GetUserAsync(User) : null;
     // Ordem de Id preserva a ordem de seed (igual ao mockup — "Grupo Vector" é o tenant padrão,
     // primeiro do array original, não ordenação alfabética).
-    var tenants = await Db.Companies.Where(c => c.Ativo).OrderBy(c => c.Id).ToListAsync();
+    var tenants = await TenantResolver.EmpresasVisiveis(Context, Db).OrderBy(c => c.Id).ToListAsync();
     var currentPage = (ViewContext.RouteData.Values["page"] as string) ?? "";
     string NavClass(string page) => currentPage.Equals(page, StringComparison.OrdinalIgnoreCase) ? "oi-nav-btn oi-active" : "oi-nav-btn";
 
@@ -48,26 +48,44 @@
                 </div>
             </div>
 
-            <div class="oi-tenant-wrap">
-                <button type="button" class="oi-tenant-btn" data-tenant-open>
-                    <span class="oi-tenant-dot"></span>
-                    <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.15">
-                        <span class="oi-tenant-label">@I18n.T("tenant")</span>
-                        <span class="oi-tenant-name" id="oi-tenant-name">@(tenantAtual?.Nome ?? "—")</span>
-                    </span>
-                    <span style="font-size:9px;color:var(--oi-muted-2);margin-left:4px">▼</span>
-                </button>
-                <div class="oi-tenant-menu" data-tenant-menu>
-                    <div class="oi-tenant-menu-label">@tenants.Count organização(ões) na plataforma</div>
-                    @foreach (var t in tenants)
-                    {
-                        <button type="button" class="oi-tenant-item @(t.Id == tenantAtual?.Id ? "oi-active" : "")" data-tenant-id="@t.Id" data-tenant-name="@t.Nome">
-                            <span class="oi-tenant-item-name">@t.Nome</span>
-                            <span class="oi-tenant-item-sector">@t.SetorPt</span>
-                        </button>
-                    }
+            @* Conta de cliente é presa à própria empresa: o seletor vira rótulo, sem menu. Mesmo que
+               alguém forjasse o cookie de organização, o TenantResolver ignoraria — mas exibir o
+               seletor sugeriria uma troca que não acontece, e listaria os nomes das outras empresas. *@
+            @if (TenantResolver.UsuarioPreso(User))
+            {
+                <div class="oi-tenant-wrap">
+                    <div class="oi-tenant-btn" style="cursor:default;">
+                        <span class="oi-tenant-dot"></span>
+                        <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.15">
+                            <span class="oi-tenant-label">@I18n.T("tenant")</span>
+                            <span class="oi-tenant-name" id="oi-tenant-name">@(tenantAtual?.Nome ?? "—")</span>
+                        </span>
+                    </div>
                 </div>
-            </div>
+            }
+            else
+            {
+                <div class="oi-tenant-wrap">
+                    <button type="button" class="oi-tenant-btn" data-tenant-open>
+                        <span class="oi-tenant-dot"></span>
+                        <span style="display:flex;flex-direction:column;align-items:flex-start;line-height:1.15">
+                            <span class="oi-tenant-label">@I18n.T("tenant")</span>
+                            <span class="oi-tenant-name" id="oi-tenant-name">@(tenantAtual?.Nome ?? "—")</span>
+                        </span>
+                        <span style="font-size:9px;color:var(--oi-muted-2);margin-left:4px">▼</span>
+                    </button>
+                    <div class="oi-tenant-menu" data-tenant-menu>
+                        <div class="oi-tenant-menu-label">@tenants.Count organização(ões) na plataforma</div>
+                        @foreach (var t in tenants)
+                        {
+                            <button type="button" class="oi-tenant-item @(t.Id == tenantAtual?.Id ? "oi-active" : "")" data-tenant-id="@t.Id" data-tenant-name="@t.Nome">
+                                <span class="oi-tenant-item-name">@t.Nome</span>
+                                <span class="oi-tenant-item-sector">@t.SetorPt</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
 
             <div class="oi-search">
                 <span class="oi-search-icon">⌕</span>

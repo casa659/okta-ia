@@ -40,6 +40,18 @@
                 <span class="oi-mono" style="font-size:9px; color:#FFC93C;">★ @m.Rating.ToString("0.0")</span>
             </div>
             <div class="oi-mono" style="font-size:9px; color:#4A5D78; margin-top:auto;">@m.Vendor · @m.Installs instalações</div>
+            @{ var roteiro = OktaIA.Web.Services.Integracoes.CatalogoDeRoteiros.PorFabricante(m.N); }
+            @if (roteiro is not null)
+            {
+                <div style="display:flex; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid rgba(120,170,255,.07); flex-wrap:wrap;">
+                    <a asp-page-handler="RoteiroCliente" asp-route-fabricante="@m.N" class="adm-btn-ghost" style="font-size:10px; padding:6px 9px; text-decoration:none;">Roteiro do cliente</a>
+                    <a asp-page-handler="RoteiroInterno" asp-route-fabricante="@m.N" class="adm-btn-ghost adm-accent" style="font-size:10px; padding:6px 9px; text-decoration:none;">Roteiro interno</a>
+                </div>
+                @if (!roteiro.Implementado)
+                {
+                    <div style="font-size:9.5px; color:#FF8A3D; margin-top:6px;">conector ainda não implementado — roteiro serve ao levantamento</div>
+                }
+            }
         </div>
     }
 </div>
