@@ -105,6 +105,44 @@ public class DiagnosticosModel : PageModel
         return RedirectToPage(new { empresa = empresa?.Id });
     }
 
+    /// <summary>
+    /// Apaga de vez, com as respostas, ferramentas, riscos e análises juntas (cascata do EF).
+    ///
+    /// Existe ao lado de Arquivar porque as duas coisas são diferentes: arquivar guarda um
+    /// levantamento que perdeu a validade mas ainda diz o que o cliente respondeu; excluir é para
+    /// o que nunca deveria ter existido — um teste, um nome errado, uma linha duplicada.
+    ///
+    /// Irreversível de propósito, e por isso confirmado na tela antes de chegar aqui.
+    /// </summary>
+    public async Task<IActionResult> OnPostExcluirAsync(int id, int? empresaId)
+    {
+        var empresa = await TenantResolver.ResolverComFiltroAsync(HttpContext, _db, empresaId);
+        var diagnostico = empresa is null
+            ? null
+            : await _db.Diagnosticos.FirstOrDefaultAsync(d => d.Id == id && d.CompanyId == empresa.Id);
+
+        if (diagnostico is null)
+        {
+            Mensagem = "Diagnóstico não encontrado.";
+            MensagemOk = false;
+        }
+        else
+        {
+            var titulo = diagnostico.Titulo;
+            _db.Diagnosticos.Remove(diagnostico);
+            await _db.SaveChangesAsync();
+
+            // Fica na auditoria: o registro sumiu, mas o ato de apagar não pode sumir junto.
+            await _auditoria.RegistrarAsync("diagnostico.excluido",
+                $"{empresa!.Nome} · {titulo}", User.Identity?.Name ?? "—");
+
+            Mensagem = $"\"{titulo}\" foi excluído.";
+            MensagemOk = true;
+        }
+
+        return RedirectToPage(new { empresa = empresa?.Id });
+    }
+
     private async Task CarregarAsync(int? empresaParam)
     {
         EmpresasDisponiveis = await TenantResolver.EmpresasVisiveis(HttpContext, _db)
