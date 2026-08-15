@@ -932,33 +932,32 @@ public class PropostaComercialPdfService
             body.Item().PaddingTop(14).Text("O ambiente, camada a camada")
                 .FontSize(9).Bold().FontColor("#0B1220");
 
-            // Duas faixas de cinco: dez caixas numa linha só ficam ilegíveis em A4.
-            foreach (var faixa in new[] { mapa.Take(5).ToList(), mapa.Skip(5).ToList() })
+            // O MESMO SVG que a tela mostra. Gerar o desenho duas vezes, por caminhos diferentes,
+            // faria os dois divergirem na primeira alteração — e o cliente veria uma coisa na
+            // reunião e outra no documento.
+            body.Item().PaddingTop(8)
+                .Svg(Services.Diagnostico.DiagramaDeRede.Gerar(mapa, Services.Diagnostico.TemaDoDiagrama.Claro));
+
+            body.Item().PaddingTop(6).Row(row =>
             {
-                if (faixa.Count == 0) { continue; }
-
-                body.Item().PaddingTop(6).Row(row =>
+                foreach (var estado in new[]
                 {
-                    foreach (var camada in faixa)
+                    Services.Diagnostico.EstadoDaCamada.Protegido,
+                    Services.Diagnostico.EstadoDaCamada.Parcial,
+                    Services.Diagnostico.EstadoDaCamada.Descoberto,
+                    Services.Diagnostico.EstadoDaCamada.NaoAvaliado,
+                })
+                {
+                    var cor = Services.Diagnostico.MapaDaArquitetura.Cor(estado);
+                    row.AutoItem().PaddingRight(14).Row(r =>
                     {
-                        var cor = camada.Estado switch
-                        {
-                            Services.Diagnostico.EstadoDaCamada.Protegido => BrandGreen,
-                            Services.Diagnostico.EstadoDaCamada.Parcial => BrandYellow,
-                            Services.Diagnostico.EstadoDaCamada.Descoberto => BrandRed,
-                            _ => TextMuted2,
-                        };
-
-                        row.RelativeItem().PaddingRight(5).Border(1).BorderColor(Colors.Grey.Lighten2)
-                            .BorderTop(3).BorderColor(cor).Padding(7).Column(c =>
-                        {
-                            c.Item().Text(camada.Nome).FontSize(8).Bold().FontColor("#1C2836");
-                            c.Item().PaddingTop(2).Text(Services.Diagnostico.MapaDaArquitetura.Rotulo(camada.Estado))
-                                .FontSize(6.5f).Bold().FontColor(cor).LetterSpacing(0.04f);
-                        });
-                    }
-                });
-            }
+                        r.AutoItem().PaddingTop(2).Width(7).Height(7).Background(cor);
+                        r.AutoItem().PaddingLeft(4)
+                            .Text(Services.Diagnostico.MapaDaArquitetura.Rotulo(estado).ToLowerInvariant())
+                            .FontSize(7.5f).FontColor(TextMuted);
+                    });
+                }
+            });
 
             var naoAvaliadas = mapa.Count(c => c.Estado == Services.Diagnostico.EstadoDaCamada.NaoAvaliado);
             if (naoAvaliadas > 0)

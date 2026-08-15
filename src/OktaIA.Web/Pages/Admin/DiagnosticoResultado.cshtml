@@ -88,38 +88,24 @@
         Da internet ao monitoramento, como o levantamento enxerga cada camada
     </div>
 
-    <div style="display:flex; gap:6px; align-items:stretch; overflow-x:auto; padding-bottom:6px;">
-        @for (var i = 0; i < Model.Mapa.Count; i++)
+    @* O desenho é SVG embutido, gerado no servidor — o mesmo texto alimenta o PDF, então os dois
+       nunca divergem. Sem script: a CSP do projeto bloquearia. *@
+    <div style="overflow-x:auto;">
+        <div style="min-width:640px;">
+            @Html.Raw(OktaIA.Web.Services.Diagnostico.DiagramaDeRede.Gerar(Model.Mapa))
+        </div>
+    </div>
+
+    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:10px; color:#7A8FAB;">
+        @foreach (var estado in new[] { OktaIA.Web.Services.Diagnostico.EstadoDaCamada.Protegido,
+                                        OktaIA.Web.Services.Diagnostico.EstadoDaCamada.Parcial,
+                                        OktaIA.Web.Services.Diagnostico.EstadoDaCamada.Descoberto,
+                                        OktaIA.Web.Services.Diagnostico.EstadoDaCamada.NaoAvaliado })
         {
-            var camada = Model.Mapa[i];
-            var cor = OktaIA.Web.Services.Diagnostico.MapaDaArquitetura.Cor(camada.Estado);
-            var apagada = camada.Estado == OktaIA.Web.Services.Diagnostico.EstadoDaCamada.NaoSeAplica
-                       || camada.Estado == OktaIA.Web.Services.Diagnostico.EstadoDaCamada.NaoAvaliado;
-
-            <div style="flex:1 1 0; min-width:112px; border-radius:9px; padding:11px 10px;
-                        border:1px solid @(apagada ? "rgba(120,170,255,.12)" : cor + "55");
-                        background:@(apagada ? "rgba(5,10,18,.45)" : cor + "12");">
-                <div style="font-size:7.5px; font-weight:600; letter-spacing:.06em; color:@cor; margin-bottom:5px;">
-                    @OktaIA.Web.Services.Diagnostico.MapaDaArquitetura.Rotulo(camada.Estado)
-                </div>
-                <div style="font-size:12px; color:#EAF0F8; font-weight:600; margin-bottom:6px;">@camada.Nome</div>
-                @if (!apagada)
-                {
-                    <div style="height:4px; border-radius:2px; background:rgba(120,170,255,.12); overflow:hidden; margin-bottom:5px;">
-                        <div style="height:100%; width:@camada.Cobertura%; background:@cor;"></div>
-                    </div>
-                    <div class="oi-mono" style="font-size:9px; color:#5A7191;">@camada.Cobertura% · @camada.Respondidas/@camada.Total</div>
-                }
-                else
-                {
-                    <div class="oi-mono" style="font-size:9px; color:#4A5D78;">—</div>
-                }
-            </div>
-
-            @if (i < Model.Mapa.Count - 1)
-            {
-                <div style="display:flex; align-items:center; color:#3E5273; font-size:12px; flex:0 0 auto;">→</div>
-            }
+            <span style="display:flex; align-items:center; gap:5px;">
+                <span style="width:9px; height:9px; border-radius:2px; background:@OktaIA.Web.Services.Diagnostico.MapaDaArquitetura.Cor(estado);"></span>
+                @OktaIA.Web.Services.Diagnostico.MapaDaArquitetura.Rotulo(estado).ToLowerInvariant()
+            </span>
         }
     </div>
 
