@@ -38,7 +38,20 @@ public class PropostaComercialPdfService
     private const string TextMuted = "#7A8FAB";
     private const string TextMuted2 = "#5A7191";
 
-    public byte[] Gerar(Company empresa, List<Vulnerability> achadosReais, int ativosReaisCount, int ativosTotalCount, DateTimeOffset? ultimaVarredura)
+    /// <summary>
+    /// Monta a proposta. Os dois últimos parâmetros são opcionais e trazem o diagnóstico
+    /// conduzido em reunião, quando existir.
+    ///
+    /// Scanner e diagnóstico não competem, se completam — e a proposta precisa deixar isso
+    /// explícito: a varredura MEDE a superfície externa, o diagnóstico LEVANTA o que ela não
+    /// alcança (backup, identidade, pessoas, governança) a partir do que o cliente declarou.
+    /// Misturar os dois num número só seria vender levantamento como medição.
+    /// </summary>
+    public byte[] Gerar(Company empresa, List<Vulnerability> achadosReais, int ativosReaisCount,
+        int ativosTotalCount, DateTimeOffset? ultimaVarredura,
+        Models.Diagnostico? diagnostico = null,
+        Services.Diagnostico.ResultadoDoDiagnostico? resultadoDiagnostico = null,
+        List<DiagnosticoRisco>? riscosDiagnostico = null)
     {
         var geradoEm = DateTimeOffset.Now;
         var referencia = $"OKT-{geradoEm:yyyy}-{ReferenciaSlug(empresa.Nome)}-01";
@@ -262,6 +275,12 @@ public class PropostaComercialPdfService
                             "recomendação. A correção — o passo a passo técnico — fica com a nossa equipe, que executa e responde pelo resultado. " +
                             "Não é uma lista de problemas — é um plano de ação conduzido por especialistas.")
                             .FontSize(9).FontColor(TextMuted).LineHeight(1.6f);
+                    }
+
+                    // 02b — O levantamento conduzido em reunião, quando existe.
+                    if (diagnostico is not null && resultadoDiagnostico is { } rd)
+                    {
+                        DiagnosticoConduzido(body, empresa, diagnostico, rd, riscosDiagnostico ?? []);
                     }
 
                     body.Item().PaddingTop(8).Text(
@@ -839,6 +858,120 @@ public class PropostaComercialPdfService
         });
 
         return documento.GeneratePdf();
+    }
+
+    /// <summary>
+    /// A parte da proposta que vem do levantamento em reunião, e não da varredura.
+    ///
+    /// ⚠️ **Toda esta seção precisa dizer que é declarada.** O restante da proposta apoia-se em
+    /// medição; esta apoia-se na palavra do cliente. Apagar essa distinção é o que faz um auditor
+    /// derrubar o documento inteiro na primeira pergunta — e, com ele, a credibilidade das seções
+    /// que estavam certas.
+    /// </summary>
+    private static void DiagnosticoConduzido(
+        ColumnDescriptor body,
+        Company empresa,
+        Models.Diagnostico diagnostico,
+        Services.Diagnostico.ResultadoDoDiagnostico r,
+        List<DiagnosticoRisco> riscos)
+    {
+        body.Item().PaddingTop(20).Text("Além do que a varredura alcança")
+            .FontSize(12.5f).Bold().FontColor("#0B1220");
+
+        var quando = diagnostico.ConcluidoEm ?? diagnostico.CriadoEm;
+        var respondente = string.IsNullOrWhiteSpace(diagnostico.Respondente)
+            ? "a equipe da empresa"
+            : $"{diagnostico.Respondente}{(string.IsNullOrWhiteSpace(diagnostico.RespondenteCargo) ? "" : $", {diagnostico.RespondenteCargo}")}";
+
+        body.Item().PaddingTop(6).Text(
+            $"A varredura mede o que se vê de fora. Já backup, identidade, resposta a incidente e governança não aparecem numa " +
+            $"análise externa — e são justamente onde um incidente costuma decidir se a empresa volta a operar. Por isso conduzimos " +
+            $"um levantamento estruturado com {respondente} em {quando.ToLocalTime():dd/MM/yyyy}, cobrindo " +
+            $"{Services.Diagnostico.CatalogoDeDominios.Todos.Count} domínios de segurança.")
+            .FontSize(9.5f).LineHeight(1.6f);
+
+        body.Item().PaddingTop(10).Row(row =>
+        {
+            void Indicador(string valor, string sufixo, string label, string descricao, string cor)
+            {
+                row.RelativeItem().PaddingRight(8).Background("#F6F8FB").Padding(11).Column(c =>
+                {
+                    c.Item().Row(rr =>
+                    {
+                        rr.AutoItem().Text(valor).FontSize(20).Bold().FontColor(cor);
+                        rr.AutoItem().PaddingTop(9).PaddingLeft(1).Text(sufixo).FontSize(9).FontColor(TextMuted2);
+                    });
+                    c.Item().PaddingTop(3).Text(label).FontSize(7.5f).Bold().FontColor(TextMuted2).LetterSpacing(0.06f);
+                    c.Item().PaddingTop(2).Text(descricao).FontSize(8).FontColor(TextMuted).LineHeight(1.35f);
+                });
+            }
+
+            var corCob = r.Cobertura >= 70 ? BrandGreen : r.Cobertura >= 40 ? BrandYellow : BrandRed;
+            Indicador(r.Cobertura.ToString(), "%", "COBERTURA", "dos controles esperados existem", corCob);
+            Indicador(r.Maturidade?.ToString("0.0") ?? "—", "/5", "MATURIDADE", "quão bem gerenciado é o que existe", BrandBg);
+            Indicador(r.UsoDoInvestimento?.ToString() ?? "—", "%", "USO DO INVESTIMENTO", "do que já foi pago está em uso", BrandBg);
+        });
+
+        // A separação entre cobertura e maturidade é o argumento comercial inteiro: quando a
+        // primeira é alta e a segunda é baixa, o cliente não precisa comprar — precisa operar.
+        if (r.Maturidade is { } mat && r.Cobertura >= 60 && mat < 3m)
+        {
+            body.Item().PaddingTop(10).Background("#EEF4FF").Padding(11).Text(
+                $"A {empresa.Nome} já tem a maior parte dos controles que se espera de um ambiente do seu porte — a cobertura de " +
+                $"{r.Cobertura}% mostra isso. O que a maturidade de {mat:0.0} indica é outra coisa: essas ferramentas não estão " +
+                "sendo operadas. Licença vencida, alerta que ninguém lê, backup que nunca foi restaurado para teste. " +
+                "Esta proposta trata desse problema — não de comprar mais tecnologia.")
+                .FontSize(9).FontColor("#1C2836").LineHeight(1.55f);
+        }
+
+        if (riscos.Count > 0)
+        {
+            body.Item().PaddingTop(12).Text("Lacunas de maior gravidade identificadas")
+                .FontSize(9).Bold().FontColor("#0B1220");
+
+            foreach (var risco in riscos.Take(6))
+            {
+                var cor = risco.Gravidade switch
+                {
+                    GravidadeRisco.Critico => BrandRed,
+                    GravidadeRisco.Alto => BrandOrange,
+                    GravidadeRisco.Medio => BrandYellow,
+                    _ => TextMuted,
+                };
+
+                body.Item().PaddingTop(7).Row(row =>
+                {
+                    row.ConstantItem(52).PaddingTop(1)
+                        .Text(risco.Gravidade.ToString().ToUpperInvariant())
+                        .FontSize(6.5f).Bold().FontColor(cor).LetterSpacing(0.05f);
+
+                    row.RelativeItem().Column(c =>
+                    {
+                        c.Item().Text(risco.Titulo).FontSize(9).Bold().FontColor("#1C2836");
+                        if (risco.SeNaoTratar is { Length: > 0 } consequencia)
+                        {
+                            c.Item().PaddingTop(1).Text(consequencia).FontSize(8.5f).FontColor(TextMuted).LineHeight(1.45f);
+                        }
+                    });
+                });
+            }
+        }
+
+        // A ressalva de origem fecha a seção e não é rodapé decorativo: é o que mantém o documento
+        // de pé quando alguém do outro lado perguntar como sabemos disso.
+        var declaradas = r.PorOrigem.GetValueOrDefault(OrigemDaInformacao.Declarado);
+        var total = r.PorOrigem.Values.Sum();
+        var tudoDeclarado = total > 0 && declaradas == total;
+
+        body.Item().PaddingTop(12).Border(1).BorderColor(Colors.Grey.Lighten2).Padding(10).Text(
+            tudoDeclarado
+                ? $"Como sabemos disso: as {total} respostas deste levantamento foram informadas pela equipe da {empresa.Nome} " +
+                  "durante a reunião e não passaram por verificação técnica independente. Diferente da seção anterior, que " +
+                  "mede a superfície externa, esta reflete o que a empresa relata sobre o próprio ambiente. Validar " +
+                  "tecnicamente cada ponto é parte do trabalho proposto, não um pré-requisito dele."
+                : $"Como sabemos disso: das {total} respostas deste levantamento, {declaradas} foram informadas pela equipe e as " +
+                  "demais têm evidência anexada ou verificação técnica. Cada item do relatório detalhado indica a própria origem.")
+            .FontSize(8.5f).FontColor(TextMuted).LineHeight(1.5f);
     }
 
     private static void SectionTitle(ColumnDescriptor body, string numero, string titulo)

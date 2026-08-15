@@ -23,13 +23,15 @@ public class DiagnosticoResultadoModel : PageModel
     private readonly ApplicationDbContext _db;
     private readonly IAnalisadorDeDiagnostico _analisador;
     private readonly AdminAuditService _auditoria;
+    private readonly PropostaComercialPdfService _proposta;
 
     public DiagnosticoResultadoModel(ApplicationDbContext db, IAnalisadorDeDiagnostico analisador,
-        AdminAuditService auditoria)
+        AdminAuditService auditoria, PropostaComercialPdfService proposta)
     {
         _db = db;
         _analisador = analisador;
         _auditoria = auditoria;
+        _proposta = proposta;
     }
 
     public Models.Diagnostico? Diagnostico { get; private set; }
@@ -78,6 +80,35 @@ public class DiagnosticoResultadoModel : PageModel
         };
 
         return RedirectToPage(new { id });
+    }
+
+    /// <summary>
+    /// Gera a proposta comercial já com este diagnóstico dentro.
+    ///
+    /// É o mesmo documento de sempre — não um segundo PDF paralelo. Duas propostas com números
+    /// diferentes circulando no mesmo cliente é como uma consultoria perde a conversa.
+    /// </summary>
+    public async Task<IActionResult> OnGetPropostaAsync(int id)
+    {
+        if (!await CarregarAsync(id)) { return RedirectToPage("/Admin/Diagnosticos"); }
+
+        var empresa = Diagnostico!.Company!;
+        var achados = await _db.Vulnerabilities
+            .Where(v => v.CompanyId == empresa.Id && v.FonteScan).ToListAsync();
+        var ativos = await _db.Assets.Where(a => a.CompanyId == empresa.Id).ToListAsync();
+        var ativosReais = ativos.Where(a => a.Real).ToList();
+        var ultimaVarredura = ativosReais.Where(a => a.UltimoScanEm.HasValue)
+            .Select(a => a.UltimoScanEm!.Value).OrderByDescending(x => x).FirstOrDefault();
+
+        var pdf = _proposta.Gerar(empresa, achados, ativosReais.Count, ativos.Count,
+            ultimaVarredura == default ? null : ultimaVarredura,
+            Diagnostico, Resultado, Riscos);
+
+        await _auditoria.RegistrarAsync("diagnostico.proposta",
+            $"{empresa.Nome} · {Diagnostico.Titulo}", User.Identity?.Name ?? "—");
+
+        var nome = $"proposta-comercial-lokta-ia-{empresa.Nome.Replace(" ", "-").ToLowerInvariant()}.pdf";
+        return File(pdf, "application/pdf", nome);
     }
 
     private async Task<bool> CarregarAsync(int id)

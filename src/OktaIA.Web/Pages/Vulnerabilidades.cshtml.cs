@@ -349,8 +349,30 @@ public class VulnerabilidadesModel : PageModel
         var ultimaVarredura = ativosReais.Where(a => a.UltimoScanEm.HasValue).Select(a => a.UltimoScanEm!.Value)
             .OrderByDescending(d => d).FirstOrDefault();
 
+        // Diagnóstico conduzido em reunião, quando houver: enriquece a proposta com o que a
+        // varredura não alcança. O mais recente CONCLUÍDO — um rascunho a meio caminho produziria
+        // números que ainda vão mudar num documento que já foi para o cliente.
+        var diagnostico = await _db.Diagnosticos
+            .Include(d => d.Respostas)
+            .Include(d => d.Ferramentas)
+            .Where(d => d.CompanyId == empresaAtual.Id && d.Status == StatusDiagnostico.Concluido)
+            .OrderByDescending(d => d.ConcluidoEm)
+            .FirstOrDefaultAsync();
+
+        Services.Diagnostico.ResultadoDoDiagnostico? resultadoDiag = null;
+        List<DiagnosticoRisco> riscosDiag = [];
+        if (diagnostico is not null)
+        {
+            resultadoDiag = Services.Diagnostico.CalculadoraDoDiagnostico.Calcular(diagnostico);
+            riscosDiag = await _db.DiagnosticoRiscos
+                .Where(x => x.DiagnosticoId == diagnostico.Id)
+                .OrderBy(x => x.Prioridade)
+                .ToListAsync();
+        }
+
         var pdf = _propostaPdf.Gerar(empresaAtual, achadosReais, ativosReais.Count, ativos.Count,
-            ultimaVarredura == default ? null : ultimaVarredura);
+            ultimaVarredura == default ? null : ultimaVarredura,
+            diagnostico, resultadoDiag, riscosDiag);
 
         var nomeArquivo = $"proposta-comercial-lokta-ia-{empresaAtual.Nome.Replace(" ", "-").ToLowerInvariant()}.pdf";
         return File(pdf, "application/pdf", nomeArquivo);
