@@ -54,7 +54,13 @@ public static class DbSeeder
     /// </summary>
     private static async Task SeedDiagnosticoDemoAsync(ApplicationDbContext db)
     {
-        if (await db.Diagnosticos.AnyAsync())
+        // ⚠️ A checagem é pelo AUTOR, não por "existe algum diagnóstico".
+        //
+        // A primeira versão voltava se houvesse QUALQUER diagnóstico no banco — e bastou o operador
+        // criar um levantamento de teste antes do primeiro boot para o exemplo nunca aparecer, sem
+        // erro nenhum, o que é o pior tipo de falha: silenciosa e confundida com bug de tela.
+        // `CriadoPor == "seed"` é estável mesmo que alguém renomeie o exemplo.
+        if (await db.Diagnosticos.AnyAsync(d => d.CriadoPor == "seed"))
         {
             return;
         }
