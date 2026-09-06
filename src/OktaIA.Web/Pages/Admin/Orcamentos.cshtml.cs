@@ -135,10 +135,31 @@ public class OrcamentosModel : PageModel
 
         var conta = _calculadora.Calcular(alvo);
         alvo.MaquinasTotal = conta.MaquinasTotal;
-        alvo.ValorImplantacao = conta.ValorImplantacao;
-        alvo.ValorMensal = conta.ValorMensal;
         alvo.CustoDiretoMensal = conta.CustoDiretoMensal;
-        alvo.MemoriaDeCalculo = conta.Memoria;
+
+        // O que a conta deu fica guardado sempre — é a referência da comparação.
+        alvo.ValorImplantacaoCalculado = conta.ValorImplantacao;
+        alvo.ValorMensalCalculado = conta.ValorMensal;
+
+        // ⚠️ O VALOR DE MÃO GANHA DA CONTA. A conta é sugestão; quem fecha o negócio é gente.
+        // Zero é tratado como "sem valor de mão": um campo em branco vira 0 no binder, e aceitar
+        // isso faria um formulário salvo sem querer zerar a proposta.
+        alvo.ValorImplantacaoManual = Entrada.ValorImplantacaoManual is > 0 ? Entrada.ValorImplantacaoManual : null;
+        alvo.ValorMensalManual = Entrada.ValorMensalManual is > 0 ? Entrada.ValorMensalManual : null;
+
+        alvo.ValorImplantacao = alvo.ValorImplantacaoManual ?? conta.ValorImplantacao;
+        alvo.ValorMensal = alvo.ValorMensalManual ?? conta.ValorMensal;
+
+        var memoria = conta.Memoria;
+        if (alvo.ValorImplantacaoManual is { } vi)
+        {
+            memoria += $"\n⚠️ Implantação definida à mão: R$ {vi:N2} (a conta deu R$ {conta.ValorImplantacao:N2}).";
+        }
+        if (alvo.ValorMensalManual is { } vm)
+        {
+            memoria += $"\n⚠️ Mensalidade definida à mão: R$ {vm:N2} (a conta deu R$ {conta.ValorMensal:N2}).";
+        }
+        alvo.MemoriaDeCalculo = memoria;
         alvo.ValidaAte = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(_calculadora.Parametros.ValidadeDias));
 
         if (novo)

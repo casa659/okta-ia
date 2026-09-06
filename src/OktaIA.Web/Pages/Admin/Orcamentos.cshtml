@@ -19,7 +19,12 @@
         <h1>Orçamentos</h1>
         <p>Levantamento, orçamento e registro · o mesmo formulário que gera o preço vira a implantação</p>
     </div>
-    <a class="adm-btn" href="/Admin/Orcamentos?nova=true">Novo orçamento</a>
+    <div style="display:flex;gap:8px;align-items:center">
+        @* ⚠️ O atalho existe porque a gaveta de preços vive no PÉ da coluna da direita, e o dono
+           não a encontrou. Um recurso que só quem sabe onde fica consegue usar não existe. *@
+        <a class="prop-link-precos" href="/Admin/Orcamentos?id=@(Model.Id)&parametros_=true#precos">Tabela de preços</a>
+        <a class="adm-btn" href="/Admin/Orcamentos?nova=true">Novo orçamento</a>
+    </div>
 </div>
 
 @if (Model.Recado is { Length: > 0 } recado)
@@ -175,6 +180,29 @@
                     </label>
                 </div>
 
+                @* ── O preço fechado à mão ──────────────────────────────────────────────
+                   ⚠️ Fica no FIM do formulário, depois do levantamento, e não no alto: a ordem
+                   da tela é a ordem da conversa — primeiro se apura o que o cliente tem, depois
+                   se discute o preço. Em branco, vale o que a conta deu. *@
+                <h2 class="prop-h2">Preço fechado (opcional)</h2>
+                <div class="prop-campos">
+                    <label>
+                        <span>Implantação, à mão</span>
+                        <input asp-for="Entrada.ValorImplantacaoManual" type="number" step="0.01" min="0"
+                               placeholder="vazio = usa a conta" />
+                    </label>
+                    <label>
+                        <span>Mensalidade, à mão</span>
+                        <input asp-for="Entrada.ValorMensalManual" type="number" step="0.01" min="0"
+                               placeholder="vazio = usa a conta" />
+                    </label>
+                    <p class="fraco" style="grid-column:1/-1;margin:0">
+                        Preenchido, este valor é o que vai para o cliente e para o PDF. A conta
+                        continua sendo feita — e a diferença aparece na caixa “só nosso”, que é
+                        onde o desconto precisa ficar visível.
+                    </p>
+                </div>
+
                 <div class="prop-acoes">
                     <button type="submit" class="adm-btn">Calcular e salvar</button>
                 </div>
@@ -268,6 +296,32 @@
                     <div><span>Margem bruta</span><b class="mono">R$ @((a.ValorMensal - a.CustoDiretoMensal).ToString("N2"))</b></div>
                 </div>
 
+                @if (a.ValorImplantacaoManual is not null || a.ValorMensalManual is not null)
+                {
+                    @* O desconto, dito em número. "Fechei mais barato" sem o quanto é uma frase;
+                       com o quanto, é uma decisão que dá para revisar no mês seguinte. *@
+                    <div class="prop-desconto">
+                        @if (a.ValorMensalManual is { } vm)
+                        {
+                            var dif = vm - a.ValorMensalCalculado;
+                            <div>
+                                <span>Mensalidade</span>
+                                <b class="mono">R$ @a.ValorMensalCalculado.ToString("N2") → R$ @vm.ToString("N2")</b>
+                                <i class="mono">@(dif >= 0 ? "+" : "")@dif.ToString("N2")</i>
+                            </div>
+                        }
+                        @if (a.ValorImplantacaoManual is { } vi)
+                        {
+                            var difI = vi - a.ValorImplantacaoCalculado;
+                            <div>
+                                <span>Implantação</span>
+                                <b class="mono">R$ @a.ValorImplantacaoCalculado.ToString("N2") → R$ @vi.ToString("N2")</b>
+                                <i class="mono">@(difI >= 0 ? "+" : "")@difI.ToString("N2")</i>
+                            </div>
+                        }
+                    </div>
+                }
+
                 <pre class="prop-memoria">@a.MemoriaDeCalculo</pre>
 
                 <p class="fraco">
@@ -314,7 +368,7 @@
            ⚠️ Ficam aqui, e não numa tela de configuração escondida: preço muda no meio de uma
            negociação, e quem vende precisa alcançá-lo sem sair de onde está. Fechado por padrão
            para não competir com o orçamento — mas a um clique. *@
-        <details class="prop-precos naoimprime" @(Model.Parametros_ ? "open" : "")>
+        <details id="precos" class="prop-precos naoimprime" @(Model.Parametros_ ? "open" : "")>
             <summary>Preços em uso · ajustar</summary>
 
             <form method="post" asp-page-handler="Parametros">
@@ -460,6 +514,13 @@
     .prop-precos > summary { cursor:pointer; font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:#8A96AB; }
     .prop-precos > summary:hover { color:#EAF0F8; }
     .prop-precos form { margin-top:14px; }
+    .prop-link-precos { font-size:12px; color:#8A96AB; text-decoration:none; border:1px solid rgba(120,170,255,.2); border-radius:8px; padding:7px 12px; }
+    .prop-link-precos:hover { color:#EAF0F8; border-color:rgba(120,170,255,.45); }
+    .prop-desconto { display:grid; gap:8px; margin:12px 0; }
+    .prop-desconto > div { background:rgba(5,10,18,.5); border-radius:8px; padding:9px 12px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+    .prop-desconto span { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#8A96AB; }
+    .prop-desconto b { font-size:13px; }
+    .prop-desconto i { font-style:normal; font-size:12px; color:#F5A34A; margin-left:auto; }
     .mono { font-family:ui-monospace,'Cascadia Mono',Menlo,monospace; }
 
     /* ⚠️ A VIA DO CLIENTE. `.naoimprime` some, o papel fica branco e a proposta ocupa a folha.

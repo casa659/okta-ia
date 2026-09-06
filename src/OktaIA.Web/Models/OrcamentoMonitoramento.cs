@@ -93,8 +93,30 @@ public class OrcamentoMonitoramento
 
     // ── O que foi calculado, e ficou ────────────────────────────────────────────────────────
     public int MaquinasTotal { get; set; }
+
+    /// <summary>O que VALE — é este número que vai para o cliente e para o PDF.</summary>
     public decimal ValorImplantacao { get; set; }
     public decimal ValorMensal { get; set; }
+
+    /// <summary>
+    /// O valor escrito À MÃO, quando alguém decidiu fechar em outro número. Nulo = o preço é o
+    /// que a conta deu.
+    ///
+    /// ⚠️ EXISTE PORQUE A CONTA É SUGESTÃO, NÃO SENTENÇA. Numa negociação o preço muda — some um
+    /// desconto, entra um arredondamento, o cliente traz uma proposta concorrente. Sem um lugar
+    /// para isso, quem vende sai da tela e manda o número por WhatsApp, e o sistema passa a
+    /// guardar um preço que não é o combinado.
+    ///
+    /// ⚠️ GUARDADO SEPARADO do valor final de propósito: é o que permite a tela mostrar, lado a
+    /// lado, "a conta deu X, você fechou em Y". Sobrescrever direto apagaria a diferença — e a
+    /// diferença é o desconto, que é justamente o que se quer enxergar depois.
+    /// </summary>
+    public decimal? ValorImplantacaoManual { get; set; }
+    public decimal? ValorMensalManual { get; set; }
+
+    /// <summary>O que a conta deu, guardado para a comparação continuar existindo depois.</summary>
+    public decimal ValorImplantacaoCalculado { get; set; }
+    public decimal ValorMensalCalculado { get; set; }
 
     /// <summary>
     /// Custo direto mensal (VPS). ⚠️ NÚMERO INTERNO — nunca aparece na via do cliente.
