@@ -129,12 +129,21 @@
                 <a asp-page="/Vulnerabilidades" class="@NavClass("/Vulnerabilidades")"><span class="oi-nav-num">05</span><span class="oi-nav-label">@I18n.T("nav.vuln")</span></a>
                 <a asp-page="/Alertas" class="@NavClass("/Alertas")"><span class="oi-nav-num">06</span><span class="oi-nav-label">@I18n.T("nav.alerts")</span></a>
                 <a asp-page="/Incidentes" class="@NavClass("/Incidentes")"><span class="oi-nav-num">07</span><span class="oi-nav-label">@I18n.T("nav.inc")</span></a>
-                <a asp-page="/Siem" class="@NavClass("/Siem")"><span class="oi-nav-num">08</span><span class="oi-nav-label">@I18n.T("nav.siem")</span></a>
+                @* ⚠️ ESTE MENU É ESCRITO À MÃO, e o AreaCatalog é OUTRA lista da mesma coisa. O
+                   catálogo governa permissão; este layout governa o que se vê. Acrescentar a área
+                   lá e esquecer daqui foi exatamente o que aconteceu em 06/09/2026: a permissão
+                   existia no banco, a página respondia, e o item não aparecia para ninguém.
+                   Quem criar tela nova no SOC mexe nos DOIS lugares.
+
+                   "LGPD" não passa pelo I18n de propósito: é sigla, e é a mesma em português e em
+                   inglês — uma chave de tradução aqui só criaria um lugar a mais para esquecer. *@
+                <a asp-page="/Conformidade" class="@NavClass("/Conformidade")"><span class="oi-nav-num">08</span><span class="oi-nav-label">LGPD</span></a>
+                <a asp-page="/Siem" class="@NavClass("/Siem")"><span class="oi-nav-num">09</span><span class="oi-nav-label">@I18n.T("nav.siem")</span></a>
 
                 <div class="oi-nav-group-label oi-second">@I18n.T("bizGroup")</div>
-                <a asp-page="/Ia" class="@NavClass("/Ia")"><span class="oi-nav-num">09</span><span class="oi-nav-label">@I18n.T("nav.ai")</span></a>
-                <a asp-page="/Relatorios" class="@NavClass("/Relatorios")"><span class="oi-nav-num">10</span><span class="oi-nav-label">@I18n.T("nav.rep")</span></a>
-                <a asp-page="/Financeiro" class="@NavClass("/Financeiro")"><span class="oi-nav-num">11</span><span class="oi-nav-label">@I18n.T("nav.fin")</span></a>
+                <a asp-page="/Ia" class="@NavClass("/Ia")"><span class="oi-nav-num">10</span><span class="oi-nav-label">@I18n.T("nav.ai")</span></a>
+                <a asp-page="/Relatorios" class="@NavClass("/Relatorios")"><span class="oi-nav-num">11</span><span class="oi-nav-label">@I18n.T("nav.rep")</span></a>
+                <a asp-page="/Financeiro" class="@NavClass("/Financeiro")"><span class="oi-nav-num">12</span><span class="oi-nav-label">@I18n.T("nav.fin")</span></a>
 
                 <div class="oi-ingest">
                     <div class="oi-ingest-label">@I18n.T("ingest")</div>
