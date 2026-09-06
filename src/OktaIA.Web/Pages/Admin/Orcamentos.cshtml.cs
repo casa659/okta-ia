@@ -130,6 +130,7 @@ public class OrcamentosModel : PageModel
         alvo.HospedagemDoCliente = Entrada.HospedagemDoCliente;
         alvo.RetencaoDias = Entrada.RetencaoDias < 90 ? 90 : Entrada.RetencaoDias;
         alvo.Cobertura = Entrada.Cobertura;
+        alvo.TrataDadosDeCriancas = Entrada.TrataDadosDeCriancas;
         alvo.Conformidade = Limpo(Entrada.Conformidade);
         alvo.Observacoes = Limpo(Entrada.Observacoes);
 

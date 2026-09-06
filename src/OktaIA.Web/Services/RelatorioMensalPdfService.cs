@@ -225,7 +225,24 @@ public class RelatorioMensalPdfService
                     // ⚠️ O limite do serviço, dito no documento e não só na venda. Cliente que
                     // entende "monitoramento" como "vocês impedem o ataque" cobra exatamente isso
                     // no primeiro incidente.
-                    col.Item().PaddingTop(20).Background("#FFF8EE").Padding(10).Text(t =>
+                    // ⚠️ O relatório É a prestação de contas do art. 6º, X — e dizer isso NO
+                    // documento é o que o transforma de "e-mail mensal" em peça que o cliente
+                    // arquiva. Numa fiscalização, é esta pilha que demonstra a medida.
+                    col.Item().PaddingTop(18).Background("#F4F7FE").Border(1).BorderColor(Azul)
+                        .Padding(11).Text(t =>
+                    {
+                        t.Span("Valor deste documento para a LGPD: ").FontSize(8.5f).Bold().FontColor(Azul);
+                        // ⚠️ Não invoca o art. 37 aqui: aquele é o registro das OPERAÇÕES DE
+                        // TRATAMENTO (quais dados, finalidade, base legal), e um relatório de
+                        // segurança não é isso. Ver a nota em OrcamentoPdfService.
+                        t.Span("a Lei nº 13.709/2018 exige, no art. 6º, X, que o agente de tratamento "
+                             + "demonstre a adoção de medidas eficazes e capazes de comprovar a "
+                             + "observância da lei. Guarde este relatório: ele é a evidência datada "
+                             + "de que o monitoramento do art. 46 estava em operação no período.")
+                            .FontSize(8.5f).FontColor(Muted);
+                    });
+
+                    col.Item().PaddingTop(12).Background("#FFF8EE").Padding(10).Text(t =>
                     {
                         t.Span("Sobre este serviço: ").FontSize(8.5f).Bold();
                         t.Span("detectamos, registramos e avisamos. O monitoramento não substitui "

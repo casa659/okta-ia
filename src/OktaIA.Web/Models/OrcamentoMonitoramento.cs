@@ -89,6 +89,19 @@ public class OrcamentoMonitoramento
     /// <summary>LGPD, ISO 27001, exigência de um cliente do cliente… Texto livre porque a resposta é.</summary>
     public string? Conformidade { get; set; }
 
+    /// <summary>
+    /// O cliente trata dados de CRIANÇAS E ADOLESCENTES — escola, creche, clínica pediátrica,
+    /// curso infantil.
+    ///
+    /// ⚠️ NÃO É DETALHE: a LGPD dá a esses dados um regime PRÓPRIO (art. 14), com consentimento
+    /// específico e destacado de um dos pais e o "melhor interesse" da criança como critério. Numa
+    /// escola, praticamente todo o banco de dados cai nesse regime — e é isso que muda o tamanho
+    /// da conversa sobre segurança da informação com o diretor.
+    ///
+    /// Liga o parágrafo específico no documento. Ver OrcamentoPdfService.
+    /// </summary>
+    public bool TrataDadosDeCriancas { get; set; }
+
     public string? Observacoes { get; set; }
 
     // ── O que foi calculado, e ficou ────────────────────────────────────────────────────────
