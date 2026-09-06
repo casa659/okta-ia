@@ -41,6 +41,10 @@ public class OrcamentosModel : PageModel
         NomeEmpresa = "",
     };
 
+    /// <summary>Empresa já cadastrada, para o seletor. Só o que preenche o formulário.</summary>
+    public record EmpresaConhecida(int Id, string Nome, string? Cnpj, string? Dominio, int Ativos);
+
+    public List<EmpresaConhecida> Empresas { get; private set; } = [];
     public List<OrcamentoMonitoramento> Lista { get; private set; } = [];
     public OrcamentoMonitoramento? Aberta { get; private set; }
     public CalculadoraDeOrcamento.Resultado? Conta { get; private set; }
@@ -55,6 +59,15 @@ public class OrcamentosModel : PageModel
 
     private async Task CarregarAsync()
     {
+        // ⚠️ Só as ATIVAS e não-demo. Empresa de demonstração no seletor faria um orçamento real
+        // nascer vinculado a uma empresa que não existe — e o vínculo é o que liga o orçamento ao
+        // cliente depois que ele fecha.
+        Empresas = await _db.Companies.AsNoTracking()
+            .Where(c => c.Ativo && !c.Demo)
+            .OrderBy(c => c.Nome)
+            .Select(c => new EmpresaConhecida(c.Id, c.Nome, c.Cnpj, c.Dominio, c.AtivosCount))
+            .ToListAsync();
+
         Lista = await _db.Orcamentos.AsNoTracking()
             .OrderByDescending(p => p.CriadaEm)
             .Take(60)
@@ -97,6 +110,10 @@ public class OrcamentosModel : PageModel
         // ⚠️ Campo a campo, e não `_db.Update(Entrada)`: o formulário não traz Numero, CriadaEm
         // nem CriadaPor, e um update do objeto inteiro apagaria os três — o registro perderia a
         // identidade que o cliente cita ao telefone.
+        // ⚠️ O vínculo com a empresa só existe quando ELA JÁ EXISTE. Prospecto fica sem
+        // CompanyId de propósito: criar a empresa no momento do orçamento encheria a lista de
+        // clientes de gente que nunca fechou, e o painel passaria a contar prospecto como cliente.
+        alvo.CompanyId = Entrada.CompanyId is > 0 ? Entrada.CompanyId : null;
         alvo.NomeEmpresa = Entrada.NomeEmpresa.Trim();
         alvo.Cnpj = Limpo(Entrada.Cnpj);
         alvo.Contato = Limpo(Entrada.Contato);

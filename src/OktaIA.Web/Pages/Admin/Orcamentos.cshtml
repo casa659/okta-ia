@@ -73,13 +73,39 @@
 
                 <h2 class="prop-h2">Quem é o cliente</h2>
                 <div class="prop-campos">
+                    @* O seletor traz o que a plataforma JÁ SABE — CNPJ e domínio não precisam ser
+                       digitados de novo, e CNPJ digitado errado numa proposta vira contrato com
+                       CNPJ errado. Fica ACIMA do nome porque é o caminho normal; o nome livre
+                       continua ali para o prospecto que ainda não é cliente. Ver orcamento.js. *@
+                    <label class="larga">
+                        <span>Empresa já cadastrada</span>
+                        <select data-orc-empresa>
+                            <option value="">— empresa nova (digite abaixo) —</option>
+                            @foreach (var e in Model.Empresas)
+                            {
+                                <option value="@e.Id"
+                                        data-nome="@e.Nome"
+                                        data-cnpj="@e.Cnpj"
+                                        data-dominio="@e.Dominio"
+                                        data-ativos="@e.Ativos"
+                                        selected="@(e.Id == Model.Entrada.CompanyId)">@e.Nome</option>
+                            }
+                        </select>
+                        <i data-orc-dica>
+                            @if (Model.Entrada.CompanyId is { } cid && Model.Empresas.FirstOrDefault(x => x.Id == cid) is { } ec)
+                            {
+                                <text>· @ec.Ativos ativo(s) no inventário da plataforma@(ec.Dominio is { Length: > 0 } d ? " · " + d : "")</text>
+                            }
+                        </i>
+                    </label>
+                    <input type="hidden" asp-for="Entrada.CompanyId" data-orc-company-id />
                     <label class="larga">
                         <span>Empresa *</span>
-                        <input asp-for="Entrada.NomeEmpresa" required maxlength="160" placeholder="Razão social ou nome fantasia" />
+                        <input asp-for="Entrada.NomeEmpresa" required maxlength="160" placeholder="Razão social ou nome fantasia" data-orc-nome />
                     </label>
                     <label>
                         <span>CNPJ</span>
-                        <input asp-for="Entrada.Cnpj" maxlength="20" placeholder="00.000.000/0001-00" />
+                        <input asp-for="Entrada.Cnpj" maxlength="20" placeholder="00.000.000/0001-00" data-orc-cnpj />
                     </label>
                     <label>
                         <span>Contato</span>
@@ -369,3 +395,7 @@
         .etiqueta { color:#1F5FE0 !important; }
     }
 </style>
+
+@section Scripts {
+    <script src="~/js/orcamento.js" asp-append-version="true"></script>
+}
