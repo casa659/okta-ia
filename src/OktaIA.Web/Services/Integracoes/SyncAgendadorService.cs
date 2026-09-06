@@ -130,5 +130,30 @@ public class SyncAgendadorService : BackgroundService
             _log.LogInformation("Sync automático do conector {Id}: sucesso={Sucesso}, lidos={Lidos}, novos={Novos}.",
                 conectorId, resumo.Sucesso, resumo.Lidos, resumo.Novos);
         }
+
+        // ── O aviso, DEPOIS de tudo ingerido ────────────────────────────────────────────────
+        //
+        // ⚠️ FORA DO LAÇO, e não dentro: com cinco conectores, avisar por conector mandaria cinco
+        // mensagens seguidas quando uma varredura de conformidade entra em todos ao mesmo tempo.
+        // Uma rodada, uma leva de avisos — e o serviço ainda agrupa por empresa.
+        //
+        // ⚠️ Nunca derruba o ciclo. Ingerir o alerta é o essencial; avisar é o acessório, e uma
+        // ponte de WhatsApp fora do ar não pode impedir o dado de entrar.
+        try
+        {
+            var avisos = scope.ServiceProvider.GetRequiredService<AvisoDeAlerta>();
+            if (avisos.Configurado)
+            {
+                var quantos = await avisos.AvisarPendentesAsync(ct);
+                if (quantos > 0)
+                {
+                    _log.LogInformation("Avisos de alerta grave enviados: {Quantos} empresa(s).", quantos);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Falha ao avisar sobre alertas graves — o sync seguiu normalmente.");
+        }
     }
 }

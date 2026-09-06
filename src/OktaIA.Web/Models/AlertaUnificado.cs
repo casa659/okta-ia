@@ -75,6 +75,18 @@ public class AlertaUnificado
     /// <summary>Quem ficou responsável por tratar. Texto livre: pode ser alguém de fora da plataforma.</summary>
     public string? Responsavel { get; set; }
 
+    /// <summary>
+    /// Quando este alerta já entrou num aviso enviado. Nulo = ainda não avisamos.
+    ///
+    /// ⚠️ EXISTE PARA NÃO AVISAR DUAS VEZES. O agendador roda a cada 15 minutos e o mesmo alerta
+    /// continua no banco: sem esta marca, a cada rodada o WhatsApp receberia tudo de novo — e
+    /// aviso repetido é o que faz alguém silenciar a conversa, perdendo junto o que importava.
+    ///
+    /// ⚠️ Só é carimbado DEPOIS do envio dar certo. Marcar antes faria uma falha de rede apagar o
+    /// aviso para sempre, sem ninguém saber que ele nunca saiu. Ver AvisoDeAlerta.
+    /// </summary>
+    public DateTimeOffset? AvisadoEm { get; set; }
+
     /// <summary>O que foi feito/concluído. É o que transforma "resolvido" em algo auditável.</summary>
     public string? NotaTriagem { get; set; }
 

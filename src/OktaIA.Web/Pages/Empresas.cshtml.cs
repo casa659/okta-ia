@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using OktaIA.Web.Models;
 using OktaIA.Web.Data;
 using OktaIA.Web.Services;
 
@@ -40,6 +41,46 @@ public class EmpresasModel : PageModel
         // aqui "Risk" é quanto maior pior, e Score ali é quanto maior melhor.
         var idsComAtivoReal = (await _db.Assets.Where(a => a.Real).Select(a => a.CompanyId).Distinct().ToListAsync()).ToHashSet();
 
+        // ── Alertas das ferramentas do cliente ──────────────────────────────────────────────
+        //
+        // ⚠️ ESTA TELA IGNORAVA A METADE NOVA. Ela contava vulnerabilidade do NOSSO scanner e
+        // incidente, e não enxergava nada do que o Wazuh (ou qualquer conector) do cliente
+        // reportou — justamente o que a operação de monitoramento existe para ver. A tela que
+        // deveria responder "qual cliente está pegando fogo" respondia com metade do parque.
+        //
+        // ⚠️ SÓ OS ABERTOS E SÓ OS GRAVES. Alerta de nível baixo vem às centenas (auditoria de
+        // configuração sozinha gera 400 numa máquina): contá-los aqui faria todo cliente parecer
+        // em chamas e o número perderia o sentido em uma semana. O que a tela precisa dizer é
+        // quantos exigem alguém agora.
+        var graves = await _db.AlertasUnificados
+            .Where(a => a.Severidade == Severidade.Critica || a.Severidade == Severidade.Alta)
+            .GroupBy(a => a.CompanyId)
+            .Select(g => new { CompanyId = g.Key, Quantos = g.Count() })
+            .ToDictionaryAsync(x => x.CompanyId, x => x.Quantos);
+
+        // O total serve para outra pergunta: "este cliente está mesmo mandando dado?". Zero aqui,
+        // com conector instalado, é sinal de que a integração parou — e é diferente de "está tudo
+        // bem", que é o que um painel sem esta coluna diria.
+        var totais = await _db.AlertasUnificados
+            .GroupBy(a => a.CompanyId)
+            .Select(g => new { CompanyId = g.Key, Quantos = g.Count() })
+            .ToDictionaryAsync(x => x.CompanyId, x => x.Quantos);
+
+        string Alertas(int companyId)
+        {
+            var g = graves.GetValueOrDefault(companyId);
+            var t = totais.GetValueOrDefault(companyId);
+            return g > 0 ? g.ToString("N0") : t.ToString("N0");
+        }
+
+        string CorAlertas(int companyId) =>
+            graves.GetValueOrDefault(companyId) > 0 ? "#FF3B5C"
+            : totais.GetValueOrDefault(companyId) > 0 ? "#3D7BFF"
+            : "#4A5A70";
+
+        string RotuloAlertas(int companyId) =>
+            graves.GetValueOrDefault(companyId) > 0 ? "graves" : "alertas";
+
         Empresas = [];
         foreach (var c in empresas)
         {
@@ -60,6 +101,7 @@ public class EmpresasModel : PageModel
                         new(ativosDaEmpresa.Count.ToString("N0"), lang == "pt" ? "ativos" : "assets", "#D4DDEA"),
                         new(achadosReais.Count.ToString(), "vulns", "#FF8A3D"),
                         new(incidentesCount.ToString(), lang == "pt" ? "incid." : "incid.", incidentesCount > 0 ? "#FF3B5C" : "#4A5A70"),
+                        new(Alertas(c.Id), RotuloAlertas(c.Id), CorAlertas(c.Id)),
                         new(uptimeMedio.ToString("0.0") + "%", "SLA", accent),
                     ]));
             }
@@ -72,6 +114,10 @@ public class EmpresasModel : PageModel
                         new(c.AtivosCount.ToString("N0"), lang == "pt" ? "ativos" : "assets", "#D4DDEA"),
                         new(c.VulnsCount.ToString(), "vulns", "#FF8A3D"),
                         new(c.IncidentesCount.ToString(), lang == "pt" ? "incid." : "incid.", c.IncidentesCount > 0 ? "#FF3B5C" : "#4A5A70"),
+                        // ⚠️ Também aqui: uma empresa pode ter conector e nenhum ativo do NOSSO
+                        // scanner — é o caso normal de quem só nos deixa ler a ferramenta dele.
+                        // Sem esta linha, justamente esse cliente apareceria sem número nenhum.
+                        new(Alertas(c.Id), RotuloAlertas(c.Id), CorAlertas(c.Id)),
                         new(c.UptimePercentual.ToString("0.0") + "%", "SLA", accent),
                     ]));
             }

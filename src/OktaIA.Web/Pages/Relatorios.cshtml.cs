@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using OktaIA.Web.Data;
@@ -32,6 +33,9 @@ public class RelatoriosModel : PageModel
         string Frequencia, string Descricao, string Ultimo, bool Disponivel);
     public record ExecStatView(string Chave, string Valor, string Cor);
 
+    /// <summary>Empresas com conector instalado — as que têm relatório mensal a emitir.</summary>
+    public List<(int Id, string Nome)> EmpresasMonitoradas { get; private set; } = [];
+
     public List<ReportView> Reports { get; private set; } = [];
     public List<ExecStatView> ExecStats { get; private set; } = [];
     public string? EmpresaNome { get; private set; }
@@ -45,8 +49,79 @@ public class RelatoriosModel : PageModel
     public string ResumoTitulo { get; private set; } = "";
     public string ResumoTexto { get; private set; } = "";
 
+    /// <summary>
+    /// O relatório do mês de uma empresa, em PDF. É o que justifica a mensalidade.
+    ///
+    /// ⚠️ O MÊS É PARÂMETRO, e o padrão é o ANTERIOR, não o atual: relatório emitido no dia 6
+    /// cobrindo "este mês" mostraria seis dias e pareceria um mês vazio. Quem quer o corrente
+    /// pede explicitamente.
+    ///
+    /// ⚠️ Sai do que ESTÁ NO BANCO — os alertas que a plataforma ingeriu. Se o conector estava
+    /// parado, o relatório mostra pouco e diz por quê (a data do último recebimento vai no
+    /// documento). Um relatório que esconde a própria lacuna é pior que nenhum.
+    /// </summary>
+    public async Task<IActionResult> OnGetMensalAsync(int empresa, int? ano, int? mes,
+        [FromServices] RelatorioMensalPdfService pdf)
+    {
+        var c = await _db.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.Id == empresa);
+        if (c is null) { return RedirectToPage(); }
+
+        var referencia = ano is { } a && mes is { } m
+            ? new DateOnly(a, m, 1)
+            : DateOnly.FromDateTime(DateTime.Today).AddMonths(-1);
+
+        var inicio = new DateOnly(referencia.Year, referencia.Month, 1);
+        var fim = inicio.AddMonths(1).AddDays(-1);
+
+        var de = new DateTimeOffset(inicio.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var ate = new DateTimeOffset(fim.ToDateTime(TimeOnly.MaxValue), TimeSpan.Zero);
+
+        var alertas = await _db.AlertasUnificados.AsNoTracking()
+            .Where(x => x.CompanyId == empresa && x.OcorridoEm >= de && x.OcorridoEm <= ate)
+            .ToListAsync();
+
+        // Máquinas VISTAS no período, contadas pelo nome do ativo que veio nos alertas — é o que
+        // a ferramenta do cliente de fato reportou, e não o que alguém cadastrou na mão.
+        var maquinas = alertas
+            .Where(x => !string.IsNullOrWhiteSpace(x.AtivoNome))
+            .Select(x => x.AtivoNome!)
+            .Distinct()
+            .Count();
+
+        var conector = await _db.Conectores.AsNoTracking()
+            .Where(x => x.CompanyId == empresa)
+            .OrderByDescending(x => x.UltimoSyncEm)
+            .Select(x => new { x.Nome, x.UltimoSyncEm })
+            .FirstOrDefaultAsync();
+
+        var bytes = pdf.Gerar(new RelatorioMensalPdfService.Dados(
+            c.Nome, inicio, fim, alertas, maquinas, conector?.UltimoSyncEm, conector?.Nome));
+
+        return File(bytes, "application/pdf",
+            $"relatorio-{inicio:yyyy-MM}-{Arquivo(c.Nome)}.pdf");
+    }
+
+    private static string Arquivo(string nome)
+    {
+        var limpo = new string(nome.ToLowerInvariant()
+            .Select(ch => char.IsLetterOrDigit(ch) ? ch : '-').ToArray());
+        while (limpo.Contains("--")) { limpo = limpo.Replace("--", "-"); }
+        return limpo.Trim('-');
+    }
+
     public async Task OnGetAsync()
     {
+        // ⚠️ Só quem tem CONECTOR. Empresa sem integração não tem alerta para relatar, e oferecer
+        // o botão ali produziria um PDF vazio com a marca da casa — que é pior que não oferecer.
+        EmpresasMonitoradas = (await _db.Conectores.AsNoTracking()
+            .Where(c => c.Company != null)
+            .Select(c => new { c.CompanyId, Nome = c.Company!.Nome })
+            .Distinct()
+            .OrderBy(x => x.Nome)
+            .ToListAsync())
+            .Select(x => (x.CompanyId, x.Nome))
+            .ToList();
+
         var lang = _i18n.Lang;
         var pt = lang == "pt";
         const string accent = "#00E0A4";

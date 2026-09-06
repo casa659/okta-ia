@@ -67,6 +67,11 @@ builder.Services.AddScoped<AdminAuditService>();
 builder.Services.Configure<ParametrosOrcamento>(builder.Configuration.GetSection("Propostas"));
 builder.Services.AddScoped<CalculadoraDeOrcamento>();
 builder.Services.AddSingleton<OrcamentoPdfService>();
+builder.Services.AddSingleton<RelatorioMensalPdfService>();
+
+// Aviso ativo de alerta grave. Sem `Avisos:*` configurado o serviço recusa operar em silêncio —
+// e "não configurado" é diferente de "nada aconteceu": ver AvisoDeAlerta.Configurado.
+builder.Services.AddScoped<AvisoDeAlerta>();
 builder.Services.AddSingleton<RelatorioPdfService>();
 builder.Services.AddSingleton<PropostaComercialPdfService>();
 builder.Services.AddSingleton<DiagnosticoPdfService>();
