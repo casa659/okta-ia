@@ -57,6 +57,14 @@ builder.Services.AddScoped<CopilotService>();
 builder.Services.AddScoped<ScanExecutor>();
 builder.Services.AddHostedService<ScanAgendadorService>();
 builder.Services.AddScoped<AdminAuditService>();
+
+// Orçamento de monitoramento gerenciado. Os parâmetros de preço vêm de `Propostas:*` em
+// configuração — ⚠️ eles são DECISÃO COMERCIAL do dono, não do código: os padrões da classe
+// existem só para a tela nunca mostrar R$ 0, e nenhum deles saiu de pesquisa de mercado.
+builder.Services.Configure<ParametrosOrcamento>(builder.Configuration.GetSection("Propostas"));
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ParametrosOrcamento>>().Value);
+builder.Services.AddScoped<CalculadoraDeOrcamento>();
 builder.Services.AddSingleton<RelatorioPdfService>();
 builder.Services.AddSingleton<PropostaComercialPdfService>();
 builder.Services.AddSingleton<DiagnosticoPdfService>();

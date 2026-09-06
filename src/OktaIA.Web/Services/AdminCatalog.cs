@@ -361,6 +361,10 @@ public static class AdminCatalog
             // ⚠️ A área `admin.assessment` nasce concedida só a Admin — perfil personalizado não a
             // recebe sozinho. Se a equipe crescer, conceder em /Admin/Perfis.
             new NavItem("assessment", "/Admin/Diagnosticos", "35", "Diagnósticos"),
+            // ⚠️ Logo depois do Diagnóstico, e não por acaso: é essa a ordem do processo
+            // comercial — levanta, orça, fatura. Menu que não conta a ordem do trabalho faz
+            // cada um inventar a sua.
+            new NavItem("quotes", "/Admin/Orcamentos", "36", "Orçamentos"),
             new NavItem("billing", "/Admin/Faturamento", "22", "Faturamento", "2", "#FF8A3D"),
         }),
     };

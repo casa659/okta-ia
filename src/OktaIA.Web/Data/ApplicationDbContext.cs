@@ -40,6 +40,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<DiagnosticoAcao> DiagnosticoAcoes => Set<DiagnosticoAcao>();
     public DbSet<DiagnosticoAnalise> DiagnosticoAnalises => Set<DiagnosticoAnalise>();
 
+    // ---------- Propostas comerciais ----------
+    public DbSet<OrcamentoMonitoramento> Orcamentos => Set<OrcamentoMonitoramento>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -84,6 +87,23 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         {
             entity.HasIndex(rp => new { rp.RoleId, rp.AreaKey }).IsUnique();
             entity.HasOne(rp => rp.Role).WithMany().HasForeignKey(rp => rp.RoleId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<OrcamentoMonitoramento>(entity =>
+        {
+            // Enum como texto, seguindo a convenção do projeto: o banco fica legível para quem
+            // abre uma consulta, e inserir um valor novo no meio do enum não renumera o passado.
+            entity.Property(p => p.Status).HasConversion<string>();
+            entity.Property(p => p.Cobertura).HasConversion<string>();
+
+            // O número é o que o cliente cita ao telefone. Único para não haver dois ORC iguais
+            // em cima da mesa, com preços diferentes.
+            entity.HasIndex(p => p.Numero).IsUnique();
+
+            // ⚠️ `Restrict`: apagar a empresa não pode levar junto a proposta que a originou.
+            // Ela é registro comercial — de quanto foi cobrado, quando e por quê.
+            entity.HasOne(p => p.Company).WithMany()
+                  .HasForeignKey(p => p.CompanyId).OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<Conector>(entity =>

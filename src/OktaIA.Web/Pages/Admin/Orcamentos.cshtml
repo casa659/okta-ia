@@ -1,0 +1,371 @@
+@page
+@using OktaIA.Web.Models
+@using OktaIA.Web.Services
+@model OktaIA.Web.Pages.Admin.OrcamentosModel
+@{
+    ViewData["Title"] = "Orçamentos";
+    var p = Model.Entrada;
+    var editando = Model.Aberta is not null || Model.Nova;
+}
+
+@*
+    ⚠️ A VIA DO CLIENTE É ESTA MESMA TELA, IMPRESSA. Ver as regras @@media print no fim: some o
+    questionário, some o menu, some o custo interno, e sobra a proposta. Uma segunda tela só para
+    imprimir seria a segunda versão que envelhece sozinha — e a que envelhece é a que o cliente lê.
+*@
+
+<div class="adm-page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+    <div>
+        <h1>Orçamentos</h1>
+        <p>Levantamento, orçamento e registro · o mesmo formulário que gera o preço vira a implantação</p>
+    </div>
+    <a class="adm-btn" href="/Admin/Orcamentos?nova=true">Novo orçamento</a>
+</div>
+
+@if (Model.Recado is { Length: > 0 } recado)
+{
+    <div class="adm-recado @(Model.RecadoRuim ? "ruim" : "")" role="status">@recado</div>
+}
+
+<div class="prop-grade">
+
+    @* ── Coluna 1: a lista ──────────────────────────────────────────────── *@
+    <aside class="prop-lista naoimprime">
+        @if (Model.Lista.Count == 0)
+        {
+            <p class="prop-vazio">Nenhum orçamento ainda. Comece por “Novo orçamento”.</p>
+        }
+        @foreach (var item in Model.Lista)
+        {
+            <a class="prop-item @(item.Id == Model.Aberta?.Id ? "on" : "")" href="/Admin/Orcamentos?id=@item.Id">
+                <div class="l1">
+                    <b>@item.NomeEmpresa</b>
+                    <span class="tag" style="color:@OrcamentosModel.CorStatus(item.Status); border-color:@OrcamentosModel.CorStatus(item.Status)">
+                        @OrcamentosModel.RotuloStatus(item.Status)
+                    </span>
+                </div>
+                <div class="l2">
+                    <span class="mono">@item.Numero</span>
+                    <span>@item.MaquinasTotal máq.</span>
+                    <span class="mono">R$ @item.ValorMensal.ToString("N0")/mês</span>
+                </div>
+            </a>
+        }
+    </aside>
+
+    @* ── Coluna 2: o questionário ───────────────────────────────────────── *@
+    <section class="prop-form naoimprime">
+        @if (!editando)
+        {
+            <div class="prop-vazio-grande">
+                <p>Escolha um orçamento à esquerda, ou crie um novo.</p>
+                <p class="fraco">
+                    O questionário tem só o que muda o preço. Topologia, ferramentas atuais e
+                    maturidade são assunto da implantação — e disso cuida a tela de Diagnósticos.
+                </p>
+            </div>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Salvar">
+                <input type="hidden" asp-for="Entrada.Id" />
+                <input type="hidden" asp-for="Id" />
+
+                <h2 class="prop-h2">Quem é o cliente</h2>
+                <div class="prop-campos">
+                    <label class="larga">
+                        <span>Empresa *</span>
+                        <input asp-for="Entrada.NomeEmpresa" required maxlength="160" placeholder="Razão social ou nome fantasia" />
+                    </label>
+                    <label>
+                        <span>CNPJ</span>
+                        <input asp-for="Entrada.Cnpj" maxlength="20" placeholder="00.000.000/0001-00" />
+                    </label>
+                    <label>
+                        <span>Contato</span>
+                        <input asp-for="Entrada.Contato" maxlength="120" placeholder="Quem decide" />
+                    </label>
+                    <label>
+                        <span>E-mail</span>
+                        <input asp-for="Entrada.Email" type="email" maxlength="160" />
+                    </label>
+                    <label>
+                        <span>Telefone</span>
+                        <input asp-for="Entrada.Telefone" maxlength="30" />
+                    </label>
+                </div>
+
+                <h2 class="prop-h2">O parque</h2>
+                <div class="prop-campos">
+                    <label>
+                        <span>Estações Windows</span>
+                        <input asp-for="Entrada.EstacoesWindows" type="number" min="0" max="9999" />
+                    </label>
+                    <label>
+                        <span>Estações Linux / macOS</span>
+                        <input asp-for="Entrada.EstacoesOutras" type="number" min="0" max="9999" />
+                    </label>
+                    <label>
+                        <span>Servidores</span>
+                        <input asp-for="Entrada.Servidores" type="number" min="0" max="9999" />
+                    </label>
+                    <label>
+                        <span>Destes, expostos à internet</span>
+                        <input asp-for="Entrada.ServidoresExpostos" type="number" min="0" max="9999" />
+                        @* Servidor que responde na internet apanha todo dia. É o que enche a fila
+                           de quem atende — por isso a pergunta existe, e por isso ela pesa. *@
+                        <i>Servidor público gera tentativa de invasão diária — é o que dá trabalho.</i>
+                    </label>
+                </div>
+
+                <h2 class="prop-h2">O serviço</h2>
+                <div class="prop-campos">
+                    <label class="larga">
+                        <span>Cobertura</span>
+                        <select asp-for="Entrada.Cobertura">
+                            <option value="@CoberturaOrcamento.Comercial">Horário comercial (dias úteis)</option>
+                            <option value="@CoberturaOrcamento.Estendida">Estendida — 12 h, todo dia</option>
+                            <option value="@CoberturaOrcamento.VinteQuatroPorSete">24 × 7</option>
+                        </select>
+                        <i>⚠️ 24 × 7 só se houver plantão de verdade. É a promessa que quebra no primeiro incidente de madrugada.</i>
+                    </label>
+                    <label>
+                        <span>Retenção (dias)</span>
+                        <input asp-for="Entrada.RetencaoDias" type="number" min="90" max="1095" step="90" />
+                        <i>90 é o padrão e cabe no disco contratado.</i>
+                    </label>
+                    <label class="checkbox">
+                        <input asp-for="Entrada.HospedagemDoCliente" type="checkbox" />
+                        <span>O cliente hospeda o servidor</span>
+                        <i>Marcado, sai o servidor gerenciado do preço — e o dado não sai da casa dele.</i>
+                    </label>
+                    <label class="larga">
+                        <span>Exigência de conformidade</span>
+                        <input asp-for="Entrada.Conformidade" maxlength="200" placeholder="LGPD, ISO 27001, exigência de um cliente dele…" />
+                    </label>
+                    <label class="larga">
+                        <span>Observações</span>
+                        <textarea asp-for="Entrada.Observacoes" rows="3" maxlength="1200"></textarea>
+                    </label>
+                </div>
+
+                <div class="prop-acoes">
+                    <button type="submit" class="adm-btn">Calcular e salvar</button>
+                </div>
+            </form>
+        }
+    </section>
+
+    @* ── Coluna 3: a proposta ───────────────────────────────────────────── *@
+    <section class="prop-saida">
+        @if (Model.Aberta is { } a && Model.Conta is { } c)
+        {
+            <div class="prop-papel">
+                <div class="prop-cab">
+                    <div>
+                        <div class="mono etiqueta">@a.Numero</div>
+                        <h2>@a.NomeEmpresa</h2>
+                        @if (a.Cnpj is { Length: > 0 }) { <div class="fraco mono">@a.Cnpj</div> }
+                    </div>
+                    <div class="prop-marca">
+                        <b>L'okta IA</b>
+                        <span>Monitoramento gerenciado</span>
+                    </div>
+                </div>
+
+                <p class="prop-resumo">
+                    Monitoramento contínuo de <strong>@a.MaquinasTotal máquina@(a.MaquinasTotal == 1 ? "" : "s")</strong>,
+                    com cobertura em <strong>@CalculadoraDeOrcamento.Rotulo(a.Cobertura)</strong> e
+                    <strong>@a.RetencaoDias dias</strong> de histórico.
+                    @if (!a.HospedagemDoCliente)
+                    {
+                        <text>Inclui o servidor dedicado, gerenciado por nós.</text>
+                    }
+                    else
+                    {
+                        <text>O servidor fica na infraestrutura do cliente.</text>
+                    }
+                </p>
+
+                <div class="prop-valores">
+                    <div>
+                        <span class="mono">Implantação · uma vez</span>
+                        <b>R$ @a.ValorImplantacao.ToString("N2")</b>
+                        <i>Levantamento, servidor, agentes e o relatório inicial de conformidade.</i>
+                    </div>
+                    <div class="destaque">
+                        <span class="mono">Mensalidade</span>
+                        <b>R$ @a.ValorMensal.ToString("N2")</b>
+                        <i>Monitoramento, triagem de alertas e relatório mensal.</i>
+                    </div>
+                </div>
+
+                @if (a.ValidaAte is { } val)
+                {
+                    <p class="fraco">Orçamento válido até <strong>@val.ToString("dd/MM/yyyy")</strong>.</p>
+                }
+
+                <div class="prop-inclui">
+                    <h3>O que está incluído</h3>
+                    <ul>
+                        <li>Agente instalado em cada máquina, com inventário e integridade de arquivos</li>
+                        <li>Auditoria de configuração contra o benchmark CIS do sistema de cada máquina</li>
+                        <li>Detecção de vulnerabilidades conhecidas nos programas instalados</li>
+                        <li>Alertas normalizados numa tela só, com triagem</li>
+                        <li>Relatório mensal de conformidade e incidentes</li>
+                        @if (!a.HospedagemDoCliente)
+                        {
+                            <li>Servidor dedicado, com certificado, firewall fechado e atualizações</li>
+                        }
+                        @if (a.Conformidade is { Length: > 0 })
+                        {
+                            <li>Atenção à exigência declarada: @a.Conformidade</li>
+                        }
+                    </ul>
+                </div>
+
+                @if (a.Observacoes is { Length: > 0 })
+                {
+                    <div class="prop-obs"><h3>Observações</h3><p>@a.Observacoes</p></div>
+                }
+            </div>
+
+            @* ── Só nossa: memória de cálculo, custo e margem ───────────── *@
+            <div class="prop-interno naoimprime">
+                <h3>Só nosso — não sai na via do cliente</h3>
+
+                <div class="prop-margem">
+                    <div><span>Custo direto</span><b class="mono">R$ @a.CustoDiretoMensal.ToString("N2")</b></div>
+                    <div><span>Mensalidade</span><b class="mono">R$ @a.ValorMensal.ToString("N2")</b></div>
+                    <div><span>Margem bruta</span><b class="mono">R$ @((a.ValorMensal - a.CustoDiretoMensal).ToString("N2"))</b></div>
+                </div>
+
+                <pre class="prop-memoria">@a.MemoriaDeCalculo</pre>
+
+                <p class="fraco">
+                    A margem não desconta o seu tempo. Com custo direto baixo, o que decide se a
+                    conta fecha é quantas horas por mês este cliente vai consumir.
+                </p>
+
+                <div class="prop-status">
+                    @foreach (var s in new[] { StatusOrcamento.Rascunho, StatusOrcamento.Enviada, StatusOrcamento.Aceita, StatusOrcamento.Recusada })
+                    {
+                        <form method="post" asp-page-handler="Status">
+                            <input type="hidden" name="id" value="@a.Id" />
+                            <input type="hidden" name="status" value="@s" />
+                            <button type="submit" class="@(a.Status == s ? "on" : "")">@OrcamentosModel.RotuloStatus(s)</button>
+                        </form>
+                    }
+                </div>
+
+                <p class="fraco">
+                    Para enviar ao cliente: <strong>Ctrl+P → Salvar como PDF</strong>. A impressão
+                    deixa só o orçamento — esta caixa, o questionário e o menu somem.
+                </p>
+            </div>
+        }
+        else if (Model.Nova)
+        {
+            <div class="prop-papel vazio">
+                <p class="fraco">Preencha o levantamento ao lado e clique em <strong>Calcular e salvar</strong>. O orçamento aparece aqui.</p>
+                <h3>Base de cálculo em uso</h3>
+                <ul class="prop-param">
+                    <li>Mensalidade base <b class="mono">R$ @Model.Parametros.MensalBase.ToString("N2")</b> (até @Model.Parametros.MaquinasIncluidas máquinas)</li>
+                    <li>Máquina adicional <b class="mono">R$ @Model.Parametros.MensalPorMaquinaExtra.ToString("N2")</b></li>
+                    <li>Servidor exposto <b class="mono">R$ @Model.Parametros.MensalPorServidorExposto.ToString("N2")</b></li>
+                    <li>Servidor gerenciado <b class="mono">R$ @Model.Parametros.MensalHospedagem.ToString("N2")</b> (custo real: R$ @Model.Parametros.CustoVpsMensal.ToString("N2"))</li>
+                    <li>Implantação <b class="mono">R$ @Model.Parametros.ImplantacaoBase.ToString("N2")</b> + R$ @Model.Parametros.ImplantacaoPorMaquina.ToString("N2")/máquina</li>
+                </ul>
+                <p class="fraco">
+                    ⚠️ Estes números são ajustáveis em <code>Propostas:*</code> nas configurações do
+                    servidor. Nenhum deles veio de pesquisa de mercado — são o seu preço, e você decide.
+                </p>
+            </div>
+        }
+    </section>
+</div>
+
+<style>
+    .prop-grade { display:grid; grid-template-columns: 240px minmax(320px,1fr) minmax(340px,1.1fr); gap:18px; align-items:start; }
+    @@media (max-width: 1200px) { .prop-grade { grid-template-columns: 1fr; } }
+
+    .prop-lista { display:flex; flex-direction:column; gap:6px; max-height:76vh; overflow:auto; }
+    .prop-item { display:block; padding:10px 12px; border:1px solid rgba(120,170,255,.14); border-radius:9px; background:rgba(8,14,24,.55); text-decoration:none; color:#EAF0F8; }
+    .prop-item:hover { border-color:rgba(120,170,255,.34); }
+    .prop-item.on { border-color:#3D7BFF; background:rgba(24,48,92,.5); }
+    .prop-item .l1 { display:flex; align-items:center; gap:8px; justify-content:space-between; }
+    .prop-item .l1 b { font-size:13px; }
+    .prop-item .l2 { display:flex; gap:10px; margin-top:4px; font-size:11px; color:#8A96AB; flex-wrap:wrap; }
+    .prop-item .tag { font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; border:1px solid; border-radius:999px; padding:1px 7px; white-space:nowrap; }
+
+    .prop-form, .prop-saida { min-width:0; }
+    .prop-h2 { font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:#8A96AB; margin:20px 0 10px; padding-bottom:7px; border-bottom:1px solid rgba(120,170,255,.14); }
+    .prop-h2:first-child { margin-top:0; }
+
+    .prop-campos { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+    .prop-campos label { display:flex; flex-direction:column; gap:5px; font-size:12px; }
+    .prop-campos label.larga { grid-column:1/-1; }
+    .prop-campos label > span { color:#B7C4D4; font-weight:500; }
+    .prop-campos input, .prop-campos select, .prop-campos textarea {
+        background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px;
+        padding:8px 10px; color:#EAF0F8; font-family:inherit; font-size:13px; width:100%;
+    }
+    .prop-campos i { font-style:normal; font-size:10.5px; color:#8A96AB; line-height:1.4; }
+    .prop-campos label.checkbox { flex-direction:row; align-items:flex-start; gap:8px; flex-wrap:wrap; }
+    .prop-campos label.checkbox input { width:auto; margin-top:2px; }
+    .prop-campos label.checkbox i { flex-basis:100%; }
+    .prop-acoes { margin-top:18px; }
+
+    .prop-papel { background:rgba(8,14,24,.6); border:1px solid rgba(120,170,255,.16); border-radius:12px; padding:24px; }
+    .prop-papel.vazio { color:#8A96AB; }
+    .prop-cab { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap; padding-bottom:16px; border-bottom:1px solid rgba(120,170,255,.14); }
+    .prop-cab h2 { margin:4px 0 0; font-size:22px; }
+    .etiqueta { font-size:11px; letter-spacing:.1em; color:#3D7BFF; }
+    .prop-marca { text-align:right; }
+    .prop-marca b { display:block; font-size:14px; }
+    .prop-marca span { font-size:10.5px; color:#8A96AB; text-transform:uppercase; letter-spacing:.08em; }
+
+    .prop-resumo { margin:16px 0; font-size:14px; line-height:1.6; }
+
+    .prop-valores { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:18px 0; }
+    .prop-valores > div { border:1px solid rgba(120,170,255,.16); border-radius:10px; padding:14px; }
+    .prop-valores > div.destaque { border-color:#3D7BFF; background:rgba(24,48,92,.35); }
+    .prop-valores span { display:block; font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:#8A96AB; }
+    .prop-valores b { display:block; font-size:25px; margin:6px 0 4px; font-variant-numeric:tabular-nums; }
+    .prop-valores i { font-style:normal; font-size:11px; color:#8A96AB; line-height:1.45; }
+
+    .prop-inclui h3, .prop-obs h3, .prop-interno h3 { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:#8A96AB; margin:20px 0 8px; }
+    .prop-inclui ul { margin:0; padding-left:18px; font-size:13px; line-height:1.65; }
+    .prop-obs p { font-size:13px; }
+
+    .prop-interno { margin-top:16px; background:rgba(30,20,10,.4); border:1px solid rgba(245,163,74,.3); border-radius:12px; padding:18px; }
+    .prop-margem { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+    .prop-margem > div { background:rgba(5,10,18,.5); border-radius:8px; padding:10px 12px; }
+    .prop-margem span { display:block; font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:#8A96AB; }
+    .prop-margem b { font-size:16px; }
+    .prop-memoria { white-space:pre-wrap; font-size:11.5px; line-height:1.6; color:#B7C4D4; background:rgba(5,10,18,.5); border-radius:8px; padding:12px; margin:12px 0; overflow-x:auto; }
+
+    .prop-status { display:flex; gap:6px; flex-wrap:wrap; margin:12px 0; }
+    .prop-status button { background:rgba(5,10,18,.6); border:1px solid rgba(120,170,255,.16); color:#B7C4D4; border-radius:999px; padding:5px 12px; font-family:inherit; font-size:11px; cursor:pointer; }
+    .prop-status button.on { border-color:#3D7BFF; color:#EAF0F8; background:rgba(24,48,92,.6); }
+
+    .prop-param { margin:0; padding-left:18px; font-size:12.5px; line-height:1.8; }
+    .prop-vazio, .prop-vazio-grande { color:#8A96AB; font-size:13px; }
+    .prop-vazio-grande { border:1px dashed rgba(120,170,255,.2); border-radius:12px; padding:28px; }
+    .fraco { color:#8A96AB; font-size:12px; }
+    .mono { font-family:ui-monospace,'Cascadia Mono',Menlo,monospace; }
+
+    /* ⚠️ A VIA DO CLIENTE. `.naoimprime` some, o papel fica branco e a proposta ocupa a folha.
+       É a mesma tela — sem segunda versão para envelhecer sozinha. */
+    @@media print {
+        .naoimprime, .adm-nav, .adm-topo, .adm-sidebar, nav, header, footer, .adm-page-head a { display:none !important; }
+        .prop-grade { display:block; }
+        body, .prop-papel { background:#fff !important; color:#111 !important; }
+        .prop-papel { border:none; padding:0; }
+        .prop-papel h2, .prop-resumo, .prop-inclui ul, .prop-obs p { color:#111 !important; }
+        .prop-valores > div { border:1px solid #ccc !important; background:#fff !important; }
+        .prop-valores > div.destaque { background:#f4f7fd !important; }
+        .fraco, .prop-marca span, .prop-valores span, .prop-valores i { color:#555 !important; }
+        .etiqueta { color:#1F5FE0 !important; }
+    }
+</style>
