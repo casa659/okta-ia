@@ -68,6 +68,13 @@ public class ParametrosOrcamento
 
     /// <summary>Por quantos dias a proposta vale.</summary>
     public int ValidadeDias { get; set; } = 30;
+
+    /// <summary>
+    /// Implantação quando o cliente JÁ TEM ferramenta (onboarding: conectar pela API, não subir
+    /// servidor). Substitui <see cref="ImplantacaoBase"/> + <see cref="ImplantacaoPorMaquina"/>
+    /// inteiros — não há agente para instalar nem VPS para preparar.
+    /// </summary>
+    public decimal ImplantacaoOnboardingFerramentaExistente { get; set; } = 900m;
 }
 
 /// <summary>
@@ -131,8 +138,23 @@ public class CalculadoraDeOrcamento
         var linhas = new List<string>();
 
         // ── Implantação ─────────────────────────────────────────────────────────────────────
-        var implantacao = _p.ImplantacaoBase + (_p.ImplantacaoPorMaquina * maquinas);
-        linhas.Add($"Implantação: base R$ {_p.ImplantacaoBase:N2} + {maquinas} máquina(s) × R$ {_p.ImplantacaoPorMaquina:N2}");
+        //
+        // ⚠️ RAMO DIFERENTE QUANDO JÁ HÁ FERRAMENTA (06/09/2026, pedido do dono). Não existe
+        // agente para instalar nem VPS para preparar — a implantação vira ONBOARDING: ligar o
+        // conector na ferramenta que o cliente já opera (o mesmo caminho do `WazuhConnector`,
+        // quando for Wazuh). Cobrar a implantação cheia aqui seria vender um trabalho que não
+        // existe.
+        decimal implantacao;
+        if (p.JaTemFerramenta)
+        {
+            implantacao = _p.ImplantacaoOnboardingFerramentaExistente;
+            linhas.Add($"Onboarding (conectar em {p.FerramentaExistente ?? "ferramenta já existente"}): R$ {implantacao:N2}");
+        }
+        else
+        {
+            implantacao = _p.ImplantacaoBase + (_p.ImplantacaoPorMaquina * maquinas);
+            linhas.Add($"Implantação: base R$ {_p.ImplantacaoBase:N2} + {maquinas} máquina(s) × R$ {_p.ImplantacaoPorMaquina:N2}");
+        }
 
         // ── Mensalidade ─────────────────────────────────────────────────────────────────────
         var mensal = _p.MensalBase;
@@ -154,8 +176,16 @@ public class CalculadoraDeOrcamento
         }
 
         // ── Hospedagem ──────────────────────────────────────────────────────────────────────
+        //
+        // ⚠️ NÃO SE APLICA quando já há ferramenta. Não há VPS nosso para hospedar — o servidor
+        // é do cliente, e é justamente ele quem está sendo administrado. Cobrar hospedagem aqui
+        // seria cobrar por um servidor que não existe do nosso lado.
         decimal custoDireto = 0m;
-        if (p.HospedagemDoCliente)
+        if (p.JaTemFerramenta)
+        {
+            linhas.Add("Hospedagem: não se aplica — o servidor já existe, é do cliente.");
+        }
+        else if (p.HospedagemDoCliente)
         {
             linhas.Add("Hospedagem: por conta do cliente — sem custo e sem cobrança.");
         }
@@ -167,8 +197,9 @@ public class CalculadoraDeOrcamento
         }
 
         // ── Retenção ────────────────────────────────────────────────────────────────────────
-        // Só o que passa dos 90 dias do padrão custa: mais histórico é mais disco.
-        var blocos = Math.Max(0, (p.RetencaoDias - 90) / 90);
+        // Só o que passa dos 90 dias do padrão custa: mais histórico é mais disco. E só quando
+        // o disco é NOSSO — com ferramenta existente, a retenção é do cliente, não nossa a cobrar.
+        var blocos = p.JaTemFerramenta ? 0 : Math.Max(0, (p.RetencaoDias - 90) / 90);
         if (blocos > 0)
         {
             var v = blocos * _p.MensalPor90DiasExtras;

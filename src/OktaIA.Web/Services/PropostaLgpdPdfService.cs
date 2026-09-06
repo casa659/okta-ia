@@ -58,13 +58,13 @@ public class PropostaLgpdPdfService
     /// </summary>
     public byte[] GerarDeclarado(string empresa, string? cnpj, string? parceiroNome,
         Models.Diagnostico diagnostico, List<DiagnosticoRisco> riscos, Preco? preco,
-        bool trataDadosDeCriancas = false)
+        bool trataDadosDeCriancas = false, bool jaTemFerramenta = false, string? ferramentaExistente = null)
     {
         var totalRespondidas = diagnostico.Respostas.Count;
         var quando = diagnostico.RealizadoEm
             ?? DateOnly.FromDateTime((diagnostico.ConcluidoEm ?? diagnostico.CriadoEm).LocalDateTime);
 
-        return Montar(empresa, cnpj, parceiroNome, preco, trataDadosDeCriancas,
+        return Montar(empresa, cnpj, parceiroNome, preco, trataDadosDeCriancas, jaTemFerramenta, ferramentaExistente,
             corpo =>
             {
                 // ⚠️ A FRASE DE ABERTURA CITA A FONTE, e não afirma sobre a empresa. "A Empresa X
@@ -91,7 +91,57 @@ public class PropostaLgpdPdfService
                 DesenharAchados(corpo, riscos,
                     vazio: "A empresa respondeu sem apontar lacuna em nenhum dos controles perguntados. "
                          + "Isto não substitui a medição contínua — ver a proposta de monitoramento.");
+
+                DesenharMapaDoAmbiente(corpo, diagnostico);
             });
+    }
+
+    /// <summary>
+    /// O ambiente, camada a camada — Internet → Firewall → Rede → Servidores → Endpoints →
+    /// Nuvem → Aplicações → Identidades → Backup → SIEM/SOC.
+    ///
+    /// ⚠️ O MESMO GERADOR que a tela e a proposta da plataforma inteira usam
+    /// (`MapaDaArquitetura.Montar` + `DiagramaDeRede.Gerar`), e pelo mesmo motivo: dois desenhos
+    /// do mesmo diagnóstico, por caminhos de código diferentes, divergiriam no primeiro ajuste — e
+    /// o cliente veria uma coisa na reunião e outra no papel.
+    ///
+    /// ⚠️ AS 8 PERGUNTAS DE UMA PLANILHA DE FRAMEWORK NÃO COBREM O DESENHO INTEIRO. A maioria das
+    /// camadas sai como "não avaliada" — cinza, não vermelha. É a mesma regra do resto do módulo:
+    /// camada sem pergunta é camada que não se olhou, nunca uma camada com problema.
+    /// </summary>
+    private static void DesenharMapaDoAmbiente(ColumnDescriptor corpo, Models.Diagnostico diagnostico)
+    {
+        var mapa = Services.Diagnostico.MapaDaArquitetura.Montar(diagnostico);
+        if (mapa.Count == 0) { return; }
+
+        corpo.Item().PaddingTop(16).Text("O AMBIENTE, CAMADA A CAMADA").FontSize(9).Bold().FontColor(Muted);
+        corpo.Item().PaddingTop(3).Text(
+            "O que este levantamento tocou, e o que ficou de fora — não avaliado é cinza, nunca vermelho.")
+            .FontSize(8.5f).FontColor(Muted);
+
+        corpo.Item().PaddingTop(8)
+            .Svg(Services.Diagnostico.DiagramaDeRede.Gerar(mapa, Services.Diagnostico.TemaDoDiagrama.Claro));
+
+        corpo.Item().PaddingTop(6).Row(row =>
+        {
+            foreach (var estado in new[]
+            {
+                Services.Diagnostico.EstadoDaCamada.Protegido,
+                Services.Diagnostico.EstadoDaCamada.Parcial,
+                Services.Diagnostico.EstadoDaCamada.Descoberto,
+                Services.Diagnostico.EstadoDaCamada.NaoAvaliado,
+            })
+            {
+                var cor = Services.Diagnostico.MapaDaArquitetura.Cor(estado);
+                row.AutoItem().PaddingRight(14).Row(r =>
+                {
+                    r.AutoItem().PaddingTop(2).Width(7).Height(7).Background(cor);
+                    r.AutoItem().PaddingLeft(4)
+                        .Text(Services.Diagnostico.MapaDaArquitetura.Rotulo(estado).ToLowerInvariant())
+                        .FontSize(7.5f).FontColor(Muted);
+                });
+            }
+        });
     }
 
     // ── Medido: a partir do que o Wazuh já mostrou ──────────────────────────────────────────
@@ -103,7 +153,10 @@ public class PropostaLgpdPdfService
     public byte[] GerarMedido(string empresa, string? cnpj, string? parceiroNome,
         PosturaLgpd.Resultado r, Preco? preco, bool trataDadosDeCriancas = false)
     {
-        return Montar(empresa, cnpj, parceiroNome, preco, trataDadosDeCriancas, corpo =>
+        // ⚠️ AQUI, "JÁ TEM FERRAMENTA" É SEMPRE VERDADE — é o próprio conector medido que prova
+        // isso. Diferente do caso declarado, onde a resposta vem de uma pergunta no orçamento.
+        return Montar(empresa, cnpj, parceiroNome, preco, trataDadosDeCriancas,
+            jaTemFerramenta: true, ferramentaExistente: r.Conector, corpo =>
         {
             corpo.Item().Text(t =>
             {
@@ -226,7 +279,8 @@ public class PropostaLgpdPdfService
     // ── O esqueleto comum aos dois documentos ───────────────────────────────────────────────
 
     private byte[] Montar(string empresa, string? cnpj, string? parceiroNome, Preco? preco,
-        bool trataDadosDeCriancas, Action<ColumnDescriptor> corpo)
+        bool trataDadosDeCriancas, bool jaTemFerramenta, string? ferramentaExistente,
+        Action<ColumnDescriptor> corpo)
     {
         var agora = DateTimeOffset.Now;
 
@@ -287,29 +341,76 @@ public class PropostaLgpdPdfService
                     // ── O corpo: declarado ou medido, conforme o caso ───────────────────────
                     corpo(col);
 
+                    // ── O serviço proposto: uma frase que muda com o que já existe ──────────
+                    //
+                    // ⚠️ DUAS FRASES, NUNCA UMA SÓ (06/09/2026, pedido do dono). "Implantar" e
+                    // "administrar o que já existe" são serviços DIFERENTES — preço diferente,
+                    // trabalho diferente, e dizer "implantação" para quem já tem Wazuh venderia
+                    // uma instalação que não vai acontecer.
+                    col.Item().PaddingTop(18).Text(t =>
+                    {
+                        t.DefaultTextStyle(x => x.FontSize(9.5f).LineHeight(1.5f));
+                        if (jaTemFerramenta)
+                        {
+                            t.Span("Serviço proposto: ").Bold();
+                            t.Span("administração, configuração e suporte contínuo sobre ");
+                            t.Span(string.IsNullOrWhiteSpace(ferramentaExistente) ? "a ferramenta já em uso" : ferramentaExistente!)
+                                .Bold();
+                            t.Span(". Não há instalação de servidor novo — a plataforma passa a ler o que a "
+                                 + "ferramenta já produz e assume a triagem dos alertas e o relatório mensal.");
+                        }
+                        else
+                        {
+                            t.Span("Serviço proposto: ").Bold();
+                            t.Span("implantação de um servidor de segurança dedicado, com agente em cada "
+                                 + "máquina, triagem de alertas e relatório mensal.");
+                        }
+                    });
+
                     // ── O preço, quando já existe orçamento ─────────────────────────────────
                     if (preco is { } p)
                     {
-                        col.Item().PaddingTop(18).Row(row =>
+                        col.Item().PaddingTop(10).Row(row =>
                         {
                             row.RelativeItem().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(12).Column(c =>
                             {
-                                c.Item().Text("IMPLANTAÇÃO · UMA VEZ").FontSize(7.5f).Bold().FontColor(Muted);
+                                c.Item().Text(jaTemFerramenta ? "ONBOARDING · UMA VEZ" : "IMPLANTAÇÃO · UMA VEZ")
+                                    .FontSize(7.5f).Bold().FontColor(Muted);
                                 c.Item().PaddingTop(4).Text($"R$ {p.ValorImplantacao:N2}").FontSize(19).Bold();
                             });
                             row.ConstantItem(12);
                             row.RelativeItem().Border(1).BorderColor(Azul).Background("#F4F7FE").Padding(12).Column(c =>
                             {
-                                c.Item().Text("MENSALIDADE").FontSize(7.5f).Bold().FontColor(Azul);
+                                c.Item().Text(jaTemFerramenta ? "ADMINISTRAÇÃO MENSAL" : "MENSALIDADE")
+                                    .FontSize(7.5f).Bold().FontColor(Azul);
                                 c.Item().PaddingTop(4).Text($"R$ {p.ValorMensal:N2}").FontSize(19).Bold();
                             });
                         });
                         col.Item().PaddingTop(4).Text($"Ref. orçamento {p.Numero}. Detalhamento do escopo no documento anexo.")
                             .FontSize(8).FontColor(Muted);
+
+                        // ⚠️ O FECHO EXPLICA A CONSEQUÊNCIA DE ASSINAR, e é PRECISO no que promete
+                        // (pedido do dono: "explicando que se implantar, estaremos dentro do que a
+                        // lei exige"). "Atende ao art. 46" é conferível — o artigo pede medida
+                        // técnica de segurança, e é isso que o serviço entrega. "Em conformidade
+                        // com a LGPD", sem o artigo, é a frase que a ressalva abaixo proíbe: a lei
+                        // tem mais exigências do que UMA medida técnica cobre.
+                        col.Item().PaddingTop(10).Background("#EEF4FF").Padding(11).Text(t =>
+                        {
+                            t.DefaultTextStyle(x => x.FontSize(9).LineHeight(1.5f));
+                            t.Span(jaTemFerramenta
+                                ? "Ao contratar esta administração, "
+                                : "Ao implantar este serviço, ");
+                            t.Span($"{empresa} passa a ter em operação, com evidência mensal, a medida "
+                                 + "técnica de segurança que o ").FontColor("#1C2836");
+                            t.Span("art. 46 da LGPD").Bold();
+                            t.Span(" exige — o requisito que hoje está em aberto no levantamento acima.")
+                                .FontColor("#1C2836");
+                        });
                     }
                     else
                     {
-                        col.Item().PaddingTop(16).Text(
+                        col.Item().PaddingTop(10).Text(
                             "O valor do serviço é enviado em documento à parte, após confirmação do "
                             + "parque de máquinas.").FontSize(9).FontColor(Muted);
                     }

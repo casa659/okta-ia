@@ -97,6 +97,21 @@ public class OrcamentoMonitoramento
     /// </summary>
     public bool HospedagemDoCliente { get; set; }
 
+    /// <summary>
+    /// O cliente JÁ opera uma ferramenta de monitoramento (Wazuh próprio, outro SIEM/EDR) —
+    /// muda o serviço inteiro, não só o preço.
+    ///
+    /// ⚠️ NÃO CONFUNDIR com <see cref="HospedagemDoCliente"/>. Aquele campo é sobre ONDE O NOSSO
+    /// Wazuh roda; este é sobre se JÁ EXISTE uma ferramenta — nossa ou de terceiro — antes de
+    /// qualquer implantação. Verdadeiro tira a implantação e o VPS do preço: não há nada para
+    /// subir, o serviço vira administrar, configurar e dar assistência sobre o que já está de pé
+    /// (ler pelo conector, quando for Wazuh — ver <c>WazuhConnector</c>).
+    /// </summary>
+    public bool JaTemFerramenta { get; set; }
+
+    /// <summary>Nome da ferramenta já em uso, quando <see cref="JaTemFerramenta"/> é verdadeiro.</summary>
+    public string? FerramentaExistente { get; set; }
+
     /// <summary>Dias de histórico contratados. 90 é o padrão e cabe no disco do VPS básico.</summary>
     public int RetencaoDias { get; set; } = 90;
 

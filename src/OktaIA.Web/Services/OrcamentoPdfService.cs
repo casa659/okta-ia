@@ -100,19 +100,37 @@ public class OrcamentoPdfService
                     });
 
                     // ── O escopo, em uma frase ─────────────────────────────────────────────
+                    //
+                    // ⚠️ DUAS FRASES, PORQUE SÃO DOIS SERVIÇOS (06/09/2026). Cliente que já opera
+                    // uma ferramenta não recebe "inclui o servidor" — não há servidor novo, e
+                    // prometer um seria vender uma instalação que não vai acontecer.
                     col.Item().PaddingTop(16).Text(t =>
                     {
                         t.DefaultTextStyle(x => x.FontSize(10.5f).LineHeight(1.45f));
-                        t.Span("Monitoramento contínuo de ");
-                        t.Span($"{o.MaquinasTotal} máquina{(o.MaquinasTotal == 1 ? "" : "s")}").Bold();
-                        t.Span(", com cobertura em ");
-                        t.Span(CalculadoraDeOrcamento.Rotulo(o.Cobertura)).Bold();
-                        t.Span(" e ");
-                        t.Span($"{o.RetencaoDias} dias").Bold();
-                        t.Span(" de histórico. ");
-                        t.Span(o.HospedagemDoCliente
-                            ? "O servidor de segurança fica na infraestrutura do cliente."
-                            : "Inclui o servidor de segurança dedicado, gerenciado por nós.");
+                        if (o.JaTemFerramenta)
+                        {
+                            t.Span("Administração, configuração e suporte contínuo de ");
+                            t.Span($"{o.MaquinasTotal} máquina{(o.MaquinasTotal == 1 ? "" : "s")}").Bold();
+                            t.Span(" já monitoradas por ");
+                            t.Span(string.IsNullOrWhiteSpace(o.FerramentaExistente) ? "ferramenta própria" : o.FerramentaExistente!)
+                                .Bold();
+                            t.Span(", com cobertura em ");
+                            t.Span(CalculadoraDeOrcamento.Rotulo(o.Cobertura)).Bold();
+                            t.Span(". Sem instalação de servidor: a leitura é pela ferramenta que já existe.");
+                        }
+                        else
+                        {
+                            t.Span("Monitoramento contínuo de ");
+                            t.Span($"{o.MaquinasTotal} máquina{(o.MaquinasTotal == 1 ? "" : "s")}").Bold();
+                            t.Span(", com cobertura em ");
+                            t.Span(CalculadoraDeOrcamento.Rotulo(o.Cobertura)).Bold();
+                            t.Span(" e ");
+                            t.Span($"{o.RetencaoDias} dias").Bold();
+                            t.Span(" de histórico. ");
+                            t.Span(o.HospedagemDoCliente
+                                ? "O servidor de segurança fica na infraestrutura do cliente."
+                                : "Inclui o servidor de segurança dedicado, gerenciado por nós.");
+                        }
                     });
 
                     // ── Os dois números ────────────────────────────────────────────────────
@@ -120,9 +138,12 @@ public class OrcamentoPdfService
                     {
                         row.RelativeItem().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(12).Column(c =>
                         {
-                            c.Item().Text("IMPLANTAÇÃO · UMA VEZ").FontSize(7.5f).Bold().FontColor(Muted);
+                            c.Item().Text(o.JaTemFerramenta ? "ONBOARDING · UMA VEZ" : "IMPLANTAÇÃO · UMA VEZ")
+                                .FontSize(7.5f).Bold().FontColor(Muted);
                             c.Item().PaddingTop(4).Text($"R$ {o.ValorImplantacao:N2}").FontSize(19).Bold();
-                            c.Item().PaddingTop(3).Text("Levantamento, servidor, agentes e o relatório inicial de conformidade.")
+                            c.Item().PaddingTop(3).Text(o.JaTemFerramenta
+                                    ? "Conexão com a ferramenta já existente e conferência inicial."
+                                    : "Levantamento, servidor, agentes e o relatório inicial de conformidade.")
                                 .FontSize(8).FontColor(Muted);
                         });
 
@@ -130,11 +151,26 @@ public class OrcamentoPdfService
 
                         row.RelativeItem().Border(1).BorderColor(Azul).Background("#F4F7FE").Padding(12).Column(c =>
                         {
-                            c.Item().Text("MENSALIDADE").FontSize(7.5f).Bold().FontColor(Azul);
+                            c.Item().Text(o.JaTemFerramenta ? "ADMINISTRAÇÃO MENSAL" : "MENSALIDADE")
+                                .FontSize(7.5f).Bold().FontColor(Azul);
                             c.Item().PaddingTop(4).Text($"R$ {o.ValorMensal:N2}").FontSize(19).Bold();
                             c.Item().PaddingTop(3).Text("Monitoramento, triagem de alertas e relatório mensal.")
                                 .FontSize(8).FontColor(Muted);
                         });
+                    });
+
+                    // ⚠️ O FECHO EXPLICA A CONSEQUÊNCIA DE FECHAR — pedido do dono: "explicando
+                    // que se implantar, estaremos dentro do que a lei exige". Preciso no que
+                    // promete: "atende ao art. 46" é conferível, "em conformidade com a LGPD" sem
+                    // o artigo é a frase que a ressalva de SecaoLeiLgpd proíbe.
+                    col.Item().PaddingTop(10).Background("#EEF4FF").Padding(11).Text(t =>
+                    {
+                        t.DefaultTextStyle(x => x.FontSize(9).LineHeight(1.5f));
+                        t.Span(o.JaTemFerramenta ? "Ao contratar esta administração, " : "Ao implantar este serviço, ");
+                        t.Span($"{o.NomeEmpresa} passa a ter em operação, com evidência mensal, a medida "
+                             + "técnica de segurança que o ").FontColor("#1C2836");
+                        t.Span("art. 46 da LGPD").Bold();
+                        t.Span(" exige.").FontColor("#1C2836");
                     });
 
                     if (o.ValidaAte is { } val)
@@ -234,17 +270,29 @@ public class OrcamentoPdfService
 
     private static List<string> Incluidos(OrcamentoMonitoramento o)
     {
-        var itens = new List<string>
-        {
-            "Agente instalado em cada máquina, com inventário de programas e monitoramento de integridade de arquivos",
-            "Auditoria de configuração contra o benchmark CIS do sistema de cada máquina",
-            "Detecção de vulnerabilidades conhecidas nos programas instalados",
-            "Alertas de todas as máquinas normalizados numa tela só, com triagem",
-            "Relatório mensal de conformidade e incidentes — a evidência que o art. 6º, X da LGPD "
-                + "exige demonstrar",
-        };
+        // ⚠️ A LISTA MUDA QUANDO JÁ HÁ FERRAMENTA (06/09/2026). "Agente instalado" e "servidor
+        // dedicado" descrevem uma implantação nossa; com ferramenta existente não há agente novo
+        // nem servidor novo — a leitura é pela ferramenta do cliente, e listar os dois itens
+        // prometeria uma instalação que não vai acontecer.
+        var itens = o.JaTemFerramenta
+            ? new List<string>
+              {
+                  $"Leitura contínua de {(string.IsNullOrWhiteSpace(o.FerramentaExistente) ? "a ferramenta já em uso" : o.FerramentaExistente)}, sem instalar nada novo",
+                  "Alertas normalizados numa tela só, com triagem",
+                  "Relatório mensal de conformidade e incidentes — a evidência que o art. 6º, X da LGPD "
+                      + "exige demonstrar",
+              }
+            : new List<string>
+              {
+                  "Agente instalado em cada máquina, com inventário de programas e monitoramento de integridade de arquivos",
+                  "Auditoria de configuração contra o benchmark CIS do sistema de cada máquina",
+                  "Detecção de vulnerabilidades conhecidas nos programas instalados",
+                  "Alertas de todas as máquinas normalizados numa tela só, com triagem",
+                  "Relatório mensal de conformidade e incidentes — a evidência que o art. 6º, X da LGPD "
+                      + "exige demonstrar",
+              };
 
-        if (!o.HospedagemDoCliente)
+        if (!o.JaTemFerramenta && !o.HospedagemDoCliente)
         {
             itens.Add("Servidor de segurança dedicado, com certificado, firewall fechado e atualizações");
         }

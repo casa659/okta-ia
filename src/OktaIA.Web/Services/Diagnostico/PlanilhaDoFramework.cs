@@ -168,9 +168,114 @@ public class PlanilhaDoFramework
                                       | XLSheetProtectionElements.FormatCells
                                       | XLSheetProtectionElements.AutoFilter;
 
+        DesenharFicha(livro, empresa);
+
         using var memoria = new MemoryStream();
         livro.SaveAs(memoria);
         return memoria.ToArray();
+    }
+
+    // ── A segunda aba: o parque de máquinas e o que já existe ───────────────────
+
+    private const string AbaFicha = "Parque e Serviço";
+
+    // ⚠️ AS MESMAS PERGUNTAS DO ORÇAMENTO (06/09/2026, pedido do dono), literalmente — o texto de
+    // ajuda de cada linha é copiado de `Pages/Admin/Orcamentos.cshtml`. Duas telas perguntando a
+    // mesma coisa com palavras diferentes fariam o consultor decidir qual delas vale quando
+    // divergissem, e aqui o objetivo é o oposto: quem preenche a planilha não precisa ser
+    // perguntado de novo na hora de montar o orçamento.
+    private static readonly (string Rotulo, string? Ajuda)[] LinhasDaFicha =
+    [
+        ("Já usa alguma ferramenta de monitoramento de segurança (SIEM/EDR)?",
+            "Wazuh próprio, Microsoft Defender, outro. Responda Sim ou Não."),
+        ("Qual ferramenta? (só se a resposta acima for Sim)", null),
+        ("Estações Windows", null),
+        ("Estações Linux / macOS", null),
+        ("Servidores", null),
+        ("Destes, quantos servidores respondem na internet?",
+            "Servidor público gera tentativa de invasão diária — é o que dá trabalho."),
+        ("Trata dados de crianças e adolescentes?",
+            "Escola, creche, curso infantil, clínica pediátrica. Responda Sim ou Não."),
+        ("Cobertura de atendimento desejada", "24 × 7 só faz sentido com plantão de verdade por trás."),
+        ("Retenção de dados desejada (dias)", "90 é o padrão e cabe no disco contratado."),
+        ("Quem hospeda o servidor de segurança?", null),
+        ("Observações", null),
+    ];
+
+    private const string ColunaPergunta = "Pergunta";
+
+    private void DesenharFicha(XLWorkbook livro, string empresa)
+    {
+        var aba = livro.Worksheets.Add(AbaFicha);
+
+        aba.Cell(1, 1).Value = "Parque de máquinas e ferramenta atual";
+        aba.Cell(1, 1).Style.Font.SetBold().Font.SetFontSize(15);
+        aba.Cell(2, 1).Value = empresa;
+        aba.Cell(2, 1).Style.Font.SetFontSize(12).Font.SetFontColor(XLColor.FromHtml("#44546A"));
+        aba.Cell(3, 1).Value =
+            "Sem isto não dá para calcular o preço nem saber se o serviço é implantar algo novo ou "
+            + "administrar o que já existe. Responda apenas na coluna Resposta.";
+        aba.Cell(3, 1).Style.Font.SetFontSize(9).Font.SetFontColor(XLColor.FromHtml("#44546A"));
+
+        const int linhaCab = 5;
+        foreach (var (texto, col) in new[] { (ColunaPergunta, 1), ("Ajuda", 2), (ColunaResposta, 3) })
+        {
+            var celula = aba.Cell(linhaCab, col);
+            celula.Value = texto;
+            celula.Style.Font.SetBold().Font.SetFontColor(XLColor.White)
+                  .Fill.SetBackgroundColor(XLColor.FromHtml("#0B45DD"));
+        }
+
+        var linha = linhaCab + 1;
+        foreach (var (rotulo, ajuda) in LinhasDaFicha)
+        {
+            aba.Cell(linha, 1).Value = rotulo;
+            aba.Cell(linha, 1).Style.Alignment.SetWrapText(true);
+            aba.Cell(linha, 2).Value = ajuda ?? "";
+            aba.Cell(linha, 2).Style.Font.SetFontSize(8.5).Font.SetFontColor(XLColor.FromHtml("#7F8FA6"))
+               .Alignment.SetWrapText(true);
+
+            aba.Cell(linha, 3).Style
+               .Protection.SetLocked(false)
+               .Fill.SetBackgroundColor(XLColor.FromHtml("#FFF9E6"))
+               .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
+               .Border.SetOutsideBorderColor(XLColor.FromHtml("#D9C88A"));
+
+            // Só nas perguntas Sim/Não/escolha — número e texto livre ficam sem lista fechada.
+            if (rotulo.EndsWith("?") && !rotulo.StartsWith("Estações") && !rotulo.StartsWith("Servidores")
+                && !rotulo.StartsWith("Destes") && !rotulo.StartsWith("Retenção"))
+            {
+                var validacao = aba.Cell(linha, 3).CreateDataValidation();
+                validacao.List("Sim,Não", inCellDropdown: true);
+                validacao.IgnoreBlanks = true;
+                validacao.ErrorStyle = XLErrorStyle.Warning;
+            }
+            else if (rotulo.StartsWith("Cobertura"))
+            {
+                var validacao = aba.Cell(linha, 3).CreateDataValidation();
+                validacao.List("Horário comercial,Estendida (12h),24 x 7", inCellDropdown: true);
+                validacao.IgnoreBlanks = true;
+                validacao.ErrorStyle = XLErrorStyle.Warning;
+            }
+            else if (rotulo.StartsWith("Quem hospeda"))
+            {
+                var validacao = aba.Cell(linha, 3).CreateDataValidation();
+                validacao.List("Nós hospedamos,A empresa hospeda", inCellDropdown: true);
+                validacao.IgnoreBlanks = true;
+                validacao.ErrorStyle = XLErrorStyle.Warning;
+            }
+
+            linha++;
+        }
+
+        aba.Column(1).Width = 52;
+        aba.Column(2).Width = 46;
+        aba.Column(3).Width = 30;
+        aba.Row(linhaCab).Height = 20;
+        aba.SheetView.FreezeRows(linhaCab);
+
+        aba.Protect().AllowedElements = XLSheetProtectionElements.SelectEverything
+                                      | XLSheetProtectionElements.FormatCells;
     }
 
     private static string[] OpcoesDe(PerguntaDoDiagnostico p) => p.Tipo switch
@@ -200,11 +305,25 @@ public class PlanilhaDoFramework
     public record LinhaLida(string Codigo, bool Reconhecida, string? Opcao, string? Texto,
                             int? Numero, string? Observacao, string? RespostaCrua);
 
+    /// <summary>
+    /// O que veio da aba "Parque e Serviço" — as mesmas perguntas do orçamento.
+    ///
+    /// ⚠️ TUDO ANULÁVEL, e por isso: planilhas geradas ANTES desta aba existir não a têm, e uma
+    /// pessoa pode devolver o arquivo sem preenchê-la. Nulo aqui significa "não perguntado", nunca
+    /// "zero" — é a mesma regra do resto do módulo.
+    /// </summary>
+    public record FichaTecnica(
+        bool? JaTemFerramenta, string? FerramentaExistente,
+        int? EstacoesWindows, int? EstacoesOutras, int? Servidores, int? ServidoresExpostos,
+        bool? TrataDadosDeCriancas, CoberturaOrcamento? Cobertura, int? RetencaoDias,
+        bool? HospedagemDoCliente, string? Observacoes);
+
     /// <param name="Aproveitadas">Linhas que viraram resposta.</param>
     /// <param name="EmBranco">Linhas que a pessoa não respondeu — normal, não é erro.</param>
     /// <param name="Recusadas">Respostas escritas que não deu para entender. É o que a tela precisa dizer.</param>
+    /// <param name="Ficha">O parque de máquinas e a ferramenta atual, quando a aba existir e vier preenchida.</param>
     public record Leitura(List<LinhaLida> Aproveitadas, int EmBranco, List<LinhaLida> Recusadas,
-                          string? Erro);
+                          string? Erro, FichaTecnica? Ficha = null);
 
     /// <summary>
     /// Lê a planilha devolvida.
@@ -285,8 +404,88 @@ public class PlanilhaDoFramework
                 }
             }
 
-            return new Leitura(aproveitadas, brancos, recusadas, null);
+            var ficha = LerFicha(livro);
+
+            return new Leitura(aproveitadas, brancos, recusadas, null, ficha);
         }
+    }
+
+    /// <summary>
+    /// Lê a aba "Parque e Serviço", pelo RÓTULO da linha — nunca pela posição, mesma regra da
+    /// aba principal. Devolve nulo quando a aba não existe (planilha de antes desta versão).
+    /// </summary>
+    private static FichaTecnica? LerFicha(XLWorkbook livro)
+    {
+        var aba = livro.Worksheets.FirstOrDefault(w => w.Name == AbaFicha);
+        if (aba is null) { return null; }
+
+        var porRotulo = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var ultimaLinha = aba.LastRowUsed()?.RowNumber() ?? 0;
+        for (var l = 1; l <= ultimaLinha; l++)
+        {
+            var rotulo = aba.Cell(l, 1).GetString().Trim();
+            if (rotulo.Length > 0 && !porRotulo.ContainsKey(rotulo)) { porRotulo[rotulo] = l; }
+        }
+
+        string? Valor(string rotulo) =>
+            porRotulo.TryGetValue(rotulo, out var l) ? Texto(aba, l, 3) : null;
+
+        bool? SimNao(string rotulo)
+        {
+            var v = Valor(rotulo);
+            if (v is null) { return null; }
+            return v.Trim().Equals("Sim", StringComparison.OrdinalIgnoreCase) ? true
+                 : v.Trim().Equals("Não", StringComparison.OrdinalIgnoreCase) ? false
+                 : (bool?)null;
+        }
+
+        int? Numero(string rotulo)
+        {
+            var v = Valor(rotulo)?.Replace(".", "").Replace(" ", "");
+            return int.TryParse(v, out var n) ? n : null;
+        }
+
+        CoberturaOrcamento? Cobertura()
+        {
+            var v = Valor("Cobertura de atendimento desejada");
+            if (v is null) { return null; }
+            if (v.Contains("24", StringComparison.Ordinal)) { return CoberturaOrcamento.VinteQuatroPorSete; }
+            if (v.Contains("Estendida", StringComparison.OrdinalIgnoreCase)) { return CoberturaOrcamento.Estendida; }
+            if (v.Contains("comercial", StringComparison.OrdinalIgnoreCase)) { return CoberturaOrcamento.Comercial; }
+            return null;
+        }
+
+        bool? Hospedagem()
+        {
+            var v = Valor("Quem hospeda o servidor de segurança?");
+            if (v is null) { return null; }
+            return v.Contains("empresa", StringComparison.OrdinalIgnoreCase) ? true
+                 : v.Contains("Nós", StringComparison.OrdinalIgnoreCase) ? false
+                 : (bool?)null;
+        }
+
+        var ficha = new FichaTecnica(
+            SimNao("Já usa alguma ferramenta de monitoramento de segurança (SIEM/EDR)?"),
+            Valor("Qual ferramenta? (só se a resposta acima for Sim)"),
+            Numero("Estações Windows"),
+            Numero("Estações Linux / macOS"),
+            Numero("Servidores"),
+            Numero("Destes, quantos servidores respondem na internet?"),
+            SimNao("Trata dados de crianças e adolescentes?"),
+            Cobertura(),
+            Numero("Retenção de dados desejada (dias)"),
+            Hospedagem(),
+            Valor("Observações"));
+
+        // Tudo nulo é a mesma coisa que a aba não ter sido preenchida — devolve nulo, não uma
+        // ficha vazia, para o chamador não criar um orçamento em branco por engano.
+        var vazia = ficha.JaTemFerramenta is null && ficha.EstacoesWindows is null
+                 && ficha.EstacoesOutras is null && ficha.Servidores is null
+                 && ficha.ServidoresExpostos is null && ficha.TrataDadosDeCriancas is null
+                 && ficha.Cobertura is null && ficha.RetencaoDias is null
+                 && ficha.HospedagemDoCliente is null && string.IsNullOrWhiteSpace(ficha.Observacoes);
+
+        return vazia ? null : ficha;
     }
 
     /// <summary>Traduz o que a pessoa escreveu no formato que o catálogo espera. Nulo = não entendi.</summary>

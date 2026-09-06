@@ -20,11 +20,14 @@ public class DiagnosticosModel : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly AdminAuditService _auditoria;
+    private readonly CalculadoraDeOrcamento _calculadora;
 
-    public DiagnosticosModel(ApplicationDbContext db, AdminAuditService auditoria)
+    public DiagnosticosModel(ApplicationDbContext db, AdminAuditService auditoria,
+        CalculadoraDeOrcamento calculadora)
     {
         _db = db;
         _auditoria = auditoria;
+        _calculadora = calculadora;
     }
 
     public record LinhaDiagnostico(
@@ -176,6 +179,18 @@ public class DiagnosticosModel : PageModel
             $"{empresa.Nome} · {alvo.Nome} · {leitura.Aproveitadas.Count} resposta(s)",
             User.Identity?.Name ?? "—");
 
+        // ── O orçamento nasce junto, quando a planilha trouxe a ficha ───────────────────────
+        //
+        // ⚠️ PEDIDO DO DONO (06/09/2026): "as mesmas perguntas do orçamento" na planilha existem
+        // para o consultor não perguntar tudo de novo. Sem criar o orçamento aqui, a ficha viraria
+        // texto lido uma vez e digitado à mão de novo em /Admin/Orcamentos — o mesmo trabalho que
+        // a pergunta na planilha deveria evitar.
+        //
+        // ⚠️ SEMPRE NOVO, nunca mesclado num orçamento existente — a mesma regra do diagnóstico
+        // (ver o comentário de `OnPostImportarAsync` acima) e pelo mesmo motivo: mesclar
+        // sobrescreveria em silêncio um preço que o consultor já vinha negociando.
+        var orcamentoCriado = leitura.Ficha is { } ficha ? await CriarOrcamentoDaFichaAsync(empresa, ficha) : null;
+
         // ⚠️ O que NÃO entrou é dito por extenso, com o valor que veio. Importação que anuncia só o
         // sucesso deixa o consultor achando que a planilha inteira subiu — e ele descobre a falta
         // na frente do cliente, lendo um relatório com buracos.
@@ -187,10 +202,62 @@ public class DiagnosticosModel : PageModel
                             r.Reconhecida ? $"{r.Codigo} (valor \"{r.RespostaCrua}\")"
                                           : $"{r.Codigo} (código fora do catálogo)"))
                       + (leitura.Recusadas.Count > 5 ? "…" : "")
-                    : ".");
+                    : ".")
+                 + (orcamentoCriado is { } orc ? $" Orçamento {orc.Numero} criado como rascunho." : "");
         MensagemOk = leitura.Recusadas.Count == 0;
 
         return RedirectToPage("/Admin/Diagnostico", new { id = diagnostico.Id });
+    }
+
+    /// <summary>
+    /// Cria um orçamento RASCUNHO a partir do que a aba "Parque e Serviço" trouxe — as mesmas
+    /// perguntas de <c>/Admin/Orcamentos</c>, para o consultor só conferir e enviar.
+    ///
+    /// ⚠️ SÓ PREENCHE O QUE VEIO. Campo ausente na ficha fica no padrão do modelo — não força um
+    /// zero onde a pessoa não respondeu, que é a mesma regra de "não perguntado ≠ zero" do resto
+    /// do módulo de diagnóstico.
+    /// </summary>
+    private async Task<Models.OrcamentoMonitoramento?> CriarOrcamentoDaFichaAsync(
+        Company empresa, Services.Diagnostico.PlanilhaDoFramework.FichaTecnica ficha)
+    {
+        var orcamento = new Models.OrcamentoMonitoramento
+        {
+            Numero = await Services.NumeracaoDeOrcamento.ProximoAsync(_db),
+            NomeEmpresa = empresa.Nome,
+            Cnpj = empresa.Cnpj,
+            CompanyId = empresa.Id,
+            JaTemFerramenta = ficha.JaTemFerramenta ?? false,
+            FerramentaExistente = ficha.JaTemFerramenta == true ? ficha.FerramentaExistente : null,
+            EstacoesWindows = Math.Max(0, ficha.EstacoesWindows ?? 0),
+            EstacoesOutras = Math.Max(0, ficha.EstacoesOutras ?? 0),
+            Servidores = Math.Max(0, ficha.Servidores ?? 0),
+            ServidoresExpostos = Math.Max(0, ficha.ServidoresExpostos ?? 0),
+            TrataDadosDeCriancas = ficha.TrataDadosDeCriancas ?? false,
+            Cobertura = ficha.Cobertura ?? Models.CoberturaOrcamento.Comercial,
+            RetencaoDias = ficha.RetencaoDias is > 0 ? ficha.RetencaoDias.Value : 90,
+            HospedagemDoCliente = ficha.HospedagemDoCliente ?? false,
+            Observacoes = string.IsNullOrWhiteSpace(ficha.Observacoes) ? null
+                : $"Vindo da planilha de levantamento: {ficha.Observacoes}",
+            CriadaPor = User.Identity?.Name,
+        };
+
+        var conta = _calculadora.Calcular(orcamento);
+        orcamento.MaquinasTotal = conta.MaquinasTotal;
+        orcamento.CustoDiretoMensal = conta.CustoDiretoMensal;
+        orcamento.ValorImplantacaoCalculado = conta.ValorImplantacao;
+        orcamento.ValorMensalCalculado = conta.ValorMensal;
+        orcamento.ValorImplantacao = conta.ValorImplantacao;
+        orcamento.ValorMensal = conta.ValorMensal;
+        orcamento.MemoriaDeCalculo = conta.Memoria;
+        orcamento.ValidaAte = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(_calculadora.Parametros.ValidadeDias));
+
+        _db.Orcamentos.Add(orcamento);
+        await _db.SaveChangesAsync();
+        await _auditoria.RegistrarAsync("orcamento.criado.da.planilha",
+            $"{empresa.Nome} · {orcamento.Numero} · {orcamento.MaquinasTotal} máquina(s)",
+            User.Identity?.Name ?? "—");
+
+        return orcamento;
     }
 
     /// <summary>Nome de arquivo sem acento nem espaço, para não quebrar no download.</summary>

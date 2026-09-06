@@ -105,7 +105,7 @@ public class OrcamentosModel : PageModel
 
         var novo = Entrada.Id == 0;
         var alvo = novo
-            ? new OrcamentoMonitoramento { Numero = await ProximoNumeroAsync(), NomeEmpresa = "" }
+            ? new OrcamentoMonitoramento { Numero = await Services.NumeracaoDeOrcamento.ProximoAsync(_db), NomeEmpresa = "" }
             : await _db.Orcamentos.FirstOrDefaultAsync(p => p.Id == Entrada.Id);
 
         if (alvo is null) { return RedirectToPage(); }
@@ -124,6 +124,8 @@ public class OrcamentosModel : PageModel
         alvo.Telefone = Limpo(Entrada.Telefone);
         alvo.ParceiroNome = Limpo(Entrada.ParceiroNome);
 
+        alvo.JaTemFerramenta = Entrada.JaTemFerramenta;
+        alvo.FerramentaExistente = Entrada.JaTemFerramenta ? Limpo(Entrada.FerramentaExistente) : null;
         alvo.EstacoesWindows = Math.Max(0, Entrada.EstacoesWindows);
         alvo.EstacoesOutras = Math.Max(0, Entrada.EstacoesOutras);
         alvo.Servidores = Math.Max(0, Entrada.Servidores);
@@ -266,20 +268,6 @@ public class OrcamentosModel : PageModel
     /// ⚠️ Lê o ÚLTIMO do ano em vez de contar linhas: proposta apagada não pode fazer a próxima
     /// reaproveitar um número que já esteve em cima da mesa de alguém.
     /// </summary>
-    private async Task<string> ProximoNumeroAsync()
-    {
-        var prefixo = $"ORC-{DateTime.UtcNow.Year}-";
-        var ultimo = await _db.Orcamentos
-            .Where(p => p.Numero.StartsWith(prefixo))
-            .OrderByDescending(p => p.Numero)
-            .Select(p => p.Numero)
-            .FirstOrDefaultAsync();
-
-        var n = 1;
-        if (ultimo is not null && int.TryParse(ultimo[prefixo.Length..], out var atual)) { n = atual + 1; }
-        return prefixo + n.ToString("D6");
-    }
-
     private static string? Limpo(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     public static string RotuloStatus(StatusOrcamento s) => s switch

@@ -184,7 +184,8 @@ public class DiagnosticoResultadoModel : PageModel
             ? _propostaLgpd.GerarMedido(empresa.Nome, empresa.Cnpj, orcamento?.ParceiroNome, postura, preco,
                 trataDadosDeCriancas)
             : _propostaLgpd.GerarDeclarado(empresa.Nome, empresa.Cnpj, orcamento?.ParceiroNome,
-                Diagnostico!, Riscos, preco, trataDadosDeCriancas);
+                Diagnostico!, Riscos, preco, trataDadosDeCriancas,
+                orcamento?.JaTemFerramenta ?? false, orcamento?.FerramentaExistente);
 
         await _auditoria.RegistrarAsync("diagnostico.proposta.lgpd",
             $"{empresa.Nome} · {(postura.Implantado ? "medido" : "declarado")}"

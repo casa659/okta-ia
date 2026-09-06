@@ -142,6 +142,20 @@
 
                 <h2 class="prop-h2">O parque</h2>
                 <div class="prop-campos">
+                    @* ⚠️ FICA NO TOPO DO PARQUE, de propósito: é a pergunta que decide todo o
+                       resto da conta (ver CalculadoraDeOrcamento) — implantação vira onboarding,
+                       hospedagem deixa de existir, retenção deixa de ser cobrada. Quem preenche
+                       precisa vê-la ANTES dos números de máquina, não depois. *@
+                    <label class="checkbox">
+                        <input asp-for="Entrada.JaTemFerramenta" type="checkbox" />
+                        <span>O cliente já usa alguma ferramenta de monitoramento (SIEM/EDR)</span>
+                        <i>Wazuh próprio, Microsoft Defender, outro. Marcado, o serviço vira administrar e
+                           configurar o que já existe — sem implantar servidor novo.</i>
+                    </label>
+                    <label class="larga">
+                        <span>Qual ferramenta? (se marcado acima)</span>
+                        <input asp-for="Entrada.FerramentaExistente" maxlength="120" placeholder="Ex.: Wazuh próprio" />
+                    </label>
                     <label>
                         <span>Estações Windows</span>
                         <input asp-for="Entrada.EstacoesWindows" type="number" min="0" max="9999" />
