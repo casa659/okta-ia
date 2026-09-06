@@ -1,0 +1,162 @@
+@page "/Conformidade"
+@using OktaIA.Web.Services
+@model OktaIA.Web.Pages.ConformidadeModel
+@{
+    ViewData["Title"] = "LGPD";
+}
+
+<div class="oi-content">
+    <div style="margin-bottom:14px;">
+        <h1 class="oi-dash-title">Postura de LGPD</h1>
+        <p class="oi-dash-sub">O que a Lei nº 13.709/2018 exige, e o que foi medido nesta empresa</p>
+    </div>
+
+    @* ⚠️ A escolha da empresa é o primeiro ato da tela. Ver o comentário no code-behind: numa
+       tela que fala de obrigação legal, abrir já preenchida faz alguém ler o número de um cliente
+       achando que é de outro. *@
+    <form method="get" class="lg-escolha">
+        <label for="empresa">Empresa</label>
+        @* ⚠️ SEM `data-adm-autosubmit`, e com botão de verdade. Aquele atributo é lido por
+           `site-admin.js`, que só a casca de ADMIN carrega — esta tela é do SOC, e ali o script
+           não existe. O select mudava e a página não ia a lugar nenhum, sem erro visível. É a
+           mesma armadilha que o projeto já teve com `data-adm-open-dialog`: comportamento preso a
+           um script que a outra casca não tem. Botão HTML funciona nas duas. *@
+        <select id="empresa" name="empresa">
+            <option value="">— escolha a empresa —</option>
+            @foreach (var e in Model.Empresas)
+            {
+                <option value="@e.Id" selected="@(e.Id == Model.Empresa)">
+                    @e.Nome@(e.TemConector ? " · monitorada" : "")
+                </option>
+            }
+        </select>
+        <button type="submit" class="lg-btn">Analisar</button>
+    </form>
+
+    @if (Model.Resultado is not { } r)
+    {
+        <div class="lg-vazio">
+            <p>Escolha uma empresa acima.</p>
+            <p class="fraco">
+                Esta tela cruza o que a plataforma <strong>mediu</strong> — conector, máquinas,
+                alertas, achados de conformidade — com as obrigações da LGPD, artigo por artigo.
+                Cada linha traz o que a lei exige e o que foi visto, com data e número.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="lg-topo">
+            <div>
+                <div class="lg-emp">@r.Empresa</div>
+                <div class="fraco">
+                    @if (r.UltimoSync is { } s)
+                    {
+                        <text>Último dado recebido em @s.ToLocalTime().ToString("dd/MM/yyyy 'às' HH:mm")@(r.Conector is { Length: > 0 } c ? $" · via {c}" : "")</text>
+                    }
+                    else
+                    {
+                        <text>Nenhum dado recebido — não há conector reportando nesta empresa.</text>
+                    }
+                </div>
+            </div>
+            <a class="lg-btn" href="/Conformidade?handler=Relatorio&empresa=@Model.Empresa">Gerar relatório (PDF)</a>
+        </div>
+
+        <div class="lg-numeros">
+            <div><b>@r.Atendidos<span>/@r.Avaliados</span></b><span>requisitos técnicos atendidos</span></div>
+            <div><b>@r.MaquinasVistas</b><span>máquinas reportando</span></div>
+            <div><b>@r.AlertasTotal.ToString("N0")</b><span>alertas no histórico</span></div>
+            <div class="@(r.GravesAbertos > 0 ? "grave" : "")">
+                <b>@r.GravesAbertos</b><span>graves em aberto</span>
+            </div>
+        </div>
+
+        @if (r.GravesAbertos > 0 && r.DiasDesdeGraveMaisAntigo >= 3)
+        {
+            @* ⚠️ O prazo do art. 48 é de 3 dias ÚTEIS a contar do conhecimento. A plataforma sabe
+               a data exata em que soube — e é isso que transforma um número feio numa decisão
+               que precisa ser tomada hoje. *@
+            <div class="lg-prazo">
+                <b>Prazo do art. 48 correndo.</b>
+                O alerta grave mais antigo em aberto está sem decisão há
+                <strong>@r.DiasDesdeGraveMaisAntigo dia(s)</strong>. Se algum deles for incidente
+                de segurança com risco relevante ao titular, a comunicação à ANPD e ao titular deve
+                sair em até 3 dias úteis do conhecimento — e a plataforma registra desde quando se soube.
+            </div>
+        }
+
+        <h2 class="lg-h2">O que a lei exige, e o que foi medido</h2>
+        <div class="lg-lista">
+            @foreach (var q in r.Requisitos)
+            {
+                <div class="lg-item">
+                    <div class="lg-item-cab">
+                        <span class="lg-artigo">@q.Artigo</span>
+                        <b>@q.Titulo</b>
+                        <span class="lg-sit" style="color:@PosturaLgpd.Cor(q.Como);border-color:@PosturaLgpd.Cor(q.Como)">
+                            @PosturaLgpd.Rotulo(q.Como)
+                        </span>
+                    </div>
+                    <p class="lg-exige">@q.Exige</p>
+                    <p class="lg-medido">@q.Medido</p>
+                </div>
+            }
+        </div>
+
+        @* ⚠️ As lacunas NÃO são rodapé: são metade do resultado. Uma tela de conformidade que
+           mostra só o verde é propaganda — e, num assunto em que o cliente pode ser multado,
+           propaganda é o pior serviço que se presta a ele. *@
+        <h2 class="lg-h2">O que esta plataforma <em>não</em> cobre</h2>
+        <p class="fraco" style="max-width:70ch">
+            Monitoramento é uma medida técnica entre várias. Os itens abaixo continuam sendo
+            obrigação do controlador e <strong>não</strong> são medidos aqui — dizer o contrário
+            seria induzir a erro justamente quem confia nesta tela.
+        </p>
+        <ul class="lg-lacunas">
+            @foreach (var l in r.Lacunas)
+            {
+                <li>@l</li>
+            }
+        </ul>
+    }
+</div>
+
+<style>
+    .lg-escolha { display:flex; align-items:center; gap:10px; margin-bottom:18px; padding:14px 16px; background:rgba(8,14,24,.6); border:1px solid rgba(120,170,255,.16); border-radius:12px; }
+    .lg-escolha label { font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:#8A96AB; }
+    .lg-escolha select { background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:8px 12px; color:#EAF0F8; font-family:inherit; font-size:13px; min-width:320px; }
+
+    .lg-vazio { border:1px dashed rgba(120,170,255,.2); border-radius:12px; padding:28px; }
+    .lg-vazio p { margin:0 0 8px; }
+
+    .lg-topo { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+    .lg-emp { font-size:20px; font-weight:600; }
+    .lg-btn { display:inline-block; background:#0B45DD; border:1px solid #3D7BFF; color:#fff; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:600; text-decoration:none; }
+    .lg-btn:hover { background:#0A3AB8; }
+
+    .lg-numeros { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px; }
+    .lg-numeros > div { background:rgba(8,14,24,.6); border:1px solid rgba(120,170,255,.16); border-radius:12px; padding:16px; }
+    .lg-numeros > div.grave { border-color:#FF3B5C; }
+    .lg-numeros b { display:block; font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; }
+    .lg-numeros b span { font-size:16px; color:#8A96AB; font-weight:500; }
+    .lg-numeros > div > span { display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:#8A96AB; margin-top:4px; }
+
+    .lg-prazo { background:rgba(60,16,26,.5); border:1px solid #FF3B5C; border-left-width:3px; border-radius:10px; padding:14px 16px; margin-bottom:20px; font-size:13.5px; line-height:1.55; }
+    .lg-prazo b { color:#FF7189; display:block; margin-bottom:4px; }
+
+    .lg-h2 { font-size:13px; text-transform:uppercase; letter-spacing:.1em; color:#8A96AB; margin:26px 0 12px; padding-bottom:8px; border-bottom:1px solid rgba(120,170,255,.14); }
+    .lg-h2 em { font-style:italic; color:#EAF0F8; }
+
+    .lg-lista { display:grid; gap:10px; }
+    .lg-item { background:rgba(8,14,24,.6); border:1px solid rgba(120,170,255,.14); border-radius:12px; padding:16px; }
+    .lg-item-cab { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+    .lg-item-cab b { font-size:15px; }
+    .lg-artigo { font-family:ui-monospace,'Cascadia Mono',Menlo,monospace; font-size:11.5px; font-weight:700; color:#3D7BFF; background:rgba(24,48,92,.5); border-radius:6px; padding:3px 8px; }
+    .lg-sit { font-size:10px; text-transform:uppercase; letter-spacing:.08em; border:1px solid; border-radius:999px; padding:2px 9px; margin-left:auto; }
+    .lg-exige { font-size:12.5px; color:#8A96AB; line-height:1.5; margin:0 0 8px; }
+    .lg-medido { font-size:13.5px; line-height:1.5; margin:0; padding-left:12px; border-left:2px solid rgba(120,170,255,.3); }
+
+    .lg-lacunas { margin:12px 0 0; padding-left:20px; font-size:13.5px; line-height:1.9; color:#B7C4D4; }
+    .fraco { color:#8A96AB; font-size:12.5px; }
+</style>

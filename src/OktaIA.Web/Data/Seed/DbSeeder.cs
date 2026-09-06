@@ -33,6 +33,7 @@ public static class DbSeeder
         await BackfillDigitalTwinPermissionAsync(db);
         await BackfillAlertasPermissionAsync(db);
         await BackfillInformacoesPermissionAsync(db);
+        await BackfillLgpdPermissionAsync(db);
         await BackfillRebrandLoktaiaAsync(db);
         await BackfillEmpresasDemoAsync(db);
         await SeedDiagnosticoDemoAsync(db);
@@ -437,6 +438,31 @@ public static class DbSeeder
 
         var roleIds = await db.RolePermissions
             .Where(rp => rp.AreaKey == "soc.vulnerabilidades")
+            .Select(rp => rp.RoleId)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var roleId in roleIds)
+        {
+            db.RolePermissions.Add(new RolePermission { RoleId = roleId, AreaKey = area });
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    // Mesma armadilha dos backfills acima, e aqui ela custaria caro: a tela de LGPD é a que o
+    // gestor abre para decidir se compra — e uma área criada depois do primeiro deploy não é
+    // concedida a ninguém, nem ao Admin. Quem já via os alertas passa a ver a leitura legal deles.
+    private static async Task BackfillLgpdPermissionAsync(ApplicationDbContext db)
+    {
+        const string area = "soc.lgpd";
+        if (await db.RolePermissions.AnyAsync(rp => rp.AreaKey == area))
+        {
+            return;
+        }
+
+        var roleIds = await db.RolePermissions
+            .Where(rp => rp.AreaKey == "soc.alertas")
             .Select(rp => rp.RoleId)
             .Distinct()
             .ToListAsync();

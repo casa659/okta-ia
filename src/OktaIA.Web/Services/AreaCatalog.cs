@@ -17,6 +17,9 @@ public static class AreaCatalog
         new Area("soc.vulnerabilidades", "Vulnerabilidades", "/Vulnerabilidades", "Centro de Operações · SOC"),
         new Area("soc.alertas", "Alertas", "/Alertas", "Centro de Operações · SOC"),
         new Area("soc.incidentes", "Incidentes", "/Incidentes", "Centro de Operações · SOC"),
+        // ⚠️ Rótulo "LGPD", rota "/Conformidade": `/Lgpd` já é a página institucional do site de
+        // marketing. Duas páginas com a mesma rota é o tipo de colisão que só aparece em produção.
+        new Area("soc.lgpd", "LGPD", "/Conformidade", "Centro de Operações · SOC"),
         new Area("soc.siem", "SIEM", "/Siem", "Centro de Operações · SOC"),
         new Area("soc.ia", "IA", "/Ia", "Centro de Operações · SOC"),
         new Area("soc.relatorios", "Relatórios", "/Relatorios", "Centro de Operações · SOC"),

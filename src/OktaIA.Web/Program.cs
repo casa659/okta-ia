@@ -68,6 +68,8 @@ builder.Services.Configure<ParametrosOrcamento>(builder.Configuration.GetSection
 builder.Services.AddScoped<CalculadoraDeOrcamento>();
 builder.Services.AddSingleton<OrcamentoPdfService>();
 builder.Services.AddSingleton<RelatorioMensalPdfService>();
+builder.Services.AddSingleton<RelatorioLgpdPdfService>();
+builder.Services.AddScoped<PosturaLgpd>();
 
 // Aviso ativo de alerta grave. Sem `Avisos:*` configurado o serviço recusa operar em silêncio —
 // e "não configurado" é diferente de "nada aconteceu": ver AvisoDeAlerta.Configurado.
