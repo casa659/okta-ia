@@ -60,6 +60,17 @@ public class ConformidadeModel : PageModel
         [FromServices] RelatorioLgpdPdfService pdf)
     {
         var r = await _postura.DeAsync(empresa, HttpContext.RequestAborted);
+
+        // ⚠️ A MESMA TRAVA DA TELA, aqui também. Este endereço é adivinhável
+        // (`?handler=Relatorio&empresa=13`), e trava que existe só na marcação é trava que
+        // qualquer pessoa contorna digitando a URL. Sem conector, o PDF sairia com zeros em toda
+        // parte, assinado pela nossa marca — um documento que afirma postura medida sobre uma
+        // empresa em que nunca se mediu nada. Ver PosturaLgpd.Implantado.
+        if (!r.Implantado)
+        {
+            return RedirectToPage("/Conformidade", new { empresa });
+        }
+
         var bytes = pdf.Gerar(r);
         return File(bytes, "application/pdf", $"postura-lgpd-{Arquivo(r.Empresa)}.pdf");
     }

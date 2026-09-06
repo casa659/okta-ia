@@ -41,6 +41,18 @@ public class PosturaLgpd
 
     public record Resultado(
         string Empresa,
+        /// <summary>
+        /// Existe conector nesta empresa — ou seja, o monitoramento foi IMPLANTADO.
+        ///
+        /// ⚠️ SEPARA "medimos e deu zero" de "nunca medimos", que é a diferença que importa numa
+        /// tela de conformidade. Sem conector, todos os números abaixo saem zerados: 0 máquinas,
+        /// 0 alertas, 0 achados. Lidos como resultado, dizem que a empresa está limpa — quando na
+        /// verdade ninguém olhou. Zero falso é pior que traço, e aqui o falso é elogioso.
+        ///
+        /// ⚠️ Conector INATIVO ou sem sincronizar continua `true`: aquilo é medição (implantado e
+        /// não reportando), e é um achado legítimo do art. 46.
+        /// </summary>
+        bool Implantado,
         DateTimeOffset? UltimoSync,
         string? Conector,
         bool ConectorAtivo,
@@ -212,7 +224,8 @@ public class PosturaLgpd
         };
 
         return new Resultado(
-            empresa, conector?.UltimoSyncEm, conector?.Nome, ativo, maquinas,
+            empresa, Implantado: conector is not null,
+            conector?.UltimoSyncEm, conector?.Nome, ativo, maquinas,
             alertas.Count, graves.Count, gravesAbertos, diasParado, conformidade, meses,
             requisitos, lacunas);
     }

@@ -44,6 +44,28 @@
             </p>
         </div>
     }
+    else if (!r.Implantado)
+    {
+        @* ⚠️ NADA DE NÚMERO AQUI (06/09/2026, pedido do dono). Sem conector, o resto da tela sairia
+           com 0 máquinas, 0 alertas, 0 achados e quatro requisitos "não atendidos" — que se leem
+           como MEDIÇÃO e não como ausência dela. Num assunto em que o cliente pode ser multado, um
+           zero que parece resultado é elogioso e falso ao mesmo tempo. Ver PosturaLgpd.Implantado. *@
+        <div class="lg-sem-monitoramento">
+            <b>Monitoramento não implantado nesta empresa.</b>
+            <p>
+                Não há conector configurado para <strong>@r.Empresa</strong>, então a plataforma
+                nunca leu nada aqui. Não é que a empresa esteja sem alertas — é que ninguém está
+                olhando, e por isso esta tela não mostra números: seriam zeros que se leem como
+                resultado.
+            </p>
+            <p class="fraco">
+                A postura de LGPD desta empresa só pode ser medida depois da primeira
+                sincronização. Enquanto isso não há evidência técnica a apresentar para os
+                arts. 46, 48, 49 e 6º, X da Lei nº 13.709/2018.
+            </p>
+            <a class="lg-btn" href="/Admin/Conectores?empresa=@Model.Empresa">Implantar monitoramento</a>
+        </div>
+    }
     else
     {
         <div class="lg-topo">
@@ -143,6 +165,16 @@
 
     .lg-vazio { border:1px dashed rgba(120,170,255,.2); border-radius:12px; padding:28px; }
     .lg-vazio p { margin:0 0 8px; }
+
+    /* Empresa sem conector. Âmbar e não vermelho: não é falha de segurança do cliente,
+       é ausência de instrumento nosso — e a diferença muda quem tem de agir. */
+    .lg-sem-monitoramento {
+        border:1px solid #C98A2E; border-left-width:3px; border-radius:12px;
+        background:rgba(58,42,16,.42); padding:22px 24px; max-width:78ch;
+    }
+    .lg-sem-monitoramento b { display:block; font-size:16px; color:#F0B458; margin-bottom:10px; }
+    .lg-sem-monitoramento p { margin:0 0 10px; font-size:13.5px; line-height:1.6; }
+    .lg-sem-monitoramento .lg-btn { margin-top:6px; }
 
     .lg-topo { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
     .lg-emp { font-size:20px; font-weight:600; }
