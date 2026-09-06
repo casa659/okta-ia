@@ -171,6 +171,18 @@ public class OrcamentoMonitoramento
     /// <summary>Como o total foi montado, em texto, do jeito que foi mostrado na tela.</summary>
     public string? MemoriaDeCalculo { get; set; }
 
+    /// <summary>
+    /// O detalhamento do preço, item a item — <see cref="Services.CalculadoraDeOrcamento.ItemDeCusto"/>
+    /// serializado em JSON.
+    ///
+    /// ⚠️ GRAVADO NO MOMENTO DO CÁLCULO, NUNCA RECALCULADO NO PDF (06/09/2026, pedido do dono:
+    /// "detalhar o orçamento... valor por estação"). Mesma regra de <see cref="ValorImplantacao"/>:
+    /// uma proposta é uma promessa com data. Recalcular ao gerar o PDF faria uma proposta antiga
+    /// mudar de detalhamento se o preço por estação mudasse amanhã — o cliente veria hoje um
+    /// número diferente do que leu no papel que já tem.
+    /// </summary>
+    public string? ItensDeCustoJson { get; set; }
+
     // ── Trilha ──────────────────────────────────────────────────────────────────────────────
     public StatusOrcamento Status { get; set; } = StatusOrcamento.Rascunho;
     public DateTimeOffset CriadaEm { get; set; } = DateTimeOffset.UtcNow;

@@ -125,17 +125,36 @@ public class CalculadoraDeOrcamento
 
     private ParametrosOrcamento _p => Parametros;
 
+    /// <summary>
+    /// Uma linha do detalhamento — o que o cliente lê quando pergunta "de onde vem esse número".
+    ///
+    /// ⚠️ NUNCA CARREGA CUSTO NEM MARGEM. Só preço de venda (o que se cobra), nunca o que a coisa
+    /// custa pra nós — `CustoDiretoMensal` fica de fora deste vetor de propósito, e é por isso que
+    /// os itens podem ir direto pro PDF do cliente sem passar pela caixa "só nosso".
+    /// </summary>
+    /// <param name="Grupo">"Implantação" ou "Mensalidade" — em qual total a linha entra.</param>
+    /// <param name="Descricao">O que é, em português de contrato.</param>
+    /// <param name="Valor">
+    /// O que esta linha ACRESCENTA ao total do grupo. Pode ser negativo (não deveria) ou zero
+    /// (linha só informativa, como "hospedagem por conta do cliente"). A soma dos itens de um
+    /// grupo bate exatamente com o total do grupo — é o que faz o detalhamento ser detalhamento,
+    /// e não decoração.
+    /// </param>
+    public record ItemDeCusto(string Grupo, string Descricao, decimal Valor);
+
     public record Resultado(
         int MaquinasTotal,
         decimal ValorImplantacao,
         decimal ValorMensal,
         decimal CustoDiretoMensal,
-        string Memoria);
+        string Memoria,
+        List<ItemDeCusto> Itens);
 
     public Resultado Calcular(OrcamentoMonitoramento p)
     {
         var maquinas = p.EstacoesWindows + p.EstacoesOutras + p.Servidores;
         var linhas = new List<string>();
+        var itens = new List<ItemDeCusto>();
 
         // ── Implantação ─────────────────────────────────────────────────────────────────────
         //
@@ -149,16 +168,24 @@ public class CalculadoraDeOrcamento
         {
             implantacao = _p.ImplantacaoOnboardingFerramentaExistente;
             linhas.Add($"Onboarding (conectar em {p.FerramentaExistente ?? "ferramenta já existente"}): R$ {implantacao:N2}");
+            itens.Add(new("Implantação",
+                $"Onboarding — conexão com {p.FerramentaExistente ?? "a ferramenta já existente"} pela API",
+                implantacao));
         }
         else
         {
             implantacao = _p.ImplantacaoBase + (_p.ImplantacaoPorMaquina * maquinas);
             linhas.Add($"Implantação: base R$ {_p.ImplantacaoBase:N2} + {maquinas} máquina(s) × R$ {_p.ImplantacaoPorMaquina:N2}");
+            itens.Add(new("Implantação", "Levantamento, preparação do servidor e relatório inicial", _p.ImplantacaoBase));
+            itens.Add(new("Implantação",
+                $"Instalação do agente — {maquinas} estação(ões)/servidor(es) × R$ {_p.ImplantacaoPorMaquina:N2} por unidade",
+                _p.ImplantacaoPorMaquina * maquinas));
         }
 
         // ── Mensalidade ─────────────────────────────────────────────────────────────────────
         var mensal = _p.MensalBase;
         linhas.Add($"Mensalidade: base R$ {_p.MensalBase:N2} (até {_p.MaquinasIncluidas} máquinas)");
+        itens.Add(new("Mensalidade", $"Plano base — inclui até {_p.MaquinasIncluidas} estação(ões)/servidor(es)", _p.MensalBase));
 
         var extras = Math.Max(0, maquinas - _p.MaquinasIncluidas);
         if (extras > 0)
@@ -166,6 +193,8 @@ public class CalculadoraDeOrcamento
             var v = extras * _p.MensalPorMaquinaExtra;
             mensal += v;
             linhas.Add($"+ {extras} máquina(s) além do pacote × R$ {_p.MensalPorMaquinaExtra:N2} = R$ {v:N2}");
+            itens.Add(new("Mensalidade",
+                $"{extras} estação(ões) além do plano × R$ {_p.MensalPorMaquinaExtra:N2} por unidade", v));
         }
 
         if (p.ServidoresExpostos > 0)
@@ -173,6 +202,8 @@ public class CalculadoraDeOrcamento
             var v = p.ServidoresExpostos * _p.MensalPorServidorExposto;
             mensal += v;
             linhas.Add($"+ {p.ServidoresExpostos} servidor(es) exposto(s) à internet × R$ {_p.MensalPorServidorExposto:N2} = R$ {v:N2}");
+            itens.Add(new("Mensalidade",
+                $"{p.ServidoresExpostos} servidor(es) exposto(s) à internet × R$ {_p.MensalPorServidorExposto:N2} por unidade", v));
         }
 
         // ── Hospedagem ──────────────────────────────────────────────────────────────────────
@@ -188,12 +219,15 @@ public class CalculadoraDeOrcamento
         else if (p.HospedagemDoCliente)
         {
             linhas.Add("Hospedagem: por conta do cliente — sem custo e sem cobrança.");
+            itens.Add(new("Mensalidade", "Servidor de segurança — hospedado pelo cliente, sem custo adicional", 0m));
         }
         else
         {
             mensal += _p.MensalHospedagem;
             custoDireto = _p.CustoVpsMensal;
             linhas.Add($"+ Servidor gerenciado (Wazuh dedicado): R$ {_p.MensalHospedagem:N2}");
+            itens.Add(new("Mensalidade", "Servidor de segurança dedicado — hospedagem, certificado e atualizações",
+                _p.MensalHospedagem));
         }
 
         // ── Retenção ────────────────────────────────────────────────────────────────────────
@@ -205,6 +239,7 @@ public class CalculadoraDeOrcamento
             var v = blocos * _p.MensalPor90DiasExtras;
             mensal += v;
             linhas.Add($"+ Retenção de {p.RetencaoDias} dias ({blocos} bloco(s) de 90 além do padrão) = R$ {v:N2}");
+            itens.Add(new("Mensalidade", $"Retenção estendida — {p.RetencaoDias} dias de histórico", v));
         }
 
         // ── Cobertura ───────────────────────────────────────────────────────────────────────
@@ -222,6 +257,9 @@ public class CalculadoraDeOrcamento
             var antes = mensal;
             mensal *= fator;
             linhas.Add($"× Cobertura {Rotulo(p.Cobertura)}: fator {fator:N1} sobre R$ {antes:N2}");
+            // ⚠️ O ITEM CARREGA A DIFERENÇA, não o fator. Um item de "detalhamento" com um "×2,2"
+            // dentro não soma com os outros; o cliente lê valor, não multiplicador.
+            itens.Add(new("Mensalidade", $"Cobertura {Rotulo(p.Cobertura)} — ajuste sobre o plano", mensal - antes));
         }
         else
         {
@@ -233,7 +271,8 @@ public class CalculadoraDeOrcamento
             Math.Round(implantacao, 2),
             Math.Round(mensal, 2),
             custoDireto,
-            string.Join("\n", linhas));
+            string.Join("\n", linhas),
+            itens);
     }
 
     public static string Rotulo(CoberturaOrcamento c) => c switch

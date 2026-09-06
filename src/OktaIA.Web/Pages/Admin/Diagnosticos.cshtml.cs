@@ -249,6 +249,7 @@ public class DiagnosticosModel : PageModel
         orcamento.ValorImplantacao = conta.ValorImplantacao;
         orcamento.ValorMensal = conta.ValorMensal;
         orcamento.MemoriaDeCalculo = conta.Memoria;
+        orcamento.ItensDeCustoJson = System.Text.Json.JsonSerializer.Serialize(conta.Itens);
         orcamento.ValidaAte = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(_calculadora.Parametros.ValidadeDias));
 
         _db.Orcamentos.Add(orcamento);

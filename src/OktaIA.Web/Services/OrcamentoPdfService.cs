@@ -133,6 +133,12 @@ public class OrcamentoPdfService
                         }
                     });
 
+                    // ⚠️ COMO FUNCIONA, ANTES DO PREÇO. Pedido do dono: "o fluxograma mostrando
+                    // como vai funcionar a estrutura". Mesmo desenho da proposta de LGPD — ver
+                    // FluxogramaDaSolucao; explica o MECANISMO do serviço, não é o mapa de risco.
+                    FluxogramaDaSolucao.Desenhar(col, o.MaquinasTotal, o.JaTemFerramenta,
+                        o.FerramentaExistente, o.HospedagemDoCliente, Muted, Azul);
+
                     // ── Os dois números ────────────────────────────────────────────────────
                     col.Item().PaddingTop(18).Row(row =>
                     {
@@ -158,6 +164,23 @@ public class OrcamentoPdfService
                                 .FontSize(8).FontColor(Muted);
                         });
                     });
+
+                    // ⚠️ ITEM A ITEM — pedido do dono: "detalhar o orçamento... valor por
+                    // estação". Vem do JSON gravado no momento do cálculo, nunca recalculado
+                    // aqui: ver o comentário de `ItensDeCustoJson` no modelo.
+                    var itensDeCusto = string.IsNullOrWhiteSpace(o.ItensDeCustoJson) ? null
+                        : System.Text.Json.JsonSerializer.Deserialize<List<CalculadoraDeOrcamento.ItemDeCusto>>(o.ItensDeCustoJson);
+                    if (itensDeCusto is { Count: > 0 })
+                    {
+                        DetalhamentoDeCustoPdf.Desenhar(col, o.JaTemFerramenta ? "ONBOARDING · DETALHAMENTO" : "IMPLANTAÇÃO · DETALHAMENTO",
+                            itensDeCusto.Where(i => i.Grupo == "Implantação").ToList(),
+                            itensDeCusto.Where(i => i.Grupo == "Implantação").Sum(i => i.Valor),
+                            o.ValorImplantacao, Muted, Azul);
+                        DetalhamentoDeCustoPdf.Desenhar(col, o.JaTemFerramenta ? "ADMINISTRAÇÃO MENSAL · DETALHAMENTO" : "MENSALIDADE · DETALHAMENTO",
+                            itensDeCusto.Where(i => i.Grupo == "Mensalidade").ToList(),
+                            itensDeCusto.Where(i => i.Grupo == "Mensalidade").Sum(i => i.Valor),
+                            o.ValorMensal, Muted, Azul);
+                    }
 
                     // ⚠️ O FECHO EXPLICA A CONSEQUÊNCIA DE FECHAR — pedido do dono: "explicando
                     // que se implantar, estaremos dentro do que a lei exige". Preciso no que

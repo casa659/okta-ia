@@ -174,7 +174,11 @@ public class DiagnosticoResultadoModel : PageModel
             .FirstOrDefaultAsync();
 
         var preco = orcamento is null ? null
-            : new PropostaLgpdPdfService.Preco(orcamento.Numero, orcamento.ValorImplantacao, orcamento.ValorMensal);
+            : new PropostaLgpdPdfService.Preco(orcamento.Numero, orcamento.ValorImplantacao, orcamento.ValorMensal,
+                Itens: string.IsNullOrWhiteSpace(orcamento.ItensDeCustoJson) ? null
+                    : System.Text.Json.JsonSerializer.Deserialize<List<CalculadoraDeOrcamento.ItemDeCusto>>(orcamento.ItensDeCustoJson),
+                Maquinas: orcamento.MaquinasTotal,
+                HospedagemDoCliente: orcamento.HospedagemDoCliente);
 
         var postura = await _postura.DeAsync(empresa.Id);
 

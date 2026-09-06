@@ -164,6 +164,7 @@ public class OrcamentosModel : PageModel
             memoria += $"\n⚠️ Mensalidade definida à mão: R$ {vm:N2} (a conta deu R$ {conta.ValorMensal:N2}).";
         }
         alvo.MemoriaDeCalculo = memoria;
+        alvo.ItensDeCustoJson = System.Text.Json.JsonSerializer.Serialize(conta.Itens);
         alvo.ValidaAte = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(_calculadora.Parametros.ValidadeDias));
 
         if (novo)

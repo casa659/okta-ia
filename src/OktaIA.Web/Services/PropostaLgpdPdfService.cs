@@ -48,7 +48,15 @@ public class PropostaLgpdPdfService
     private const string Fundo = "#0B1220";
 
     /// <summary>O preço, quando já existe um orçamento para esta empresa. Nulo = ainda não orçado.</summary>
-    public record Preco(string Numero, decimal ValorImplantacao, decimal ValorMensal);
+    /// <param name="Itens">
+    /// O detalhamento, item a item — gravado no orçamento no momento do cálculo, nunca
+    /// recalculado aqui. Nulo/vazio = orçamento de antes desta versão, sem detalhamento salvo.
+    /// </param>
+    /// <param name="Maquinas">Para o fluxograma. Zero quando não há orçamento, e o desenho some.</param>
+    /// <param name="HospedagemDoCliente">Idem — decide o texto da caixa do servidor no fluxograma.</param>
+    public record Preco(string Numero, decimal ValorImplantacao, decimal ValorMensal,
+        List<CalculadoraDeOrcamento.ItemDeCusto>? Itens = null,
+        int Maquinas = 0, bool HospedagemDoCliente = false);
 
     // ── Declarado: a partir das respostas da planilha ───────────────────────────────────────
 
@@ -341,6 +349,13 @@ public class PropostaLgpdPdfService
                     // ── O corpo: declarado ou medido, conforme o caso ───────────────────────
                     corpo(col);
 
+                    // ⚠️ COMO FUNCIONA, ANTES DO PREÇO — pedido do dono: "o fluxograma mostrando
+                    // como vai funcionar a estrutura, a internet, nuvem, estações, a API, o
+                    // Wazuh". Mesmo desenho do orçamento (FluxogramaDaSolucao) — explica o
+                    // MECANISMO do serviço, nunca confundir com o mapa de risco acima.
+                    FluxogramaDaSolucao.Desenhar(col, preco?.Maquinas ?? 0, jaTemFerramenta,
+                        ferramentaExistente, preco?.HospedagemDoCliente ?? false, Muted, Azul);
+
                     // ── O serviço proposto: uma frase que muda com o que já existe ──────────
                     //
                     // ⚠️ DUAS FRASES, NUNCA UMA SÓ (06/09/2026, pedido do dono). "Implantar" e
@@ -386,8 +401,22 @@ public class PropostaLgpdPdfService
                                 c.Item().PaddingTop(4).Text($"R$ {p.ValorMensal:N2}").FontSize(19).Bold();
                             });
                         });
-                        col.Item().PaddingTop(4).Text($"Ref. orçamento {p.Numero}. Detalhamento do escopo no documento anexo.")
-                            .FontSize(8).FontColor(Muted);
+                        col.Item().PaddingTop(4).Text($"Ref. orçamento {p.Numero}.").FontSize(8).FontColor(Muted);
+
+                        // ⚠️ ITEM A ITEM — pedido do dono: "detalhar o orçamento... valor por
+                        // estação". Nunca recalculado aqui: vem do que foi gravado no orçamento
+                        // no momento do cálculo. Ver o comentário de `ItensDeCustoJson`.
+                        if (p.Itens is { Count: > 0 } itensDeCusto)
+                        {
+                            DetalhamentoDeCustoPdf.Desenhar(col, jaTemFerramenta ? "ONBOARDING · DETALHAMENTO" : "IMPLANTAÇÃO · DETALHAMENTO",
+                                itensDeCusto.Where(i => i.Grupo == "Implantação").ToList(),
+                                itensDeCusto.Where(i => i.Grupo == "Implantação").Sum(i => i.Valor),
+                                p.ValorImplantacao, Muted, Azul);
+                            DetalhamentoDeCustoPdf.Desenhar(col, jaTemFerramenta ? "ADMINISTRAÇÃO MENSAL · DETALHAMENTO" : "MENSALIDADE · DETALHAMENTO",
+                                itensDeCusto.Where(i => i.Grupo == "Mensalidade").ToList(),
+                                itensDeCusto.Where(i => i.Grupo == "Mensalidade").Sum(i => i.Valor),
+                                p.ValorMensal, Muted, Azul);
+                        }
 
                         // ⚠️ O FECHO EXPLICA A CONSEQUÊNCIA DE ASSINAR, e é PRECISO no que promete
                         // (pedido do dono: "explicando que se implantar, estaremos dentro do que a
