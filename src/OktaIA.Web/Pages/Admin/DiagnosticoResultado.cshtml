@@ -21,9 +21,14 @@
            style="padding:8px 14px; font-size:11.5px; background:rgba(77,155,255,.13); border-color:rgba(77,155,255,.38); color:#4D9BFF;">
             Baixar relatório PDF
         </a>
+        @* ⚠️ O RÓTULO DIZ O QUE VAI SAIR (06/09/2026), e só muda onde o backend também muda.
+           Hoje SÓ LGPD tem proposta exclusiva (ver OnGetPropostaAsync) — um diagnóstico puro de
+           CIS/ISO/NIST ainda cai na proposta geral, então o botão continua dizendo "Gerar
+           proposta" para eles. Rotular como exclusivo algo que sai igual ao de sempre seria o
+           próprio botão mentindo sobre o documento que ele gera. *@
         <a href="?id=@d.Id&handler=Proposta" class="adm-btn"
            style="padding:8px 14px; font-size:11.5px; background:rgba(0,224,164,.13); border-color:rgba(0,224,164,.38); color:#00E0A4;">
-            Gerar proposta
+            @(string.Equals(Model.EscopoUnico, "LGPD", StringComparison.OrdinalIgnoreCase) ? "Gerar proposta LGPD" : "Gerar proposta")
         </a>
         <a href="/Admin/Diagnostico?id=@d.Id" class="adm-btn" style="padding:8px 14px; font-size:11.5px;">Editar respostas</a>
         <a href="/Admin/Diagnosticos?empresa=@d.CompanyId" class="adm-btn" style="padding:8px 14px; font-size:11.5px;">Voltar</a>

@@ -124,6 +124,28 @@ public static class CalculadoraDoDiagnostico
     }
 
     /// <summary>
+    /// Se um DOMÍNIO deve entrar na conta: o portão de contexto abriu, OU existe resposta real
+    /// para alguma pergunta dele — o que vier primeiro.
+    ///
+    /// ⚠️ ACHADO EM 06/09/2026, com a planilha de framework. `dev.dadosprod` ("dado de produção é
+    /// usado em teste?") é a única pergunta de LGPD dentro de DevSecOps, e o domínio só abre com
+    /// `perfil.desenvolve = sim/parcial` — uma pergunta que NÃO tem etiqueta de framework nenhuma.
+    /// A planilha LGPD nunca traz essa pergunta, então o portão nunca abre, e um "sim" respondido
+    /// de verdade (o pior caso: dado de produção em teste) desaparecia da conta em silêncio — nem
+    /// no risco, nem na cobertura. O cliente respondeu, e a resposta sumia.
+    ///
+    /// Uma resposta gravada é prova mais forte de que o domínio se aplica do que a ausência de uma
+    /// pergunta de contexto que ninguém fez. Continua fechado quando não há gate ABERTO nem
+    /// resposta nenhuma dentro — só aí um domínio de fato não se aplica.
+    /// </summary>
+    public static bool DominioVisivel(DominioDeSeguranca dominio,
+        IReadOnlyDictionary<string, string?> respostas, IReadOnlyDictionary<string, DiagnosticoResposta> porCodigo)
+    {
+        if (Visivel(dominio.SomenteSe, respostas)) { return true; }
+        return dominio.Perguntas.Any(p => porCodigo.ContainsKey(p.Codigo));
+    }
+
+    /// <summary>
     /// Pergunta de qualidade: só aparece quando o controle PAI, que pontua, já existe. É o que
     /// alimenta maturidade em vez de cobertura.
     /// </summary>
@@ -149,7 +171,7 @@ public static class CalculadoraDoDiagnostico
 
         foreach (var dominio in CatalogoDeDominios.Todos)
         {
-            if (!Visivel(dominio.SomenteSe, respostas)) { continue; }
+            if (!DominioVisivel(dominio, respostas, porCodigo)) { continue; }
 
             decimal pesoCob = 0, notaCob = 0, pesoQual = 0, notaQual = 0;
             int visiveis = 0, respondidas = 0;
@@ -262,7 +284,7 @@ public static class CalculadoraDoDiagnostico
 
         foreach (var dominio in CatalogoDeDominios.Todos)
         {
-            if (!Visivel(dominio.SomenteSe, respostas)) { continue; }
+            if (!DominioVisivel(dominio, respostas, porCodigo)) { continue; }
 
             foreach (var pergunta in dominio.Perguntas)
             {

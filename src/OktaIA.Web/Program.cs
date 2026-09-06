@@ -76,8 +76,11 @@ builder.Services.AddScoped<PosturaLgpd>();
 builder.Services.AddScoped<AvisoDeAlerta>();
 builder.Services.AddSingleton<RelatorioPdfService>();
 builder.Services.AddSingleton<PropostaComercialPdfService>();
+// A proposta exclusiva de LGPD — para diagnóstico que tocou um framework só. Ver o comentário
+// da classe: deliberadamente pequena, sem a narrativa fixa da plataforma inteira.
+builder.Services.AddSingleton<PropostaLgpdPdfService>();
 builder.Services.AddSingleton<DiagnosticoPdfService>();
-// A planilha de levantamento por framework: gera e lê. Sem estado, um s� basta.
+// A planilha de levantamento por framework: gera e lê. Sem estado, um s� basta.
 builder.Services.AddSingleton<OktaIA.Web.Services.Diagnostico.PlanilhaDoFramework>();
 builder.Services.AddSingleton<TermoAutorizacaoPdfService>();
 builder.Services.AddSingleton<RoteiroPdfService>();

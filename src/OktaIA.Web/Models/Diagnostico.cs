@@ -79,6 +79,23 @@ public class Diagnostico
 
     public string? Observacoes { get; set; }
 
+    /// <summary>
+    /// O prefixo do framework, quando este diagnóstico nasceu de UMA planilha (ex.: "LGPD").
+    /// Nulo para o levantamento completo, feito pelo questionário.
+    ///
+    /// ⚠️ FATO GRAVADO NA ORIGEM, NUNCA DERIVADO DAS ETIQUETAS DAS PERGUNTAS (06/09/2026). A
+    /// primeira tentativa foi inferir o "framework único" olhando os `Frameworks` das perguntas
+    /// respondidas — e não funciona: um controle costuma carregar VÁRIAS etiquetas ao mesmo tempo
+    /// ("LGPD art. 46", "CIS 3.6", "ISO A.8.24" na mesma pergunta), porque os frameworks se
+    /// sobrepõem de propósito. Isso faz até um diagnóstico "só LGPD" tocar CIS e ISO ao mesmo
+    /// tempo — a inferência nunca fecha num framework só. Só o AUTOR sabe se a planilha era de
+    /// LGPD; ninguém deriva isso depois do fato.
+    ///
+    /// É o que decide se `/Admin/DiagnosticoResultado` oferece a proposta EXCLUSIVA do framework
+    /// em vez da proposta da plataforma inteira.
+    /// </summary>
+    public string? OrigemFramework { get; set; }
+
     // ── Números derivados, GRAVADOS ao concluir ─────────────────────────────
     // Recalcular na leitura faria o relatório entregue ao cliente mudar sozinho quando o catálogo
     // de perguntas evoluísse — o PDF que ele guardou deixaria de bater com a tela. Congela-se.

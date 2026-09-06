@@ -138,6 +138,7 @@ public class DiagnosticosModel : PageModel
         {
             CompanyId = empresa.Id,
             Titulo = $"Levantamento {alvo.Nome} · planilha",
+            OrigemFramework = alvo.Prefixo,
             Status = StatusDiagnostico.EmAndamento,
             CriadoPor = User.Identity?.Name ?? "desconhecido",
             Respondente = string.IsNullOrWhiteSpace(respondente) ? null : respondente.Trim(),

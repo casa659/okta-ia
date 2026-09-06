@@ -24,18 +24,34 @@ public class DiagnosticoResultadoModel : PageModel
     private readonly IAnalisadorDeDiagnostico _analisador;
     private readonly AdminAuditService _auditoria;
     private readonly PropostaComercialPdfService _proposta;
+    private readonly PropostaLgpdPdfService _propostaLgpd;
+    private readonly PosturaLgpd _postura;
     private readonly DiagnosticoPdfService _relatorio;
 
     public DiagnosticoResultadoModel(ApplicationDbContext db, IAnalisadorDeDiagnostico analisador,
         AdminAuditService auditoria, PropostaComercialPdfService proposta,
+        PropostaLgpdPdfService propostaLgpd, PosturaLgpd postura,
         DiagnosticoPdfService relatorio)
     {
         _db = db;
         _analisador = analisador;
         _auditoria = auditoria;
         _proposta = proposta;
+        _propostaLgpd = propostaLgpd;
+        _postura = postura;
         _relatorio = relatorio;
     }
+
+    /// <summary>
+    /// O framework deste diagnóstico, quando ele nasceu de uma planilha — o que decide se a tela
+    /// oferece a proposta EXCLUSIVA do framework em vez da proposta da plataforma inteira.
+    ///
+    /// ⚠️ É `Diagnostico.OrigemFramework`, direto — nunca inferido das etiquetas das perguntas
+    /// respondidas. Uma primeira versão tentou inferir e não fechava: um controle carrega várias
+    /// etiquetas ao mesmo tempo ("LGPD art. 46", "CIS 3.6", "ISO A.8.24" na mesma pergunta), então
+    /// até um diagnóstico só-LGPD tocava CIS e ISO juntos. Ver o comentário do campo no modelo.
+    /// </summary>
+    public string? EscopoUnico { get; private set; }
 
     public Models.Diagnostico? Diagnostico { get; private set; }
     public string? EmpresaNome { get; private set; }
@@ -92,14 +108,32 @@ public class DiagnosticoResultadoModel : PageModel
     /// <summary>
     /// Gera a proposta comercial já com este diagnóstico dentro.
     ///
-    /// É o mesmo documento de sempre — não um segundo PDF paralelo. Duas propostas com números
-    /// diferentes circulando no mesmo cliente é como uma consultoria perde a conversa.
+    /// ⚠️ DUAS PORTAS PARA DOCUMENTOS DIFERENTES (06/09/2026, pedido do dono: "a proposta deve
+    /// ser exclusiva para LGPD, somente LGPD" e "100% em cima da resposta do Excel"). Quando o
+    /// diagnóstico toca um framework só (<see cref="EscopoUnico"/> não nulo), a proposta da
+    /// PLATAFORMA INTEIRA — módulos, ROI, scanner de vulnerabilidade — deixa de fazer sentido: ela
+    /// citaria coisa nenhuma do que foi de fato perguntado. Neste caso sai a proposta
+    /// <see cref="PropostaLgpdPdfService"/>, pequena e presa ao que existe.
+    ///
+    /// Fora desse caso — diagnóstico completo, vários domínios — continua o mesmo documento de
+    /// sempre. Duas propostas com números diferentes circulando no mesmo cliente é como uma
+    /// consultoria perde a conversa.
     /// </summary>
     public async Task<IActionResult> OnGetPropostaAsync(int id)
     {
         if (!await CarregarAsync(id)) { return RedirectToPage("/Admin/Diagnosticos"); }
 
         var empresa = Diagnostico!.Company!;
+
+        // ⚠️ SÓ LGPD, POR AGORA. O pedido do dono foi específico a LGPD; um diagnóstico puro de
+        // outro framework (CIS, ISO, NIST) ainda cai na proposta geral — construir a versão
+        // escopada de cada um sem um pedido real seria gastar em cima de um formato que pode
+        // não servir a nenhum dos três.
+        if (string.Equals(EscopoUnico, "LGPD", StringComparison.OrdinalIgnoreCase))
+        {
+            return await GerarPropostaLgpdAsync(empresa);
+        }
+
         var achados = await _db.Vulnerabilities
             .Where(v => v.CompanyId == empresa.Id && v.FonteScan).ToListAsync();
         var ativos = await _db.Assets.Where(a => a.CompanyId == empresa.Id).ToListAsync();
@@ -115,6 +149,49 @@ public class DiagnosticoResultadoModel : PageModel
             $"{empresa.Nome} · {Diagnostico.Titulo}", User.Identity?.Name ?? "—");
 
         var nome = $"proposta-comercial-lokta-ia-{empresa.Nome.Replace(" ", "-").ToLowerInvariant()}.pdf";
+        return File(pdf, "application/pdf", nome);
+    }
+
+    /// <summary>
+    /// A proposta exclusiva de LGPD. Ver o comentário de <see cref="OnGetPropostaAsync"/> para o
+    /// porquê da bifurcação.
+    ///
+    /// ⚠️ MEDIDO VENCE DECLARADO. Antes de usar as respostas da planilha, pergunta a
+    /// `PosturaLgpd` se a empresa já tem conector — se tiver, o documento usa o que foi MEDIDO
+    /// (Wazuh), porque ignorar um fato para citar uma opinião seria o próprio módulo desmentindo
+    /// a si mesmo. Pedido do dono, 06/09/2026: "se a empresa já estiver sendo monitorada pelo
+    /// Wazuh, na proposta tem que ser com base no relatório do Wazuh".
+    ///
+    /// ⚠️ O PARCEIRO E O PREÇO VÊM DO ORÇAMENTO, quando existe um para a mesma empresa — é lá que
+    /// mora `ParceiroNome` e os valores fechados. Sem orçamento, a proposta sai sem preço: não é
+    /// erro, é a ordem natural quando o levantamento chega antes da negociação comercial.
+    /// </summary>
+    private async Task<IActionResult> GerarPropostaLgpdAsync(Company empresa)
+    {
+        var orcamento = await _db.Orcamentos.AsNoTracking()
+            .Where(o => o.CompanyId == empresa.Id)
+            .OrderByDescending(o => o.CriadaEm)
+            .FirstOrDefaultAsync();
+
+        var preco = orcamento is null ? null
+            : new PropostaLgpdPdfService.Preco(orcamento.Numero, orcamento.ValorImplantacao, orcamento.ValorMensal);
+
+        var postura = await _postura.DeAsync(empresa.Id);
+
+        var trataDadosDeCriancas = orcamento?.TrataDadosDeCriancas ?? false;
+
+        var pdf = postura.Implantado
+            ? _propostaLgpd.GerarMedido(empresa.Nome, empresa.Cnpj, orcamento?.ParceiroNome, postura, preco,
+                trataDadosDeCriancas)
+            : _propostaLgpd.GerarDeclarado(empresa.Nome, empresa.Cnpj, orcamento?.ParceiroNome,
+                Diagnostico!, Riscos, preco, trataDadosDeCriancas);
+
+        await _auditoria.RegistrarAsync("diagnostico.proposta.lgpd",
+            $"{empresa.Nome} · {(postura.Implantado ? "medido" : "declarado")}"
+            + (orcamento?.ParceiroNome is { Length: > 0 } parc ? $" · via {parc}" : ""),
+            User.Identity?.Name ?? "—");
+
+        var nome = $"proposta-lgpd-{Slug(empresa.Nome)}.pdf";
         return File(pdf, "application/pdf", nome);
     }
 
@@ -183,6 +260,8 @@ public class DiagnosticoResultadoModel : PageModel
             .Where(a => a.DiagnosticoId == id)
             .OrderByDescending(a => a.GeradaEm)
             .FirstOrDefaultAsync();
+
+        EscopoUnico = Diagnostico.OrigemFramework;
 
         return true;
     }
