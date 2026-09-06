@@ -102,7 +102,14 @@ done
 # ── 4. O usuário do L'okta ──────────────────────────────────────────────────
 titulo "4/4 · Criando o usuário somente-leitura do L'okta"
 
-SENHA_LOKTA=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)
+# ⚠️ `openssl rand`, e NUNCA `tr -dc ... </dev/urandom | head -c 32`.
+#
+# Aquele pipe derrubou a primeira instalação real (06/09/2026): o `head` fecha o
+# cano ao juntar os 32 caracteres, o `tr` leva SIGPIPE e morre com 141, e o
+# `set -o pipefail` mata o script inteiro. O Wazuh ficou instalado e o FIREWALL
+# NÃO — a máquina passou minutos com a 9200 aberta para a internet. Sem pipe,
+# sem armadilha.
+SENHA_LOKTA=$(openssl rand -hex 16)
 
 # O papel dá EXATAMENTE o que o conector usa e nada além:
 #   - `_cat/indices/wazuh-alerts-*` no teste de conexão  -> cluster_monitor + indices_monitor
