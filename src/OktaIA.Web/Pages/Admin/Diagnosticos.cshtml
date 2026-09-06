@@ -140,10 +140,23 @@
                     @* Fechado o levantamento, o que se quer abrir é o RELATÓRIO — o questionário
                        vira consulta. Por isso ele vem primeiro e destacado; "Abrir" continua ali
                        para conferir ou corrigir uma resposta. *@
-                    @if (d.TemRelatorio)
+                    @* ⚠️ A PORTA APARECE ANTES DA CONCLUSÃO (06/09/2026). O link ficava escondido
+                       até o diagnóstico ser concluído, mas `DiagnosticoResultado` sempre soube
+                       trabalhar em andamento — ele calcula os riscos na hora justamente "para o
+                       consultor já enxergar o mapa enquanto preenche". A capacidade existia e o
+                       caminho até ela não: quem importou uma planilha via 8 respostas na lista e
+                       nenhum botão que levasse ao relatório ou à proposta.
+
+                       O rótulo muda porque as duas coisas são diferentes: concluído entrega
+                       números CONGELADOS, em andamento entrega uma leitura de agora, que muda a
+                       cada resposta nova. Chamar as duas de "Relatório" faria alguém mandar ao
+                       cliente uma prévia achando que era o documento final. *@
+                    @if (d.Respostas > 0)
                     {
                         <a href="/Admin/DiagnosticoResultado?id=@d.Id" class="adm-btn"
-                           style="padding:6px 12px; font-size:11px; background:rgba(0,224,164,.14); border-color:rgba(0,224,164,.4); color:#00E0A4;">Relatório</a>
+                           style="padding:6px 12px; font-size:11px; @(d.TemRelatorio
+                               ? "background:rgba(0,224,164,.14); border-color:rgba(0,224,164,.4); color:#00E0A4;"
+                               : "")">@(d.TemRelatorio ? "Relatório" : "Prévia do relatório")</a>
                     }
                     <a href="/Admin/Diagnostico?id=@d.Id" class="adm-btn" style="padding:6px 12px; font-size:11px;">@(d.TemRelatorio ? "Respostas" : "Abrir")</a>
                     @if (d.Status != OktaIA.Web.Models.StatusDiagnostico.Arquivado)

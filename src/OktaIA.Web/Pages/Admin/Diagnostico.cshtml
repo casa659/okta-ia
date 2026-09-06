@@ -47,6 +47,24 @@
     </div>
 }
 
+@* ⚠️ EM ANDAMENTO TAMBÉM TEM PORTA (06/09/2026). Antes o acesso ao relatório vivia só dentro do
+   cartão "concluído": quem estava preenchendo — ou quem acabara de importar uma planilha — não
+   tinha nenhum caminho até ele, embora a tela de resultado sempre tenha funcionado assim. Ver o
+   comentário equivalente na lista. *@
+@if (!temRelatorio && d.Respostas.Count > 0)
+{
+    <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid #4D9BFF; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <span style="font-size:12.5px; color:#D4DFEC;">
+            Levantamento em andamento, com @d.Respostas.Count resposta(s). Dá para ver o relatório e
+            a proposta agora — os números são de <strong>agora</strong> e mudam a cada resposta nova.
+            Concluir é o que os congela para entregar ao cliente.
+        </span>
+        <span style="margin-left:auto;">
+            <a href="/Admin/DiagnosticoResultado?id=@d.Id" class="adm-btn" style="padding:6px 13px; font-size:11px;">Prévia do relatório</a>
+        </span>
+    </div>
+}
+
 @if (temRelatorio)
 {
     <div class="adm-card" style="padding:13px 16px; margin-bottom:14px; border-left:2px solid @(arquivado ? "#5A7191" : "#00E0A4"); display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
