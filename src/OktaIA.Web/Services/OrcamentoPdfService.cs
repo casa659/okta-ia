@@ -82,6 +82,21 @@ public class OrcamentoPdfService
                         {
                             c.Item().PaddingTop(3).Text(string.Join("  ·  ", linha)).FontSize(9).FontColor(Muted);
                         }
+
+                        // ⚠️ SÓ QUANDO É REVENDA. A ressalva vai DENTRO do arquivo, e não só na
+                        // tela de quem gerou: este PDF é o que circula até quem vai pagar, e sem
+                        // a frase o valor abaixo seria lido como o preço ao cliente final — que o
+                        // parceiro é quem define, e a L'okta não tem por que saber qual é.
+                        if (!string.IsNullOrWhiteSpace(o.ParceiroNome))
+                        {
+                            c.Item().PaddingTop(6).Text(t =>
+                            {
+                                t.Span("Proposta encaminhada por ").FontSize(8.5f).FontColor(Muted);
+                                t.Span(o.ParceiroNome).FontSize(8.5f).Bold().FontColor(Muted);
+                                t.Span(" — o valor abaixo é o repasse ao parceiro; o preço ao cliente final é definido por ele.")
+                                    .FontSize(8.5f).FontColor(Muted);
+                            });
+                        }
                     });
 
                     // ── O escopo, em uma frase ─────────────────────────────────────────────

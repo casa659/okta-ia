@@ -122,6 +122,7 @@ public class OrcamentosModel : PageModel
         alvo.Contato = Limpo(Entrada.Contato);
         alvo.Email = Limpo(Entrada.Email);
         alvo.Telefone = Limpo(Entrada.Telefone);
+        alvo.ParceiroNome = Limpo(Entrada.ParceiroNome);
 
         alvo.EstacoesWindows = Math.Max(0, Entrada.EstacoesWindows);
         alvo.EstacoesOutras = Math.Max(0, Entrada.EstacoesOutras);

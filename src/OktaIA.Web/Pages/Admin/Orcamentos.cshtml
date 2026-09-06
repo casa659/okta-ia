@@ -49,6 +49,10 @@
                         @OrcamentosModel.RotuloStatus(item.Status)
                     </span>
                 </div>
+                @if (item.ParceiroNome is { Length: > 0 } parc)
+                {
+                    <div class="l2" style="color:#8A96AB;">via @parc</div>
+                }
                 <div class="l2">
                     <span class="mono">@item.Numero</span>
                     <span>@item.MaquinasTotal máq.</span>
@@ -123,6 +127,16 @@
                     <label>
                         <span>Telefone</span>
                         <input asp-for="Entrada.Telefone" maxlength="30" />
+                    </label>
+                    @* ⚠️ SÓ PREENCHE QUANDO É REVENDA. "Empresa" acima continua sendo o ambiente
+                       avaliado (a escola com 10 máquinas); este campo é só o canal — quem trouxe
+                       o cliente e para quem o preço é combinado. Vazio = venda direta, e é o caso
+                       comum: nenhum texto novo aparece no PDF. *@
+                    <label class="larga">
+                        <span>Revenda por (opcional)</span>
+                        <input asp-for="Entrada.ParceiroNome" maxlength="160"
+                               placeholder="Vazio = venda direta. Preencha com o parceiro, ex.: Cleveris Tecnologia LTDA" />
+                        <i>Marca no documento que este valor é o repasse ao parceiro — não o preço ao cliente final dele.</i>
                     </label>
                 </div>
 

@@ -56,6 +56,22 @@ public class OrcamentoMonitoramento
     public int? CompanyId { get; set; }
     public Company? Company { get; set; }
 
+    /// <summary>
+    /// Quem revendeu — nulo quando a proposta é direta.
+    ///
+    /// ⚠️ EXISTE PORQUE "QUEM DECIDE O PREÇO" E "QUEM É ATENDIDO" PASSARAM A SER PESSOAS
+    /// DIFERENTES (06/09/2026, modelo com a Cleveris). <see cref="NomeEmpresa"/> continua sendo
+    /// o ambiente avaliado — a escola com 10 máquinas, o CNPJ que entra no cálculo de máquina e
+    /// no art. 14. Este campo é só o canal: quem trouxe o cliente e para quem o valor de repasse
+    /// é combinado. Sem ele, seis meses depois ninguém saberia por que existe uma proposta para
+    /// uma escola que a L'okta nunca visitou.
+    ///
+    /// ⚠️ NÃO CRIA CADASTRO DE PARCEIRO. Isto é só um rótulo de texto — não há CNPJ, comissão nem
+    /// tabela de desconto por canal. Construir isso agora, com um parceiro só, seria pagar por
+    /// uma estrutura antes de saber a forma que ela precisa ter. Ver o comentário no PDF.
+    /// </summary>
+    public string? ParceiroNome { get; set; }
+
     // ── O levantamento ──────────────────────────────────────────────────────────────────────
     /// <summary>Estações de trabalho Windows.</summary>
     public int EstacoesWindows { get; set; }
