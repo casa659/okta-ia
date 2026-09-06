@@ -31,7 +31,13 @@ public class PosturaLgpd
     /// <param name="Artigo">O dispositivo da Lei nº 13.709/2018, citado pelo número.</param>
     /// <param name="Exige">O que a lei manda, em português de gente.</param>
     /// <param name="Medido">O que a plataforma viu — número, data, nome. Nunca adjetivo.</param>
-    public record Requisito(string Artigo, string Titulo, string Exige, string Medido, Situacao Como);
+    /// <param name="OQueFazer">
+    /// O próximo passo. ⚠️ Requisito que aponta problema e não diz o caminho é meia informação —
+    /// e transfere para quem lê a tarefa de descobrir sozinho o que a própria plataforma já sabe.
+    /// </param>
+    /// <param name="AcaoRotulo">O botão, quando existe uma tela que resolve. Nulo quando não há.</param>
+    public record Requisito(string Artigo, string Titulo, string Exige, string Medido, Situacao Como,
+        string? OQueFazer = null, string? AcaoRotulo = null, string? AcaoUrl = null);
 
     public record Resultado(
         string Empresa,
@@ -121,7 +127,19 @@ public class PosturaLgpd
                     : ativo
                         ? "Conector ativo, mas sem dado nas últimas 24 h — verificar se os agentes estão reportando."
                         : "Nenhum conector ativo. Não há medida técnica de monitoramento em operação.",
-                ativo && recente ? Situacao.Atendido : ativo ? Situacao.Parcial : Situacao.NaoAtendido),
+                ativo && recente ? Situacao.Atendido : ativo ? Situacao.Parcial : Situacao.NaoAtendido,
+                OQueFazer: ativo && recente
+                    ? "Nada a fazer. Confira de tempos em tempos se o número de máquinas bate com "
+                      + "o parque real do cliente — agente que parou some daqui em silêncio."
+                    : ativo
+                        ? "O conector está ativo mas não trouxe dado nas últimas 24 h. Teste a "
+                          + "conexão e confirme, no painel da ferramenta, se os agentes continuam "
+                          + "reportando."
+                        : "Instale o conector desta empresa e faça a primeira sincronização. Sem "
+                          + "isso não há medida técnica de monitoramento em operação — e é essa a "
+                          + "medida que o art. 46 exige.",
+                AcaoRotulo: ativo && recente ? null : "Abrir conectores",
+                AcaoUrl: ativo && recente ? null : $"/Admin/Conectores?empresa={companyId}"),
 
             new("Art. 49", "Sistemas conforme boas práticas",
                 "Estruturar os sistemas de tratamento para atender aos requisitos de segurança e "
@@ -130,7 +148,14 @@ public class PosturaLgpd
                     ? $"{conformidade} achado(s) de conformidade medidos contra o benchmark CIS, "
                       + "item a item, com o caminho de correção."
                     : "Nenhuma auditoria de configuração registrada no período.",
-                conformidade > 0 ? Situacao.Atendido : Situacao.NaoAtendido),
+                conformidade > 0 ? Situacao.Atendido : Situacao.NaoAtendido,
+                OQueFazer: conformidade > 0
+                    ? "Trate os achados como projeto, não como emergência: cada item corrigido "
+                      + "some do relatório do mês seguinte, e é a nota subindo que se mostra ao cliente."
+                    : "Nenhuma auditoria de configuração chegou. Confirme que há agente instalado "
+                      + "nas máquinas — é ele que roda o benchmark e reporta.",
+                AcaoRotulo: conformidade > 0 ? "Ver os achados" : null,
+                AcaoUrl: conformidade > 0 ? $"/Alertas?empresa={companyId}&q=CIS" : null),
 
             new("Art. 48", "Comunicação de incidente",
                 "Comunicar à ANPD e ao titular incidente que possa acarretar risco relevante, em "
@@ -139,15 +164,35 @@ public class PosturaLgpd
                     ? graves.Count > 0
                         ? $"Capacidade de detecção comprovada: {graves.Count} alerta(s) grave(s) detectado(s), nenhum em aberto."
                         : "Detecção em operação; nenhum alerta grave no período."
-                    : $"{gravesAbertos} alerta(s) grave(s) em aberto. O mais antigo aguarda decisão há {diasParado} dia(s).",
-                gravesAbertos == 0 ? Situacao.Atendido : diasParado >= 3 ? Situacao.NaoAtendido : Situacao.Parcial),
+                    // ⚠️ "há 0 dia(s)" é o tipo de frase que faz a tela parecer quebrada. Zero dia
+                    // é HOJE, e dizer "hoje" ainda é mais informativo: o prazo começou agora.
+                    : $"{gravesAbertos} alerta(s) grave(s) em aberto. O mais antigo aguarda decisão "
+                      + (diasParado == 0 ? "desde hoje." : diasParado == 1 ? "há 1 dia." : $"há {diasParado} dias."),
+                gravesAbertos == 0 ? Situacao.Atendido : diasParado >= 3 ? Situacao.NaoAtendido : Situacao.Parcial,
+                OQueFazer: gravesAbertos == 0
+                    ? "Nada pendente. Mantenha a triagem em dia: é ela que faz o prazo do art. 48 "
+                      + "começar a contar de um fato conhecido, e não de uma descoberta por acaso."
+                    : "Abra cada alerta grave e decida: é incidente de segurança com risco ao "
+                      + "titular, ou não é? Marque como RESOLVIDO o que foi tratado e FALSO POSITIVO "
+                      + "o que não se aplica — decisão registrada é o que prova que houve análise. "
+                      + "Sendo incidente, a comunicação à ANPD e ao titular sai em até 3 dias úteis.",
+                AcaoRotulo: gravesAbertos == 0 ? null : "Triar os graves",
+                AcaoUrl: gravesAbertos == 0 ? null
+                    : $"/Alertas?empresa={companyId}&severidade=Alta&status=Novo"),
 
             new("Art. 6º, X", "Responsabilização e prestação de contas",
                 "Demonstrar a adoção de medidas eficazes e capazes de comprovar a observância da lei.",
                 meses > 0
                     ? $"Há registro em {meses} mês(es). O relatório mensal pode ser emitido e arquivado como evidência datada."
                     : "Sem registro no período — não há o que demonstrar.",
-                meses > 0 ? Situacao.Atendido : Situacao.NaoAtendido),
+                meses > 0 ? Situacao.Atendido : Situacao.NaoAtendido,
+                OQueFazer: meses > 0
+                    ? "Emita o relatório do mês fechado e ARQUIVE — de preferência no mesmo lugar "
+                      + "onde a empresa guarda contratos. Evidência que ninguém sabe onde está não "
+                      + "serve numa fiscalização."
+                    : "Sem registro no período não há o que demonstrar. Resolva primeiro o art. 46.",
+                AcaoRotulo: meses > 0 ? "Emitir relatório do mês" : null,
+                AcaoUrl: meses > 0 ? $"/Relatorios?empresa={companyId}" : null),
         };
 
         // ⚠️ ESTA LISTA É FIXA E É DE PROPÓSITO. Ela não sai de medição porque a plataforma NÃO

@@ -80,9 +80,11 @@
             <div class="lg-prazo">
                 <b>Prazo do art. 48 correndo.</b>
                 O alerta grave mais antigo em aberto está sem decisão há
-                <strong>@r.DiasDesdeGraveMaisAntigo dia(s)</strong>. Se algum deles for incidente
+                <strong>@r.DiasDesdeGraveMaisAntigo dias</strong>. Se algum deles for incidente
                 de segurança com risco relevante ao titular, a comunicação à ANPD e ao titular deve
                 sair em até 3 dias úteis do conhecimento — e a plataforma registra desde quando se soube.
+                <a class="lg-corrigir" style="margin-top:10px"
+                   href="/Alertas?empresa=@Model.Empresa&severidade=Alta&status=Novo">Triar agora</a>
             </div>
         }
 
@@ -100,6 +102,18 @@
                     </div>
                     <p class="lg-exige">@q.Exige</p>
                     <p class="lg-medido">@q.Medido</p>
+
+                    @if (q.OQueFazer is { Length: > 0 } fazer)
+                    {
+                        <div class="lg-fazer">
+                            <span>O QUE FAZER</span>
+                            <p>@fazer</p>
+                            @if (q.AcaoUrl is { Length: > 0 } url)
+                            {
+                                <a class="lg-corrigir" href="@url">@q.AcaoRotulo</a>
+                            }
+                        </div>
+                    }
                 </div>
             }
         </div>
@@ -157,6 +171,11 @@
     .lg-exige { font-size:12.5px; color:#8A96AB; line-height:1.5; margin:0 0 8px; }
     .lg-medido { font-size:13.5px; line-height:1.5; margin:0; padding-left:12px; border-left:2px solid rgba(120,170,255,.3); }
 
+    .lg-fazer { margin-top:12px; padding-top:12px; border-top:1px solid rgba(120,170,255,.1); }
+    .lg-fazer > span { display:block; font-size:9.5px; letter-spacing:.1em; color:#8A96AB; margin-bottom:4px; }
+    .lg-fazer p { font-size:13px; line-height:1.55; margin:0 0 10px; color:#D4DDEA; }
+    .lg-corrigir { display:inline-block; background:rgba(24,48,92,.6); border:1px solid #3D7BFF; color:#EAF0F8; border-radius:8px; padding:6px 14px; font-size:12px; font-weight:600; text-decoration:none; }
+    .lg-corrigir:hover { background:#0B45DD; }
     .lg-lacunas { margin:12px 0 0; padding-left:20px; font-size:13.5px; line-height:1.9; color:#B7C4D4; }
     .fraco { color:#8A96AB; font-size:12.5px; }
 </style>

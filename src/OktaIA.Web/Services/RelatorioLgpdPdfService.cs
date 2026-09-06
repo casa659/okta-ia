@@ -141,6 +141,18 @@ public class RelatorioLgpdPdfService
 
                             c.Item().PaddingTop(6).BorderLeft(2).BorderColor(CorImpressa(q.Como))
                                 .PaddingLeft(8).Text(q.Medido).FontSize(9.5f).LineHeight(1.4f);
+
+                            // ⚠️ O "o que fazer" entra no PDF do cliente também. Relatório que
+                            // aponta pendência sem dizer o caminho vira cobrança; com o caminho,
+                            // vira plano — e é assim que ele volta para a próxima reunião.
+                            if (!string.IsNullOrWhiteSpace(q.OQueFazer))
+                            {
+                                c.Item().PaddingTop(8).Text(tt =>
+                                {
+                                    tt.Span("O que fazer: ").FontSize(9).Bold().FontColor(Muted);
+                                    tt.Span(q.OQueFazer).FontSize(9).FontColor(Muted).LineHeight(1.4f);
+                                });
+                            }
                         });
                     }
 
