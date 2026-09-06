@@ -43,6 +43,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     // ---------- Propostas comerciais ----------
     public DbSet<OrcamentoMonitoramento> Orcamentos => Set<OrcamentoMonitoramento>();
 
+    /// <summary>Uma linha só (Id = 1) com os preços em vigor. Ver ParametrosOrcamento.</summary>
+    public DbSet<Services.ParametrosOrcamento> ParametrosOrcamento => Set<Services.ParametrosOrcamento>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

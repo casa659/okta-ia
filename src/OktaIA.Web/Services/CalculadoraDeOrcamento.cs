@@ -1,19 +1,32 @@
+using Microsoft.EntityFrameworkCore;
 using OktaIA.Web.Models;
 
 namespace OktaIA.Web.Services;
 
 /// <summary>
-/// Os números que decidem o preço. Ficam em configuração para mudarem sem deploy.
+/// Os números que decidem o preço. **Uma linha no banco**, editável na própria tela.
 ///
-/// ⚠️ ESTES VALORES SÃO DO DONO, NÃO DO CÓDIGO. Os padrões abaixo existem para a tela nunca
-/// mostrar R$ 0 — mas nenhum deles saiu de pesquisa de mercado, e apresentá-los como "o preço
-/// certo" seria dar a um chute a aparência de dado. Ajuste em `Propostas:*` (App Settings).
+/// ⚠️ ESTES VALORES SÃO DO DONO, NÃO DO CÓDIGO. Nenhum deles saiu de pesquisa de mercado, e
+/// apresentá-los como "o preço certo" seria dar a um chute a aparência de dado.
+///
+/// ⚠️ POR QUE SAIU DA CONFIGURAÇÃO PARA O BANCO (06/09/2026, pedido do dono: "permitir que o adm
+/// consiga alterar os preços"): App Setting muda preço com reinício do site e acesso ao Azure —
+/// ou seja, na prática só eu mudaria. Preço é decisão comercial e muda no meio de uma negociação;
+/// tem de estar a um clique de quem vende. A configuração `Propostas:*` continua valendo como
+/// SEMENTE: é dela que a primeira linha nasce, e depois disso o banco manda.
 ///
 /// O que se sabe com precisão é o CUSTO: um VPS de 8 GB que aguenta o Wazuh de um cliente sai por
 /// R$ 44/mês (Hostinger KVM 2, medido em 06/09/2026). O resto é decisão comercial.
 /// </summary>
 public class ParametrosOrcamento
 {
+    /// <summary>Sempre 1: existe uma tabela de parâmetros com uma linha só.</summary>
+    public int Id { get; set; } = 1;
+
+    /// <summary>Quem mexeu por último, e quando. Preço que muda sem rastro vira discussão.</summary>
+    public DateTimeOffset? AtualizadoEm { get; set; }
+    public string? AtualizadoPor { get; set; }
+
     /// <summary>Base da mensalidade, antes de contar máquina. Cobre a operação existir.</summary>
     public decimal MensalBase { get; set; } = 600m;
 
@@ -67,11 +80,43 @@ public class ParametrosOrcamento
 /// </summary>
 public class CalculadoraDeOrcamento
 {
-    private readonly ParametrosOrcamento _p;
+    private readonly OktaIA.Web.Data.ApplicationDbContext _db;
+    private readonly ParametrosOrcamento _semente;
+    private ParametrosOrcamento? _cache;
 
-    public CalculadoraDeOrcamento(ParametrosOrcamento parametros) => _p = parametros;
+    public CalculadoraDeOrcamento(OktaIA.Web.Data.ApplicationDbContext db,
+        Microsoft.Extensions.Options.IOptions<ParametrosOrcamento> semente)
+    {
+        _db = db;
+        _semente = semente.Value;
+    }
 
-    public ParametrosOrcamento Parametros => _p;
+    /// <summary>
+    /// Os parâmetros em vigor. Vêm do banco; na primeira vez, nascem da configuração.
+    ///
+    /// ⚠️ Semeia e GRAVA em vez de só devolver os padrões: sem a linha no banco, a tela de edição
+    /// não teria o que editar, e o dono clicaria em salvar num formulário que não existe do outro
+    /// lado.
+    /// </summary>
+    public ParametrosOrcamento Parametros
+    {
+        get
+        {
+            if (_cache is not null) { return _cache; }
+
+            _cache = _db.ParametrosOrcamento.FirstOrDefault(x => x.Id == 1);
+            if (_cache is null)
+            {
+                _semente.Id = 1;
+                _db.ParametrosOrcamento.Add(_semente);
+                _db.SaveChanges();
+                _cache = _semente;
+            }
+            return _cache;
+        }
+    }
+
+    private ParametrosOrcamento _p => Parametros;
 
     public record Resultado(
         int MaquinasTotal,

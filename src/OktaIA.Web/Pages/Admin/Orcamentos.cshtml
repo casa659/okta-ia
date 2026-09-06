@@ -196,6 +196,8 @@
                     <div class="prop-marca">
                         <b>L'okta IA</b>
                         <span>Monitoramento gerenciado</span>
+                        @* ⚠️ `naoimprime` porque este botão não pode sair dentro do próprio PDF. *@
+                        <a class="prop-pdf naoimprime" href="/Admin/Orcamentos?handler=Pdf&id=@a.Id">Baixar PDF</a>
                     </div>
                 </div>
 
@@ -285,8 +287,8 @@
                 </div>
 
                 <p class="fraco">
-                    Para enviar ao cliente: <strong>Ctrl+P → Salvar como PDF</strong>. A impressão
-                    deixa só o orçamento — esta caixa, o questionário e o menu somem.
+                    O <strong>PDF</strong> acima é a via do cliente — sai sem esta caixa, sem custo
+                    e sem margem. Ctrl+P continua funcionando se você preferir imprimir a tela.
                 </p>
             </div>
         }
@@ -308,6 +310,79 @@
                 </p>
             </div>
         }
+        @* ── Os preços, editáveis ──────────────────────────────────────────
+           ⚠️ Ficam aqui, e não numa tela de configuração escondida: preço muda no meio de uma
+           negociação, e quem vende precisa alcançá-lo sem sair de onde está. Fechado por padrão
+           para não competir com o orçamento — mas a um clique. *@
+        <details class="prop-precos naoimprime" @(Model.Parametros_ ? "open" : "")>
+            <summary>Preços em uso · ajustar</summary>
+
+            <form method="post" asp-page-handler="Parametros">
+                <input type="hidden" asp-for="Id" />
+                <div class="prop-campos">
+                    <label>
+                        <span>Mensalidade base</span>
+                        <input name="parametros.MensalBase" type="number" step="0.01" min="0" value="@Model.Parametros.MensalBase" />
+                    </label>
+                    <label>
+                        <span>Máquinas no pacote</span>
+                        <input name="parametros.MaquinasIncluidas" type="number" min="0" value="@Model.Parametros.MaquinasIncluidas" />
+                    </label>
+                    <label>
+                        <span>Máquina adicional</span>
+                        <input name="parametros.MensalPorMaquinaExtra" type="number" step="0.01" min="0" value="@Model.Parametros.MensalPorMaquinaExtra" />
+                    </label>
+                    <label>
+                        <span>Servidor exposto</span>
+                        <input name="parametros.MensalPorServidorExposto" type="number" step="0.01" min="0" value="@Model.Parametros.MensalPorServidorExposto" />
+                    </label>
+                    <label>
+                        <span>Servidor gerenciado</span>
+                        <input name="parametros.MensalHospedagem" type="number" step="0.01" min="0" value="@Model.Parametros.MensalHospedagem" />
+                    </label>
+                    <label>
+                        <span>Custo real do VPS</span>
+                        <input name="parametros.CustoVpsMensal" type="number" step="0.01" min="0" value="@Model.Parametros.CustoVpsMensal" />
+                        <i>Só entra na margem — nunca no preço.</i>
+                    </label>
+                    <label>
+                        <span>Implantação base</span>
+                        <input name="parametros.ImplantacaoBase" type="number" step="0.01" min="0" value="@Model.Parametros.ImplantacaoBase" />
+                    </label>
+                    <label>
+                        <span>Implantação por máquina</span>
+                        <input name="parametros.ImplantacaoPorMaquina" type="number" step="0.01" min="0" value="@Model.Parametros.ImplantacaoPorMaquina" />
+                    </label>
+                    <label>
+                        <span>Fator cobertura estendida</span>
+                        <input name="parametros.FatorEstendida" type="number" step="0.1" min="1" value="@Model.Parametros.FatorEstendida" />
+                    </label>
+                    <label>
+                        <span>Fator 24 × 7</span>
+                        <input name="parametros.Fator24x7" type="number" step="0.1" min="1" value="@Model.Parametros.Fator24x7" />
+                    </label>
+                    <label>
+                        <span>+90 dias de retenção</span>
+                        <input name="parametros.MensalPor90DiasExtras" type="number" step="0.01" min="0" value="@Model.Parametros.MensalPor90DiasExtras" />
+                    </label>
+                    <label>
+                        <span>Validade (dias)</span>
+                        <input name="parametros.ValidadeDias" type="number" min="1" max="365" value="@Model.Parametros.ValidadeDias" />
+                    </label>
+                </div>
+
+                <p class="fraco" style="margin-top:10px">
+                    ⚠️ Mudar aqui vale para os <strong>próximos</strong> orçamentos. Os já emitidos
+                    guardam o valor com que saíram — orçamento é promessa com data.
+                    @if (Model.Parametros.AtualizadoEm is { } q)
+                    {
+                        <text>Última alteração em @q.ToLocalTime().ToString("dd/MM/yyyy HH:mm")@(Model.Parametros.AtualizadoPor is { Length: > 0 } quem ? $" por {quem}" : "").</text>
+                    }
+                </p>
+
+                <button type="submit" class="adm-btn">Salvar preços</button>
+            </form>
+        </details>
     </section>
 </div>
 
@@ -379,6 +454,12 @@
     .prop-vazio, .prop-vazio-grande { color:#8A96AB; font-size:13px; }
     .prop-vazio-grande { border:1px dashed rgba(120,170,255,.2); border-radius:12px; padding:28px; }
     .fraco { color:#8A96AB; font-size:12px; }
+    .prop-pdf { display:inline-block; margin-top:8px; font-size:11px; font-weight:600; color:#3D7BFF; text-decoration:none; border:1px solid #3D7BFF; border-radius:999px; padding:4px 12px; }
+    .prop-pdf:hover { background:rgba(61,123,255,.14); }
+    .prop-precos { margin-top:16px; background:rgba(8,14,24,.6); border:1px solid rgba(120,170,255,.16); border-radius:12px; padding:14px 18px; }
+    .prop-precos > summary { cursor:pointer; font-size:12px; text-transform:uppercase; letter-spacing:.1em; color:#8A96AB; }
+    .prop-precos > summary:hover { color:#EAF0F8; }
+    .prop-precos form { margin-top:14px; }
     .mono { font-family:ui-monospace,'Cascadia Mono',Menlo,monospace; }
 
     /* ⚠️ A VIA DO CLIENTE. `.naoimprime` some, o papel fica branco e a proposta ocupa a folha.

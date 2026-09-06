@@ -35,6 +35,9 @@ public class OrcamentosModel : PageModel
     [BindProperty(SupportsGet = true)] public int? Id { get; set; }
     [BindProperty(SupportsGet = true)] public bool Nova { get; set; }
 
+    /// <summary>Abre a gaveta de preços já aberta — usado ao voltar de salvá-los.</summary>
+    [BindProperty(SupportsGet = true)] public bool Parametros_ { get; set; }
+
     [BindProperty] public OrcamentoMonitoramento Entrada { get; set; } = new()
     {
         Numero = "",
@@ -171,6 +174,67 @@ public class OrcamentosModel : PageModel
 
         TempData["Recado"] = $"Orçamento {p.Numero}: {status}.";
         return RedirectToPage(new { id });
+    }
+
+    /// <summary>
+    /// A via do cliente, em PDF.
+    ///
+    /// ⚠️ Sai do que está GRAVADO, não do que está na tela. Quem alterou o formulário e não
+    /// clicou em "Calcular e salvar" receberia um PDF com valores que o banco não conhece — e
+    /// esse PDF vai para o cliente.
+    /// </summary>
+    public async Task<IActionResult> OnGetPdfAsync(int id, [FromServices] OrcamentoPdfService pdf)
+    {
+        var o = await _db.Orcamentos.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        if (o is null) { return RedirectToPage(); }
+
+        var bytes = pdf.Gerar(o);
+        return File(bytes, "application/pdf", $"{o.Numero} - {Arquivo(o.NomeEmpresa)}.pdf");
+    }
+
+    /// <summary>
+    /// Grava os preços. É o dono mexendo no próprio preço — por isso vai para a auditoria com o
+    /// nome de quem mexeu.
+    ///
+    /// ⚠️ NÃO recalcula os orçamentos existentes, e é de propósito: orçamento é promessa com
+    /// data. O que o cliente recebeu ontem continua valendo pelo que dizia.
+    /// </summary>
+    public async Task<IActionResult> OnPostParametrosAsync(ParametrosOrcamento parametros)
+    {
+        var atual = _calculadora.Parametros;   // garante a linha existindo
+
+        var alvo = await _db.ParametrosOrcamento.FirstAsync(x => x.Id == 1);
+        alvo.MensalBase = Math.Max(0, parametros.MensalBase);
+        alvo.MaquinasIncluidas = Math.Max(0, parametros.MaquinasIncluidas);
+        alvo.MensalPorMaquinaExtra = Math.Max(0, parametros.MensalPorMaquinaExtra);
+        alvo.MensalPorServidorExposto = Math.Max(0, parametros.MensalPorServidorExposto);
+        alvo.CustoVpsMensal = Math.Max(0, parametros.CustoVpsMensal);
+        alvo.MensalHospedagem = Math.Max(0, parametros.MensalHospedagem);
+        alvo.ImplantacaoBase = Math.Max(0, parametros.ImplantacaoBase);
+        alvo.ImplantacaoPorMaquina = Math.Max(0, parametros.ImplantacaoPorMaquina);
+        alvo.MensalPor90DiasExtras = Math.Max(0, parametros.MensalPor90DiasExtras);
+
+        // Fator abaixo de 1 daria desconto por ampliar a cobertura — o contrário do que ela é.
+        alvo.FatorEstendida = parametros.FatorEstendida < 1m ? 1m : parametros.FatorEstendida;
+        alvo.Fator24x7 = parametros.Fator24x7 < 1m ? 1m : parametros.Fator24x7;
+        alvo.ValidadeDias = Math.Clamp(parametros.ValidadeDias, 1, 365);
+
+        alvo.AtualizadoEm = DateTimeOffset.UtcNow;
+        alvo.AtualizadoPor = User.Identity?.Name;
+
+        await _db.SaveChangesAsync();
+        await _auditoria.RegistrarAsync("Preços do orçamento alterados",
+            $"base R$ {alvo.MensalBase:N2} · máquina extra R$ {alvo.MensalPorMaquinaExtra:N2} · "
+            + $"implantação R$ {alvo.ImplantacaoBase:N2}", User.Identity?.Name ?? "sistema");
+
+        TempData["Recado"] = "Preços atualizados. Orçamentos já emitidos não mudam — cada um guarda o valor com que saiu.";
+        return RedirectToPage(new { id = Id, parametros_ = true });
+    }
+
+    private static string Arquivo(string nome)
+    {
+        var limpo = new string(nome.Where(c => char.IsLetterOrDigit(c) || c is ' ' or '-' or '_').ToArray());
+        return string.IsNullOrWhiteSpace(limpo) ? "orcamento" : limpo.Trim();
     }
 
     /// <summary>
