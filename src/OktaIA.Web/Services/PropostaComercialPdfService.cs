@@ -906,15 +906,42 @@ public class PropostaComercialPdfService
                 });
             }
 
+            // ⚠️ A DESCRIÇÃO MUDA QUANDO O LEVANTAMENTO ESTÁ INCOMPLETO. "0% dos controles
+            // esperados existem" é uma frase sobre a EMPRESA INTEIRA; quando só um recorte foi
+            // perguntado (uma planilha de framework, por exemplo, cobre poucas perguntas do
+            // catálogo), a frase afirma sobre o cliente algo que ninguém verificou — e afirma para
+            // pior, num documento que ele vai ler. Ver a tarja logo abaixo.
             var corCob = r.Cobertura >= 70 ? BrandGreen : r.Cobertura >= 40 ? BrandYellow : BrandRed;
-            Indicador(r.Cobertura.ToString(), "%", "COBERTURA", "dos controles esperados existem", corCob);
+            Indicador(r.Cobertura.ToString(), "%", "COBERTURA",
+                r.Completude >= 80
+                    ? "dos controles esperados existem"
+                    : "dos controles PERGUNTADOS existem", corCob);
             Indicador(r.Maturidade?.ToString("0.0") ?? "—", "/5", "MATURIDADE", "quão bem gerenciado é o que existe", BrandBg);
             Indicador(r.UsoDoInvestimento?.ToString() ?? "—", "%", "USO DO INVESTIMENTO", "do que já foi pago está em uso", BrandBg);
         });
 
+        // ⚠️ LEVANTAMENTO PARCIAL SE DECLARA, e no documento do cliente — não só na tela de quem
+        // o gerou. O relatório técnico já dizia ("Este levantamento está X% preenchido"); a
+        // proposta não dizia nada, e é ela que o cliente lê. Um recorte de perguntas (uma planilha
+        // de framework, uma reunião interrompida) produz cobertura baixa por FALTA DE PERGUNTA, e
+        // sem esta ressalva o número seria lido como diagnóstico do ambiente inteiro. Afirmar para
+        // pior sobre o cliente, por escrito, é o erro que derruba a proposta na primeira reunião.
+        if (r.Completude < 80)
+        {
+            body.Item().PaddingTop(10).Background("#FFF7E8").Padding(11).Text(
+                $"Levantamento parcial: {r.Completude}% das perguntas aplicáveis foram respondidas. "
+                + "Os números acima valem para o que foi perguntado, e não para o ambiente inteiro — "
+                + "as áreas ainda não avaliadas podem estar melhores ou piores que estas. "
+                + "Completar o levantamento é o primeiro passo do escopo desta proposta.")
+                .FontSize(9).FontColor("#7A5A12").LineHeight(1.5f);
+        }
+
         // A separação entre cobertura e maturidade é o argumento comercial inteiro: quando a
         // primeira é alta e a segunda é baixa, o cliente não precisa comprar — precisa operar.
-        if (r.Maturidade is { } mat && r.Cobertura >= 60 && mat < 3m)
+        // ⚠️ Só com levantamento razoavelmente completo: dizer "você já tem a maior parte dos
+        // controles" a partir de oito perguntas seria elogio inventado, do mesmo tamanho do
+        // problema que a tarja acima evita.
+        if (r.Maturidade is { } mat && r.Cobertura >= 60 && mat < 3m && r.Completude >= 80)
         {
             body.Item().PaddingTop(10).Background("#EEF4FF").Padding(11).Text(
                 $"A {empresa.Nome} já tem a maior parte dos controles que se espera de um ambiente do seu porte — a cobertura de " +
