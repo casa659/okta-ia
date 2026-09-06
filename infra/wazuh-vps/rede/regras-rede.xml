@@ -1,0 +1,63 @@
+<!--
+  Vigilância do equipamento de rede a partir de DENTRO da rede.
+
+  POR QUE EXISTE: modem residencial e boa parte do CPE de operadora não exporta
+  syslog — e, quando exporta, mandar o log pela internet até um manager remoto
+  exigiria abrir a 514/udp, que não tem autenticação nem criptografia. Em vez de
+  esperar o aparelho falar, uma máquina que já tem agente OLHA para ele e reporta
+  pelo canal cifrado da 1514 que já existe.
+
+  O QUE ISSO PEGA: o ataque real contra roteador doméstico e de pequena empresa no
+  Brasil não é invasão do aparelho por esporte — é TROCAR O DNS dele para que o
+  site do banco resolva no servidor do golpista. Não aparece em log nenhum da
+  máquina da vítima; aparece na comparação do valor de hoje com o de ontem.
+
+  ⚠️ ALERTA POR MUDANÇA, NUNCA POR VALOR. Não existe lista de DNS "certo" — o dono
+  pode legitimamente usar 8.8.8.8, o do provedor ou um Pi-hole. O que é sempre
+  suspeito é o valor MUDAR sozinho. Daí `check_diff`: a primeira leitura só grava a
+  linha de base e fica calada.
+-->
+<group name="rede,modem,">
+
+  <!-- ── DNS ────────────────────────────────────────────────────────────── -->
+  <rule id="100600" level="0">
+    <if_sid>530</if_sid>
+    <match>ossec: output: 'rede-dns'</match>
+    <description>Rede: leitura periódica dos servidores DNS em uso.</description>
+  </rule>
+
+  <rule id="100601" level="12">
+    <if_sid>100600</if_sid>
+    <check_diff />
+    <description>Rede: os servidores DNS desta máquina MUDARAM — verificar sequestro de DNS no roteador.</description>
+    <group>pci_dss_1.1.1,gdpr_IV_35.7.d,</group>
+  </rule>
+
+  <!-- ── Gateway: IP e MAC ──────────────────────────────────────────────── -->
+  <rule id="100610" level="0">
+    <if_sid>530</if_sid>
+    <match>ossec: output: 'rede-gateway'</match>
+    <description>Rede: leitura periódica do gateway padrão.</description>
+  </rule>
+
+  <rule id="100611" level="12">
+    <if_sid>100610</if_sid>
+    <check_diff />
+    <description>Rede: o gateway padrão MUDOU de endereço ou de MAC — verificar troca de equipamento ou envenenamento de ARP.</description>
+    <group>pci_dss_1.1.1,</group>
+  </rule>
+
+  <!-- ── Painel do modem exposto ────────────────────────────────────────── -->
+  <rule id="100620" level="0">
+    <if_sid>530</if_sid>
+    <match>ossec: output: 'rede-modem-admin'</match>
+    <description>Rede: leitura periódica do painel de administração do modem.</description>
+  </rule>
+
+  <rule id="100621" level="10">
+    <if_sid>100620</if_sid>
+    <check_diff />
+    <description>Rede: a resposta do painel de administração do modem MUDOU — firmware trocado ou configuração alterada.</description>
+  </rule>
+
+</group>
