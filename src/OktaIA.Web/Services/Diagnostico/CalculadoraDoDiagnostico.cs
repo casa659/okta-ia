@@ -89,7 +89,16 @@ public static class CalculadoraDoDiagnostico
         return pergunta.RespostaBoaEhNao ? 1m - bruta : bruta;
     }
 
-    private static SituacaoDoControle Situacao(PerguntaDoDiagnostico pergunta, string? opcao)
+    /// <summary>
+    /// A situação de um controle, dada a opção escolhida.
+    ///
+    /// ⚠️ PÚBLICA E ÚNICA (06/09/2026). Existiam DUAS cópias desta regra — esta e uma `SituacaoDe`
+    /// privada em `Pages/Admin/Diagnostico`. Concordavam, e por isso ninguém notava: duas versões
+    /// que concordam hoje são só duas versões que ainda não divergiram. A importação por planilha
+    /// seria a terceira, e aí a mesma resposta valeria coisas diferentes conforme a porta por onde
+    /// entrou. Quem precisar da conversão chama daqui.
+    /// </summary>
+    public static SituacaoDoControle Situacao(PerguntaDoDiagnostico pergunta, string? opcao)
     {
         if (opcao is null) { return SituacaoDoControle.NaoAvaliado; }
         var nota = Nota(pergunta, opcao);

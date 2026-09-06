@@ -26,6 +26,69 @@
     </div>
 }
 
+@* ══ Levantamento por framework ══════════════════════════════════════════════
+   O menu sai de CatalogoDeFrameworks, que DERIVA a lista das etiquetas das perguntas. Escrever
+   os frameworks aqui na marcação criaria a lista paralela que envelhece sem avisar: etiquetar
+   uma pergunta com um framework novo não o faria aparecer, e a tela continuaria funcionando. *@
+@if (Model.EmpresaSelecionadaId is not null && Model.Frameworks.Count > 0)
+{
+    <div class="adm-card" style="padding:17px 18px; margin-bottom:18px;">
+        <div style="font-size:13.5px; font-weight:600; margin-bottom:4px;">Levantamento por framework</div>
+        <div style="font-size:11.5px; color:#7A8FAB; margin-bottom:6px;">
+            Baixe a planilha, mande ao cliente, e devolva-a aqui: as respostas entram como um
+            diagnóstico novo de <strong style="color:#EAF0F8;">@Model.EmpresaNome</strong>.
+        </div>
+        @* ⚠️ A ressalva fica na TELA e dentro do arquivo. É a mesma regra do resto do módulo: o que
+           volta de uma planilha é DECLARADO, e chamar isso de conformidade é a alegação que o
+           auditor do cliente derruba na primeira pergunta. *@
+        <div style="font-size:10.5px; color:#C98A2E; margin-bottom:14px; line-height:1.55;">
+            São as perguntas do nosso catálogo que tocam controles de cada framework — não é
+            auditoria, não cobre o framework inteiro, e o que vier respondido é declaração do
+            cliente, sem verificação.
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr)); gap:12px;">
+            @foreach (var f in Model.Frameworks)
+            {
+                <div style="background:rgba(5,10,18,.5); border:1px solid rgba(120,170,255,.14); border-radius:10px; padding:14px 15px;">
+                    <div style="font-size:13px; font-weight:600; margin-bottom:3px;">@f.Nome</div>
+                    <div style="font-size:10.5px; color:#7A8FAB; line-height:1.5; margin-bottom:9px; min-height:31px;">@f.Resumo</div>
+                    <div class="oi-mono" style="font-size:10px; color:#4A5D78; margin-bottom:11px;">
+                        @f.Perguntas pergunta(s) · @f.Controles controle(s) tocado(s)
+                    </div>
+
+                    <a class="adm-btn"
+                       href="/Admin/Diagnosticos?handler=Planilha&amp;framework=@f.Prefixo&amp;empresaId=@Model.EmpresaSelecionadaId"
+                       style="display:inline-block; padding:7px 13px; font-size:11.5px; text-decoration:none;">
+                        Baixar planilha (.xlsx)
+                    </a>
+
+                    @* Um formulário POR framework: o arquivo escolhido pertence a este, e um
+                       formulário só na página faria o consultor subir a planilha do CIS achando
+                       que estava subindo a da ISO. *@
+                    <form method="post" asp-page-handler="Importar" enctype="multipart/form-data"
+                          style="margin-top:11px; display:grid; gap:7px;">
+                        <input type="hidden" name="empresaId" value="@Model.EmpresaSelecionadaId" />
+                        <input type="hidden" name="framework" value="@f.Prefixo" />
+                        <input type="file" name="arquivo" required
+                               accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                               style="font-size:11px; color:#7A8FAB;" />
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:7px;">
+                            <input name="respondente" placeholder="Quem respondeu"
+                                   style="width:100%; box-sizing:border-box; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:7px 9px; color:#EAF0F8; font-family:inherit; font-size:11.5px;" />
+                            <input name="cargo" placeholder="Cargo"
+                                   style="width:100%; box-sizing:border-box; background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px; padding:7px 9px; color:#EAF0F8; font-family:inherit; font-size:11.5px;" />
+                        </div>
+                        <button type="submit" class="adm-btn" style="padding:7px 13px; font-size:11.5px;">
+                            Enviar planilha preenchida
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+}
+
 <div class="adm-card" style="padding:17px 18px; margin-bottom:18px;">
     <div style="font-size:13.5px; font-weight:600; margin-bottom:4px;">Novo diagnóstico</div>
     <div style="font-size:11.5px; color:#7A8FAB; margin-bottom:13px;">

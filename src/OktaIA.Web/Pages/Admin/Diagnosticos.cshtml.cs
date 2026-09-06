@@ -34,6 +34,12 @@ public class DiagnosticosModel : PageModel
         bool TemRelatorio, bool EhExemplo);
 
     public List<LinhaDiagnostico> Itens { get; private set; } = [];
+
+    /// <summary>
+    /// Os frameworks do menu. Vêm de <see cref="CatalogoDeFrameworks"/>, que os DERIVA das
+    /// etiquetas das perguntas — nunca de uma lista escrita aqui, que envelheceria calada.
+    /// </summary>
+    public IReadOnlyList<CatalogoDeFrameworks.Framework> Frameworks => CatalogoDeFrameworks.Todos;
     public List<(int Id, string Nome)> EmpresasDisponiveis { get; private set; } = [];
     public int? EmpresaSelecionadaId { get; private set; }
     public string? EmpresaNome { get; private set; }
@@ -42,6 +48,158 @@ public class DiagnosticosModel : PageModel
     [TempData] public bool MensagemOk { get; set; }
 
     public async Task OnGetAsync(int? empresa) => await CarregarAsync(empresa);
+
+    // ── Planilha por framework ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Baixa a planilha de levantamento de um framework, já com o nome da empresa dentro.
+    ///
+    /// ⚠️ Passa pelo `TenantResolver` como todo o resto: o nome do cliente vai impresso no arquivo,
+    /// e sem o filtro bastaria trocar o número na URL para levar embora o nome de outra empresa.
+    /// </summary>
+    public async Task<IActionResult> OnGetPlanilhaAsync(string framework, int? empresaId,
+        [FromServices] PlanilhaDoFramework planilhas)
+    {
+        var empresa = await TenantResolver.ResolverComFiltroAsync(HttpContext, _db, empresaId);
+        var alvo = CatalogoDeFrameworks.Buscar(framework);
+        if (empresa is null || alvo is null)
+        {
+            Mensagem = "Escolha a empresa e o framework antes de gerar a planilha.";
+            MensagemOk = false;
+            return RedirectToPage(new { empresa = empresaId });
+        }
+
+        var bytes = planilhas.Gerar(alvo, empresa.Nome);
+        await _auditoria.RegistrarAsync("diagnostico.planilha.gerada",
+            $"{empresa.Nome} · {alvo.Nome}", User.Identity?.Name ?? "—");
+
+        return File(bytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            $"levantamento-{Arquivo(alvo.Prefixo)}-{Arquivo(empresa.Nome)}.xlsx");
+    }
+
+    /// <summary>
+    /// Recebe a planilha preenchida e grava as respostas num diagnóstico NOVO.
+    ///
+    /// ⚠️ NOVO, e não mesclado num existente. Mesclar sobrescreveria em silêncio o que o consultor
+    /// levantou na reunião — e ele não teria como saber que a planilha do cliente passou por cima
+    /// da resposta dele. Um registro novo é visível, comparável e descartável.
+    ///
+    /// ⚠️ Tudo entra como DECLARADO. Uma planilha preenchida pelo cliente é a definição de
+    /// declaração sem prova; marcá-la de outro jeito daria ao número a cara de medição, que é
+    /// exatamente o que este módulo se recusa a fazer.
+    /// </summary>
+    public async Task<IActionResult> OnPostImportarAsync(string framework, int? empresaId,
+        IFormFile? arquivo, string? respondente, string? cargo,
+        [FromServices] PlanilhaDoFramework planilhas)
+    {
+        var empresa = await TenantResolver.ResolverComFiltroAsync(HttpContext, _db, empresaId);
+        var alvo = CatalogoDeFrameworks.Buscar(framework);
+        if (empresa is null || alvo is null)
+        {
+            Mensagem = "Escolha a empresa e o framework antes de enviar a planilha.";
+            MensagemOk = false;
+            return RedirectToPage(new { empresa = empresaId });
+        }
+
+        if (arquivo is null || arquivo.Length == 0)
+        {
+            Mensagem = "Nenhum arquivo foi enviado.";
+            MensagemOk = false;
+            return RedirectToPage(new { empresa = empresa.Id });
+        }
+
+        PlanilhaDoFramework.Leitura leitura;
+        using (var conteudo = arquivo.OpenReadStream())
+        {
+            leitura = planilhas.Ler(conteudo);
+        }
+
+        if (leitura.Erro is { } erro)
+        {
+            Mensagem = erro;
+            MensagemOk = false;
+            return RedirectToPage(new { empresa = empresa.Id });
+        }
+
+        if (leitura.Aproveitadas.Count == 0)
+        {
+            // ⚠️ Não cria diagnóstico vazio. Um registro sem resposta nenhuma, na lista do cliente,
+            // parece levantamento feito — e é o oposto disso.
+            Mensagem = leitura.Recusadas.Count > 0
+                ? $"Nenhuma resposta pôde ser lida. {leitura.Recusadas.Count} linha(s) tinham valor "
+                  + "fora do esperado — confira se as respostas seguem a lista da coluna Resposta."
+                : "A planilha veio sem nenhuma resposta preenchida.";
+            MensagemOk = false;
+            return RedirectToPage(new { empresa = empresa.Id });
+        }
+
+        var diagnostico = new Models.Diagnostico
+        {
+            CompanyId = empresa.Id,
+            Titulo = $"Levantamento {alvo.Nome} · planilha",
+            Status = StatusDiagnostico.EmAndamento,
+            CriadoPor = User.Identity?.Name ?? "desconhecido",
+            Respondente = string.IsNullOrWhiteSpace(respondente) ? null : respondente.Trim(),
+            RespondenteCargo = string.IsNullOrWhiteSpace(cargo) ? null : cargo.Trim(),
+            RealizadoEm = DateOnly.FromDateTime(DateTime.Today),
+            Observacoes = $"Respostas importadas da planilha \"{arquivo.FileName}\" em "
+                        + $"{DateTimeOffset.Now:dd/MM/yyyy HH:mm}. "
+                        + $"{leitura.Aproveitadas.Count} aproveitada(s), {leitura.EmBranco} em branco"
+                        + (leitura.Recusadas.Count > 0 ? $", {leitura.Recusadas.Count} não entendida(s)" : "")
+                        + ". Origem: declarada pelo cliente, sem verificação.",
+        };
+
+        foreach (var linha in leitura.Aproveitadas)
+        {
+            var pergunta = CatalogoDeDominios.BuscarPergunta(linha.Codigo);
+            if (pergunta is null) { continue; }
+
+            diagnostico.Respostas.Add(new DiagnosticoResposta
+            {
+                PerguntaCodigo = linha.Codigo,
+                Opcao = linha.Opcao,
+                Texto = string.IsNullOrWhiteSpace(linha.Observacao) ? linha.Texto
+                      : string.IsNullOrWhiteSpace(linha.Texto) ? linha.Observacao
+                      : $"{linha.Texto} — {linha.Observacao}",
+                Numero = linha.Numero,
+                // A conversão mora na calculadora, e só lá. Ver o comentário dela.
+                Situacao = CalculadoraDoDiagnostico.Situacao(pergunta, linha.Opcao),
+                Origem = OrigemDaInformacao.Declarado,
+            });
+        }
+
+        _db.Diagnosticos.Add(diagnostico);
+        await _db.SaveChangesAsync();
+        await _auditoria.RegistrarAsync("diagnostico.planilha.importada",
+            $"{empresa.Nome} · {alvo.Nome} · {leitura.Aproveitadas.Count} resposta(s)",
+            User.Identity?.Name ?? "—");
+
+        // ⚠️ O que NÃO entrou é dito por extenso, com o valor que veio. Importação que anuncia só o
+        // sucesso deixa o consultor achando que a planilha inteira subiu — e ele descobre a falta
+        // na frente do cliente, lendo um relatório com buracos.
+        Mensagem = $"{leitura.Aproveitadas.Count} resposta(s) importada(s)"
+                 + (leitura.EmBranco > 0 ? $", {leitura.EmBranco} pergunta(s) em branco" : "")
+                 + (leitura.Recusadas.Count > 0
+                    ? $". {leitura.Recusadas.Count} linha(s) NÃO foram lidas: "
+                      + string.Join(", ", leitura.Recusadas.Take(5).Select(r =>
+                            r.Reconhecida ? $"{r.Codigo} (valor \"{r.RespostaCrua}\")"
+                                          : $"{r.Codigo} (código fora do catálogo)"))
+                      + (leitura.Recusadas.Count > 5 ? "…" : "")
+                    : ".");
+        MensagemOk = leitura.Recusadas.Count == 0;
+
+        return RedirectToPage("/Admin/Diagnostico", new { id = diagnostico.Id });
+    }
+
+    /// <summary>Nome de arquivo sem acento nem espaço, para não quebrar no download.</summary>
+    private static string Arquivo(string nome)
+    {
+        var limpo = new string(nome.ToLowerInvariant()
+            .Select(ch => char.IsLetterOrDigit(ch) ? ch : '-').ToArray());
+        while (limpo.Contains("--")) { limpo = limpo.Replace("--", "-"); }
+        return limpo.Trim('-');
+    }
 
     public async Task<IActionResult> OnPostCriarAsync(int? empresaId, string titulo, string? respondente, string? cargo)
     {

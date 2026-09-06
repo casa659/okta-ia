@@ -232,19 +232,11 @@ public class DiagnosticoModel : PageModel
     private static string? Valor(Dictionary<string, string>? dic, string chave) =>
         dic is not null && dic.TryGetValue(chave, out var v) && !string.IsNullOrWhiteSpace(v) ? v.Trim() : null;
 
-    private static SituacaoDoControle SituacaoDe(PerguntaDoDiagnostico pergunta, string? opcao)
-    {
-        if (opcao is null) { return SituacaoDoControle.NaoAvaliado; }
-        var positiva = opcao == CatalogoDeDominios.Sim;
-        if (pergunta.RespostaBoaEhNao) { positiva = opcao == CatalogoDeDominios.Nao; }
-
-        return opcao switch
-        {
-            CatalogoDeDominios.Parcial => SituacaoDoControle.Parcial,
-            CatalogoDeDominios.NaoSei => SituacaoDoControle.NaoAvaliado,
-            _ => positiva ? SituacaoDoControle.Tem : SituacaoDoControle.NaoTem,
-        };
-    }
+    // ⚠️ A regra mora na calculadora, e só lá. Esta cópia existiu até 06/09/2026 e concordava com
+    // a de lá — o que não é garantia nenhuma: duas versões que concordam são duas versões que ainda
+    // não divergiram, e a que divergisse silenciosamente seria a que grava no banco.
+    private static SituacaoDoControle SituacaoDe(PerguntaDoDiagnostico pergunta, string? opcao) =>
+        CalculadoraDoDiagnostico.Situacao(pergunta, opcao);
 
     private async Task<bool> CarregarAsync(int id)
     {

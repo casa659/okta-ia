@@ -77,6 +77,8 @@ builder.Services.AddScoped<AvisoDeAlerta>();
 builder.Services.AddSingleton<RelatorioPdfService>();
 builder.Services.AddSingleton<PropostaComercialPdfService>();
 builder.Services.AddSingleton<DiagnosticoPdfService>();
+// A planilha de levantamento por framework: gera e lê. Sem estado, um s� basta.
+builder.Services.AddSingleton<OktaIA.Web.Services.Diagnostico.PlanilhaDoFramework>();
 builder.Services.AddSingleton<TermoAutorizacaoPdfService>();
 builder.Services.AddSingleton<RoteiroPdfService>();
 // Sem estado e sem dependência de request — a chave vem de configuração e não muda em execução.
