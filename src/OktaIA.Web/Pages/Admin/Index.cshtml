@@ -1,56 +1,187 @@
 @page
 @model OktaIA.Web.Pages.Admin.IndexModel
-@using OktaIA.Web.Services
+@using OktaIA.Web.Models
 @{
     ViewData["Title"] = "Visão geral";
 }
 
+@* ⚠️ TUDO NESTA TELA SAI DE CONSULTA. Até 07/09/2026 ela era inteiramente escrita à mão — MRR,
+   organizações, ativos licenciados, um feed com pessoas que não existem e uma saúde de plataforma
+   com "18,4k EPS". Ver o comentário do PageModel: num produto de segurança, número inventado numa
+   tela aberta na frente do cliente destrói a confiança inclusive no que é verdadeiro.
+
+   Se for acrescentar um indicador aqui, ele precisa vir do banco. Não havendo de onde tirar, ele
+   não entra. *@
+
 <div class="adm-page-head">
     <h1>Visão geral da operação</h1>
-    <p>8 organizações · 6.788 ativos licenciados · 42 usuários ativos</p>
+    <p>
+        @Model.EmpresasAtivas empresa(s) ativa(s) ·
+        @Model.EmpresasComConector com monitoramento ·
+        @Model.UsuariosAtivos usuário(s)
+    </p>
 </div>
 
+@* ── Sem conector nenhum: a tela DIZ isso, em vez de mostrar zeros ──────────────────────────
+   "0 alertas nas últimas 24 h" é verdade e comunica mentira: soa como "nada aconteceu", quando
+   o certo é "não estamos olhando". Mesma regra da /Conformidade. *@
+@if (!Model.TemMonitoramento)
+{
+    <div class="adm-card" style="border-left:2px solid #FF8A3D; margin-bottom:14px; padding:14px 16px;">
+        <div style="font-size:13px; color:#FFC08A; font-weight:600; margin-bottom:4px;">
+            Nenhum conector instalado
+        </div>
+        <div style="font-size:12.5px; color:#9DB0C8; line-height:1.6;">
+            Sem conector não há medição — e por isso esta tela não mostra número de alerta.
+            Zero aqui significaria "está tudo limpo", quando o certo é "ninguém olhou ainda".
+            <a href="/Admin/Conectores" style="color:#4D9BFF;">Instalar um conector</a>.
+        </div>
+    </div>
+}
+
 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(190px,100%),1fr)); gap:11px; margin-bottom:14px;">
-    @foreach (var k in AdminCatalog.OverviewKpis)
+
+    <div class="adm-kpi" style="border-left:2px solid #4D9BFF;">
+        <div class="adm-kpi-label">Empresas ativas</div>
+        <div style="display:flex; align-items:baseline; gap:7px;">
+            <span class="adm-kpi-val" style="color:#4D9BFF;">@Model.EmpresasAtivas</span>
+            <span class="adm-kpi-delta">@Model.EmpresasComConector monitorada(s)</span>
+        </div>
+    </div>
+
+    <div class="adm-kpi" style="border-left:2px solid @(Model.ConectoresComErro > 0 ? "#FF3B5C" : "#00E0A4");">
+        <div class="adm-kpi-label">Conectores ativos</div>
+        <div style="display:flex; align-items:baseline; gap:7px;">
+            <span class="adm-kpi-val" style="color:@(Model.ConectoresComErro > 0 ? "#FF3B5C" : "#00E0A4");">@Model.ConectoresAtivos</span>
+            <span class="adm-kpi-delta">de @Model.ConectoresTotal</span>
+        </div>
+    </div>
+
+    @if (Model.TemMonitoramento)
     {
-        <div class="adm-kpi" style="border-left:2px solid @k.C;">
-            <div class="adm-kpi-label">@k.L</div>
+        <div class="adm-kpi" style="border-left:2px solid #8A7BFF;">
+            <div class="adm-kpi-label">Alertas · 24 h</div>
             <div style="display:flex; align-items:baseline; gap:7px;">
-                <span class="adm-kpi-val" style="color:@k.C;">@k.V</span>
-                <span class="adm-kpi-delta">@k.D</span>
+                <span class="adm-kpi-val" style="color:#8A7BFF;">@Model.Alertas24h</span>
+                <span class="adm-kpi-delta">@Model.Alertas7d em 7 dias</span>
+            </div>
+        </div>
+
+        <div class="adm-kpi" style="border-left:2px solid @(Model.AlertasGravesAbertos > 0 ? "#FF3B5C" : "#00E0A4");">
+            <div class="adm-kpi-label">Graves em aberto</div>
+            <div style="display:flex; align-items:baseline; gap:7px;">
+                <span class="adm-kpi-val" style="color:@(Model.AlertasGravesAbertos > 0 ? "#FF3B5C" : "#00E0A4");">@Model.AlertasGravesAbertos</span>
+                <span class="adm-kpi-delta">sem triagem</span>
+            </div>
+        </div>
+
+        <div class="adm-kpi" style="border-left:2px solid #4D9BFF;">
+            <div class="adm-kpi-label">Máquinas reportando</div>
+            <div style="display:flex; align-items:baseline; gap:7px;">
+                <span class="adm-kpi-val" style="color:#4D9BFF;">@Model.MaquinasReportando</span>
+                <span class="adm-kpi-delta">últimos 7 dias</span>
             </div>
         </div>
     }
 </div>
 
 <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr)); gap:12px;">
+
+    @* ── Saúde do monitoramento ────────────────────────────────────────────────────────── *@
     <div class="adm-card">
-        <div class="adm-card-head">Atividade administrativa recente</div>
-        @foreach (var a in AdminCatalog.RecentActivities)
-        {
-            <div style="display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid rgba(120,170,255,.055);">
-                <span style="width:6px; height:6px; border-radius:50%; background:@a.C; flex:0 0 6px;"></span>
-                <span style="font-size:12.5px; color:#C4D3E6; flex:1;">@a.T</span>
-                <span class="oi-mono" style="font-size:9.5px; color:#4A5D78;">@a.Who</span>
-                <span class="oi-mono" style="font-size:9.5px; color:#3C4C60; width:44px; text-align:right;">@a.When</span>
-            </div>
-        }
-    </div>
-    <div class="adm-card">
-        <div class="adm-card-head">Saúde da plataforma</div>
+        <div class="adm-card-head">Saúde do monitoramento</div>
         <div style="padding:16px;">
-            @foreach (var h in AdminCatalog.PlatformHealth)
+
+            @if (Model.ConectoresTotal == 0)
             {
-                <div style="margin-bottom:13px;">
-                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
-                        <span style="color:#9DB0C8;">@h.L</span>
-                        <span class="oi-mono" style="color:@h.C; font-weight:600;">@h.V</span>
+                <div style="font-size:12.5px; color:#7B8FA8; line-height:1.6;">
+                    Nada a medir enquanto não houver conector instalado.
+                </div>
+            }
+            else
+            {
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px; margin-bottom:16px;">
+                    <div>
+                        <div style="font-size:10.5px; color:#7B8FA8; margin-bottom:3px;">Ativos</div>
+                        <div class="oi-mono" style="font-size:17px; color:#00E0A4;">@Model.ConectoresAtivos</div>
                     </div>
-                    <div style="height:4px; background:rgba(120,170,255,.09); border-radius:3px; overflow:hidden;">
-                        <div style="height:100%; width:@(h.P)%; background:@h.C; border-radius:3px;"></div>
+                    <div>
+                        <div style="font-size:10.5px; color:#7B8FA8; margin-bottom:3px;">Com erro</div>
+                        <div class="oi-mono" style="font-size:17px; color:@(Model.ConectoresComErro > 0 ? "#FF3B5C" : "#4A5D78");">@Model.ConectoresComErro</div>
                     </div>
+                    <div>
+                        <div style="font-size:10.5px; color:#7B8FA8; margin-bottom:3px;">Pausados</div>
+                        <div class="oi-mono" style="font-size:17px; color:@(Model.ConectoresPausados > 0 ? "#FF8A3D" : "#4A5D78");">@Model.ConectoresPausados</div>
+                    </div>
+                    <div>
+                        <div style="font-size:10.5px; color:#7B8FA8; margin-bottom:3px;">Nunca conectaram</div>
+                        <div class="oi-mono" style="font-size:17px; color:@(Model.ConectoresNuncaConectados > 0 ? "#FF8A3D" : "#4A5D78");">@Model.ConectoresNuncaConectados</div>
+                    </div>
+                </div>
+
+                @* ⚠️ A ÚLTIMA SINCRONIZAÇÃO é o sinal vital: conector "Ativo" que parou de
+                   sincronizar continua verde na lista e não traz nada há dias. É por isto que a
+                   idade aparece aqui, e não só o status. *@
+                <div style="border-top:1px solid rgba(120,170,255,.07); padding-top:13px;">
+                    <div style="font-size:10.5px; color:#7B8FA8; margin-bottom:5px;">Última sincronização</div>
+
+                    @if (Model.UltimoSync is { } sync)
+                    {
+                        <div style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+                            <span class="oi-mono" style="font-size:14px; color:@(sync.Sucesso ? "#00E0A4" : "#FF3B5C");">
+                                @OktaIA.Web.Pages.Admin.IndexModel.Quando(sync.IniciadoEm)
+                            </span>
+                            <span style="font-size:12px; color:#9DB0C8;">
+                                @(Model.UltimoSyncEmpresa ?? "—") ·
+                                @sync.ItensLidos lido(s), @sync.ItensNovos novo(s)
+                            </span>
+                        </div>
+
+                        @if (!sync.Sucesso)
+                        {
+                            @* O motivo LITERAL do servidor, nunca "falhou": credencial recusada,
+                               certificado e host inalcançável pedem correções diferentes. *@
+                            <div style="margin-top:7px; font-size:11.5px; color:#FF9AA9; line-height:1.5;">
+                                @(string.IsNullOrWhiteSpace(sync.Erro) ? "Falhou sem mensagem do servidor." : sync.Erro)
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div style="font-size:12.5px; color:#FF8A3D;">
+                            Nunca sincronizou — o conector está instalado, mas ainda não trouxe dado.
+                        </div>
+                    }
                 </div>
             }
         </div>
+    </div>
+
+    @* ── Atividade administrativa REAL (trilha de auditoria) ───────────────────────────── *@
+    <div class="adm-card">
+        <div class="adm-card-head">Atividade administrativa recente</div>
+
+        @if (Model.AtividadeRecente.Count == 0)
+        {
+            @* Vazio é resposta legítima: ninguém mexeu na administração ainda. Antes havia
+               sete linhas de exemplo aqui, com nomes de pessoas que não existem. *@
+            <div style="padding:16px; font-size:12.5px; color:#7B8FA8; line-height:1.6;">
+                Nenhuma ação administrativa registrada ainda.
+            </div>
+        }
+        else
+        {
+            @foreach (var a in Model.AtividadeRecente)
+            {
+                <div style="display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid rgba(120,170,255,.055);">
+                    <span style="width:6px; height:6px; border-radius:50%; background:#4D9BFF; flex:0 0 6px;"></span>
+                    <span style="font-size:12.5px; color:#C4D3E6; flex:1;">@a.Detalhe</span>
+                    <span class="oi-mono" style="font-size:9.5px; color:#4A5D78;">@a.Autor</span>
+                    <span class="oi-mono" style="font-size:9.5px; color:#3C4C60; width:60px; text-align:right;">
+                        @OktaIA.Web.Pages.Admin.IndexModel.Quando(a.CriadoEm)
+                    </span>
+                </div>
+            }
+        }
     </div>
 </div>

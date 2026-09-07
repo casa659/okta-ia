@@ -17,62 +17,55 @@ public static class AdminCatalog
     public record RecentActivity(string T, string Who, string When, string C);
     public record HealthMetric(string L, string V, int P, string C);
 
-    public static readonly IReadOnlyList<OverviewKpi> OverviewKpis = new[]
-    {
-        new OverviewKpi("MRR", "R$ 284,7k", "+11,4%", "#00E0A4"),
-        new OverviewKpi("Organizações", "8", "+1", "#4D9BFF"),
-        new OverviewKpi("Usuários ativos", "42", "+6", "#4D9BFF"),
-        new OverviewKpi("Ativos licenciados", "6.788", "+214", "#8A7BFF"),
-        new OverviewKpi("Faturas em aberto", "2", "R$ 27,1k", "#FF8A3D"),
-    };
-
-    public static readonly IReadOnlyList<RecentActivity> RecentActivities = new[]
-    {
-        new RecentActivity("Nova organização provisionada · Escritório Lemos", "R. Silva", "8 min", "#00E0A4"),
-        new RecentActivity("Perfil de Diego Moraes elevado para Gestor", "R. Silva", "22 min", "#4D9BFF"),
-        new RecentActivity("Integração Microsoft Sentinel reconectada", "sistema", "1 h", "#00E0A4"),
-        new RecentActivity("Conta de Paula Lemos suspensa por inatividade", "política", "3 h", "#FF8A3D"),
-        new RecentActivity("Chave de API rotacionada · Banco Meridiano", "B. Teixeira", "5 h", "#4D9BFF"),
-        new RecentActivity("Fatura NF-8838 marcada como vencida", "sistema", "9 h", "#FF3B5C"),
-        new RecentActivity("Política de retenção alterada para 5 anos", "R. Silva", "ontem", "#8A7BFF"),
-    };
-
-    public static readonly IReadOnlyList<HealthMetric> PlatformHealth = new[]
-    {
-        new HealthMetric("Ingestão de eventos", "18,4k EPS", 68, "#00E0A4"),
-        new HealthMetric("Fila de processamento", "204 ms", 22, "#00E0A4"),
-        new HealthMetric("Índice de busca", "2,4 bi docs", 74, "#4D9BFF"),
-        new HealthMetric("Armazenamento quente", "81%", 81, "#FF8A3D"),
-        new HealthMetric("Disponibilidade da API", "99,99%", 99, "#00E0A4"),
-        new HealthMetric("Latência do console", "112 ms", 18, "#00E0A4"),
-    };
-
+    // ⚠️ REMOVIDOS EM 07/09/2026: `OverviewKpis`, `RecentActivities` e `PlatformHealth`.
+    //
+    // Eram os dados da /Admin escritos à mão: "MRR R$ 284,7k", "8 organizações", "6.788 ativos
+    // licenciados", um feed com pessoas e empresas que não existem ("Escritório Lemos", "Diego
+    // Moraes", "Banco Meridiano") e uma saúde de plataforma com "18,4k EPS" e "2,4 bi docs".
+    //
+    // A tela agora consulta o banco (ver Pages/Admin/Index.cshtml.cs). Não recoloque números
+    // aqui: num produto de segurança, o cliente pergunta de onde vem cada um, e o inventado
+    // derruba a confiança inclusive no que é medido de verdade.
     // ---------- Marketplace ----------
-    public record MarketItem(string N, string Cat, string Vendor, string Ver, string Status, string Trust, double Rating, string Installs)
+
+    /// <summary>
+    /// Um fabricante do catálogo.
+    ///
+    /// ⚠️ SEM STATUS, VERSÃO, NOTA E CONTAGEM DE INSTALAÇÕES (removidos em 07/09/2026). A lista
+    /// dizia "instalado" para Defender, Sentinel, FortiGate e CrowdStrike — dos quais NENHUM tem
+    /// adaptador —, além de versões ("v1.4.2"), notas ("★ 4,9") e "2.1k instalações" inventadas.
+    /// O dono abriu a tela e viu vários conectores instalados quando só existe o Wazuh.
+    ///
+    /// O que é verdade já existia em dois lugares e agora é de onde a tela lê:
+    /// `CatalogoDeRoteiros.Implementado` (temos adaptador?) e a tabela `Conectores` (alguém
+    /// instalou?). Ver `MarketplaceModel`.
+    /// </summary>
+    /// <param name="Slug">Casa com `Conector.Slug`. Só importa para quem tem adaptador.</param>
+    public record MarketItem(string N, string Cat, string Vendor, string Trust, string Slug)
     {
         public string Ini => string.Concat(N.Split(' ').Where(w => w.Length > 0).Take(2).Select(w => w[0])).ToUpperInvariant();
     }
 
     public static readonly IReadOnlyList<MarketItem> Market = new[]
     {
-        new MarketItem("Microsoft Defender", "EDR / XDR", "Microsoft", "1.4.2", "instalado", "oficial", 4.9, "2.1k"),
-        new MarketItem("Microsoft Sentinel", "SIEM", "Microsoft", "2.1.0", "instalado", "oficial", 4.8, "1.8k"),
-        new MarketItem("Wazuh", "HIDS / SIEM", "Wazuh Inc.", "1.2.8", "instalado", "verificado", 4.7, "3.4k"),
-        new MarketItem("Fortinet FortiGate", "Firewall", "Fortinet", "1.6.1", "instalado", "oficial", 4.6, "2.7k"),
-        new MarketItem("CrowdStrike Falcon", "EDR", "CrowdStrike", "1.3.4", "instalado", "oficial", 4.9, "1.9k"),
-        new MarketItem("Palo Alto Cortex XDR", "XDR", "Palo Alto", "1.2.0", "atualizar", "oficial", 4.7, "1.4k"),
-        new MarketItem("SentinelOne", "EDR", "SentinelOne", "1.0.9", "disponível", "oficial", 4.6, "980"),
-        new MarketItem("Sophos Central", "Endpoint", "Sophos", "1.1.2", "disponível", "verificado", 4.4, "760"),
-        new MarketItem("Trend Micro Vision One", "XDR", "Trend Micro", "0.9.8", "disponível", "verificado", 4.3, "520"),
-        new MarketItem("Elastic Security", "SIEM", "Elastic", "1.3.1", "disponível", "oficial", 4.5, "1.2k"),
-        new MarketItem("Splunk Enterprise", "SIEM", "Splunk", "2.0.4", "disponível", "oficial", 4.7, "2.3k"),
-        new MarketItem("Qualys VMDR", "Vulnerability Mgmt", "Qualys", "1.1.5", "disponível", "oficial", 4.5, "890"),
-        new MarketItem("Rapid7 InsightVM", "Vulnerability Mgmt", "Rapid7", "1.0.6", "disponível", "verificado", 4.4, "670"),
-        new MarketItem("Okta Identity", "IAM", "Okta", "1.2.3", "disponível", "oficial", 4.8, "1.5k"),
-        new MarketItem("Proofpoint", "E-mail Security", "Proofpoint", "1.0.2", "disponível", "verificado", 4.3, "410"),
-        new MarketItem("Zscaler", "SASE / Proxy", "Zscaler", "1.1.0", "disponível", "oficial", 4.5, "620"),
-        new MarketItem("pfSense", "Firewall", "Comunidade", "0.8.4", "beta", "comunidade", 4.1, "340"),
-        new MarketItem("Suricata", "IDS / IPS", "Comunidade", "0.9.1", "beta", "comunidade", 4.2, "480"),
+        new MarketItem("Wazuh", "HIDS / SIEM", "Wazuh Inc.", "verificado", "wazuh"),
+        new MarketItem("Microsoft Defender", "EDR / XDR", "Microsoft", "oficial", "defender"),
+        new MarketItem("Microsoft Sentinel", "SIEM", "Microsoft", "oficial", "sentinel"),
+        new MarketItem("Fortinet FortiGate", "Firewall", "Fortinet", "oficial", "fortigate"),
+        new MarketItem("CrowdStrike Falcon", "EDR", "CrowdStrike", "oficial", "crowdstrike"),
+        new MarketItem("Palo Alto Cortex XDR", "XDR", "Palo Alto", "oficial", "cortex"),
+        new MarketItem("SentinelOne", "EDR", "SentinelOne", "oficial", "sentinelone"),
+        new MarketItem("Sophos Central", "Endpoint", "Sophos", "verificado", "sophos"),
+        new MarketItem("Trend Micro Vision One", "XDR", "Trend Micro", "verificado", "trendmicro"),
+        new MarketItem("Elastic Security", "SIEM", "Elastic", "oficial", "elastic"),
+        new MarketItem("Splunk Enterprise", "SIEM", "Splunk", "oficial", "splunk"),
+        new MarketItem("Qualys VMDR", "Vulnerability Mgmt", "Qualys", "oficial", "qualys"),
+        new MarketItem("Rapid7 InsightVM", "Vulnerability Mgmt", "Rapid7", "verificado", "rapid7"),
+        new MarketItem("Okta Identity", "IAM", "Okta", "oficial", "okta"),
+        new MarketItem("Proofpoint", "E-mail Security", "Proofpoint", "verificado", "proofpoint"),
+        new MarketItem("Zscaler", "SASE / Proxy", "Zscaler", "oficial", "zscaler"),
+        new MarketItem("pfSense", "Firewall", "Comunidade", "comunidade", "pfsense"),
+        new MarketItem("Suricata", "IDS / IPS", "Comunidade", "comunidade", "suricata"),
     };
 
     // ---------- Conectores instalados ----------
@@ -328,20 +321,24 @@ public static class AdminCatalog
         new Invoice("NF-8834", "Escritório Lemos", "07/2026", "30/08/2026", "R$ 1.890", "aberta"),
     };
 
+    // ⚠️ SEM NÚMERO NO MENU (07/09/2026). Os contadores eram fixos — "8" empresas, "42" usuários,
+    // "1" conector, "18" no marketplace — e o real é outro: 17 empresas ativas, uma com conector.
+    // Um contador errado no menu é pior que nenhum: ele é lido de relance, ninguém confere, e
+    // vira o número que a pessoa repete numa reunião. Se voltarem, que venham de consulta.
     public static readonly IReadOnlyList<NavGroup> NavGroups = new[]
     {
         new NavGroup("OPERAÇÃO", new[]
         {
             new NavItem("overview", "/Admin/Index", "01", "Visão geral"),
-            new NavItem("companies", "/Admin/Empresas", "02", "Empresas", "8", "#4D9BFF"),
-            new NavItem("users", "/Admin/Usuarios", "03", "Usuários", "42", "#4D9BFF"),
+            new NavItem("companies", "/Admin/Empresas", "02", "Empresas"),
+            new NavItem("users", "/Admin/Usuarios", "03", "Usuários"),
             new NavItem("roles", "/Admin/Perfis", "04", "Perfis e permissões"),
         }),
         new NavGroup("PLATAFORMA DE INTEGRAÇÃO", new[]
         {
             new NavItem("infoconectores", "/Admin/Informacoes", "25", "Informações"),
-            new NavItem("market", "/Admin/Marketplace", "26", "Marketplace", "18", "#00E0A4"),
-            new NavItem("connectors", "/Admin/Conectores", "27", "Conectores", "1", "#FF3B5C"),
+            new NavItem("market", "/Admin/Marketplace", "26", "Marketplace"),
+            new NavItem("connectors", "/Admin/Conectores", "27", "Conectores"),
             new NavItem("vault", "/Admin/Credenciais", "28", "Credenciais"),
             new NavItem("schema", "/Admin/ModeloUnificado", "29", "Modelo unificado"),
             new NavItem("bus", "/Admin/EventosSync", "30", "Eventos e sync"),
@@ -352,7 +349,7 @@ public static class AdminCatalog
         }),
         new NavGroup("GOVERNANÇA", new[]
         {
-            new NavItem("notify", "/Admin/Notificacoes", "25", "Notificações", "12", "#00E0A4"),
+            new NavItem("notify", "/Admin/Notificacoes", "25", "Notificações"),
             new NavItem("audit", "/Admin/Auditoria", "16", "Auditoria"),
         }),
         new NavGroup("COMERCIAL", new[]
@@ -365,7 +362,7 @@ public static class AdminCatalog
             // comercial — levanta, orça, fatura. Menu que não conta a ordem do trabalho faz
             // cada um inventar a sua.
             new NavItem("quotes", "/Admin/Orcamentos", "36", "Orçamentos"),
-            new NavItem("billing", "/Admin/Faturamento", "22", "Faturamento", "2", "#FF8A3D"),
+            new NavItem("billing", "/Admin/Faturamento", "22", "Faturamento"),
         }),
     };
 }

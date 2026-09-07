@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.EntityFrameworkCore;
 using OktaIA.Web.Data;
 using OktaIA.Web.Services;
 using OktaIA.Web.Services.Integracoes;
@@ -28,8 +29,53 @@ public class MarketplaceModel : PageModel
         _db = db;
     }
 
-    public void OnGet()
+    /// <summary>
+    /// Os slugs que TÊM adaptador escrito na plataforma. Hoje: só o Wazuh.
+    ///
+    /// ⚠️ Sai do <see cref="RegistroDeConectores"/>, que é a lista de implementações registradas —
+    /// não de uma constante ao lado. Escrever "wazuh" à mão aqui faria a tela continuar dizendo a
+    /// mesma coisa no dia em que o segundo adaptador entrasse (ou saísse).
+    /// </summary>
+    public HashSet<string> ComAdaptador { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Slugs de fato instalados por alguma empresa — da tabela `Conectores`.</summary>
+    public HashSet<string> Instalados { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Quantas empresas usam cada conector. Substitui as "2.1k instalações" inventadas.</summary>
+    public Dictionary<string, int> EmpresasPorSlug { get; private set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public async Task OnGetAsync([FromServices] RegistroDeConectores registro)
     {
+        ComAdaptador = registro.Disponiveis
+            .Select(c => c.Slug)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var instalados = await _db.Conectores.AsNoTracking()
+            .Select(c => new { c.Slug, c.CompanyId })
+            .ToListAsync();
+
+        Instalados = instalados.Select(c => c.Slug).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        EmpresasPorSlug = instalados
+            .GroupBy(c => c.Slug, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.CompanyId).Distinct().Count(),
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// O estado REAL de um item do catálogo, na ordem em que ele importa para quem opera.
+    ///
+    /// ⚠️ "Instalado" exige as duas coisas: adaptador escrito E alguém usando. Um sem o outro é
+    /// meia verdade — e foi meia verdade que fez a tela mostrar quatro conectores instalados que
+    /// nunca existiram.
+    /// </summary>
+    public (string Rotulo, string Cor) Situacao(string slug)
+    {
+        var temAdaptador = ComAdaptador.Contains(slug);
+
+        if (temAdaptador && Instalados.Contains(slug)) { return ("instalado", "#00E0A4"); }
+        if (temAdaptador) { return ("pronto para instalar", "#4D9BFF"); }
+        return ("sem conector", "#7A8FAB");
     }
 
     public async Task<IActionResult> OnGetRoteiroClienteAsync(string fabricante)
