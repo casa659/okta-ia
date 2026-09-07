@@ -1,0 +1,25 @@
+@*
+    Tarja das telas de VITRINE — as que desenham uma capacidade da plataforma que ainda não
+    funciona (API Gateway, SDK, SOAR, Observabilidade, Motor de eventos, Modelo unificado).
+
+    ⚠️ POR QUE ELA EXISTE (07/09/2026): essas telas têm `OnGet()` vazio e conteúdo vindo de listas
+    fixas no AdminCatalog. Sem aviso, elas são indistinguíveis das telas reais — e a diferença só
+    aparece quando alguém promete a um cliente um recurso que não existe, ou vai procurar na
+    "Eventos e sync" a sincronização que de fato aconteceu (essa mora no banco, e quem mostra é a
+    Visão geral).
+
+    ⚠️ Discreta de propósito: o objetivo é não deixar ninguém se enganar, não envergonhar a tela
+    numa demonstração. Quem lê, entende; quem não lê, não é atrapalhado.
+*@
+<div style="display:flex; align-items:center; gap:9px; margin-bottom:14px; padding:9px 13px;
+            border:1px solid rgba(255,138,61,.28); border-left:2px solid #FF8A3D;
+            border-radius:9px; background:rgba(255,138,61,.06);">
+    <span style="font-size:10px; font-weight:700; letter-spacing:.08em; color:#FF8A3D;
+                 white-space:nowrap;">EM PROJETO</span>
+    <span style="font-size:11.5px; color:#9DB0C8; line-height:1.5;">
+        Esta tela desenha uma capacidade planejada da plataforma. Os dados abaixo são ilustrativos —
+        o que está em operação de verdade aparece em
+        <a href="/Admin/Index" style="color:#4D9BFF;">Visão geral</a> e em
+        <a href="/Admin/Conectores" style="color:#4D9BFF;">Conectores</a>.
+    </span>
+</div>
