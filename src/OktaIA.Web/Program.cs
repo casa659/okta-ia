@@ -58,7 +58,7 @@ builder.Services.AddScoped<ScanExecutor>();
 builder.Services.AddHostedService<ScanAgendadorService>();
 builder.Services.AddScoped<AdminAuditService>();
 
-// E-mail transacional (hoje: link de "esqueci minha senha"). A caixa info@okta-ia.com está na
+// E-mail transacional (hoje: link de "esqueci minha senha"). A caixa info@loktaia.com está na
 // GoDaddy, então é SMTP autenticado — ver o comentário em Services/EnviadorEmail.cs. Sem
 // credencial entra o EnviadorEmailNaoConfigurado, que devolve FALSO em vez de fingir que enviou.
 var opcoesEmail = builder.Configuration.GetSection("Email").Get<OpcoesEmail>() ?? new OpcoesEmail();

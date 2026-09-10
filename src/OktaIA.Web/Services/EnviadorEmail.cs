@@ -7,7 +7,7 @@ namespace OktaIA.Web.Services;
 /// <summary>
 /// Configuração do envio de e-mail. Vem de App Settings (`Email__*`) — nunca de arquivo versionado.
 ///
-/// A caixa remetente (`info@okta-ia.com`) mora no e-mail da GoDaddy (MX `secureserver.net`), não no
+/// A caixa remetente (`info@loktaia.com`) mora no e-mail da GoDaddy (MX `secureserver.net`), não no
 /// Microsoft 365 dos outros produtos. Por isso aqui é SMTP com usuário e senha da caixa, e não a API
 /// do Graph — o Graph só alcança caixas do tenant da Microsoft.
 /// </summary>

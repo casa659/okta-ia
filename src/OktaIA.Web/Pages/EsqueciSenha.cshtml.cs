@@ -65,7 +65,7 @@ public class EsqueciSenhaModel : PageModel
         if (!ok)
         {
             _log.LogError("Falha ao enviar o link de senha para {Para}: {Motivo}", user.Email, motivo);
-            Erro = "Não conseguimos enviar o e-mail agora. Tente de novo em alguns minutos ou fale com o suporte em info@okta-ia.com.";
+            Erro = "Não conseguimos enviar o e-mail agora. Tente de novo em alguns minutos ou fale com o suporte em info@loktaia.com.";
             return Page();
         }
 
