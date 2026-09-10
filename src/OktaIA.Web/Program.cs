@@ -58,6 +58,20 @@ builder.Services.AddScoped<ScanExecutor>();
 builder.Services.AddHostedService<ScanAgendadorService>();
 builder.Services.AddScoped<AdminAuditService>();
 
+// E-mail transacional (hoje: link de "esqueci minha senha"). A caixa info@okta-ia.com está na
+// GoDaddy, então é SMTP autenticado — ver o comentário em Services/EnviadorEmail.cs. Sem
+// credencial entra o EnviadorEmailNaoConfigurado, que devolve FALSO em vez de fingir que enviou.
+var opcoesEmail = builder.Configuration.GetSection("Email").Get<OpcoesEmail>() ?? new OpcoesEmail();
+builder.Services.AddSingleton(opcoesEmail);
+if (opcoesEmail.Completo)
+{
+    builder.Services.AddSingleton<IEnviadorEmail, EnviadorEmailSmtp>();
+}
+else
+{
+    builder.Services.AddSingleton<IEnviadorEmail, EnviadorEmailNaoConfigurado>();
+}
+
 // Orçamento de monitoramento gerenciado. Os parâmetros de preço vêm de `Propostas:*` em
 // configuração — ⚠️ eles são DECISÃO COMERCIAL do dono, não do código: os padrões da classe
 // existem só para a tela nunca mostrar R$ 0, e nenhum deles saiu de pesquisa de mercado.

@@ -1,0 +1,71 @@
+@page
+@model RedefinirSenhaModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Criar senha nova";
+}
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Criar senha nova — L'okta IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/img/brand/favicon-32.png" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/senha.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="oksenha-wrap">
+        <div class="oksenha-card">
+            <a href="/" class="oksenha-brand">
+                <img src="~/img/brand/simbolo-solido-branco.svg" alt="L'okta IA" />
+                <span><b>L'okta IA</b><small>Cyber Security &amp; AI</small></span>
+            </a>
+
+            <h1>Criar senha nova</h1>
+
+            @if (Model.Concluido)
+            {
+                <div class="oksenha-ok">Senha alterada. Já dá para entrar com ela.</div>
+                <a asp-page="/Login" class="oksenha-btn">Ir para o login</a>
+            }
+            else if (!Model.LinkValido)
+            {
+                @* Link vencido, já usado ou truncado pelo programa de e-mail. Não adianta mostrar o
+                   formulário: a pessoa escolheria uma senha e só então descobriria que não vale. *@
+                <div class="oksenha-erro"><span></span>@Model.Erro</div>
+                <p class="oksenha-sub">Peça um link novo em <strong>Entrar → Esqueci minha senha</strong>.</p>
+                <a asp-page="/EsqueciSenha" class="oksenha-btn">Pedir um link novo</a>
+            }
+            else
+            {
+                <p class="oksenha-sub">Conta <strong>@Model.Email</strong></p>
+
+                @if (Model.Erro is not null)
+                {
+                    <div class="oksenha-erro"><span></span>@Model.Erro</div>
+                }
+
+                <form method="post" autocomplete="off">
+                    @* O token e o e-mail voltam no POST: é o token que prova que quem está aqui abriu o e-mail. *@
+                    <input type="hidden" asp-for="Token" />
+                    <input type="hidden" asp-for="Email" />
+
+                    <label class="oksenha-label">Nova senha</label>
+                    <input asp-for="Senha" type="password" autocomplete="new-password" minlength="8" required class="oksenha-input" />
+
+                    <label class="oksenha-label">Repita a nova senha</label>
+                    <input asp-for="Confirmacao" type="password" autocomplete="new-password" minlength="8" required class="oksenha-input" />
+
+                    @* A mesma regra que o Identity cobra em Program.cs (8+, maiúscula, minúscula e número). *@
+                    <p class="oksenha-regra">Pelo menos 8 caracteres, com uma letra maiúscula, uma minúscula e um número.</p>
+                    <button type="submit" class="oksenha-btn">Salvar senha nova</button>
+                </form>
+            }
+        </div>
+    </div>
+</body>
+</html>
