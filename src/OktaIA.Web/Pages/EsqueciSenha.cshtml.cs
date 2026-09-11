@@ -76,6 +76,8 @@ public class EsqueciSenhaModel : PageModel
     private static string CorpoDoEmail(ApplicationUser user, string link)
     {
         var nome = HtmlEncoder.Default.Encode(user.NomeCompleto ?? user.Email ?? "");
+        // ⚠️ Sem o "se o botão não abrir, copie este endereço" (11/09/2026, pedido do dono): o link
+        // cru, com e-mail e token, não deve aparecer escrito no corpo da mensagem — só no botão.
         var href = HtmlEncoder.Default.Encode(link);
         return $"""
             <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1b2431;line-height:1.6;max-width:560px">
@@ -85,7 +87,6 @@ public class EsqueciSenhaModel : PageModel
               <p style="margin:26px 0">
                 <a href="{href}" style="background:#2A6FD6;color:#fff;padding:13px 26px;border-radius:8px;text-decoration:none;display:inline-block;font-weight:bold">Criar uma senha nova</a>
               </p>
-              <p style="font-size:13px;color:#5A7191">Se o botão não abrir, copie este endereço no navegador:<br>{href}</p>
               <p style="font-size:13px;color:#5A7191">O link vale por 24 horas e só pode ser usado uma vez.</p>
               <p style="font-size:13px;color:#5A7191">Se não foi você que pediu, não precisa fazer nada — sua senha atual continua valendo.</p>
             </div>
