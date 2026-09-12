@@ -87,7 +87,7 @@ public class EsqueciSenhaModel : PageModel
         return $"""
             <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1b2431;line-height:1.6;max-width:600px">
               <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:18px"><tr>
-                <td style="padding-right:12px"><img src="{logo}" width="48" height="48" alt="L'okta IA" style="display:block;border-radius:12px" /></td>
+                <td width="72" style="width:72px;min-width:72px;padding-right:12px"><img src="{logo}" width="60" height="60" alt="L'okta IA" style="display:block;width:60px;height:60px;max-width:none;border-radius:14px" /></td>
                 <td style="font-size:17px;font-weight:bold;color:#1b2431">L'okta IA <span style="font-weight:normal;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5A7191">· Cyber Security &amp; AI</span></td>
               </tr></table>
               <p>Olá, {nome}.</p>
@@ -97,8 +97,8 @@ public class EsqueciSenhaModel : PageModel
               </p>
               <p style="font-size:13px;color:#5A7191">O link vale por 24 horas e só pode ser usado uma vez.</p>
               <p style="font-size:13px;color:#5A7191">Se não foi você que pediu, não precisa fazer nada — sua senha atual continua valendo.</p>
-              <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:30px"><tr>
-                <td style="padding:6px 22px 6px 0;border-right:2px solid #cfcfcf;vertical-align:middle"><img src="{logo}" width="96" height="96" alt="L'okta IA" style="display:block;border-radius:18px" /></td>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:30px;width:100%"><tr>
+                <td width="120" style="width:120px;min-width:120px;padding:6px 22px 6px 0;border-right:2px solid #cfcfcf;vertical-align:middle"><img src="{logo}" width="96" height="96" alt="L'okta IA" style="display:block;width:96px;height:96px;max-width:none;border-radius:18px" /></td>
                 <td style="padding-left:22px;font-size:13px;line-height:1.55;color:#333333;vertical-align:middle">
                   L'OKTA IA<br />
                   CNPJ 39.419.459/0001-60<br />
