@@ -61,7 +61,7 @@ public class EsqueciSenhaModel : PageModel
         var tokenUrl = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
         var link = Url.Page("/RedefinirSenha", null, new { email = user.Email, token = tokenUrl }, Request.Scheme)!;
 
-        var (ok, motivo) = await _email.EnviarAsync(user.Email, "Redefinir sua senha — L'okta IA", CorpoDoEmail(user, link));
+        var (ok, motivo) = await _email.EnviarAsync(user.Email, "Redefinir sua senha — L'okta IA", CorpoDoEmail(user, link, Request.Scheme + "://" + Request.Host));
         if (!ok)
         {
             _log.LogError("Falha ao enviar o link de senha para {Para}: {Motivo}", user.Email, motivo);
@@ -73,15 +73,23 @@ public class EsqueciSenhaModel : PageModel
         return Page();
     }
 
-    private static string CorpoDoEmail(ApplicationUser user, string link)
+    /// <summary>
+    /// Logo da L'okta no topo e, no rodapé, a assinatura da iAgrow (12/09/2026, pedido do dono): o
+    /// mesmo texto da assinatura de e-mail deles, com "L'okta IA" no lugar de iAgrow e a logo da
+    /// L'okta, mantendo CNPJ, endereço e telefone. A imagem é a do próprio site.
+    /// </summary>
+    private static string CorpoDoEmail(ApplicationUser user, string link, string baseUrl)
     {
         var nome = HtmlEncoder.Default.Encode(user.NomeCompleto ?? user.Email ?? "");
-        // ⚠️ Sem o "se o botão não abrir, copie este endereço" (11/09/2026, pedido do dono): o link
-        // cru, com e-mail e token, não deve aparecer escrito no corpo da mensagem — só no botão.
+        // Sem o link cru no corpo (11/09/2026, pedido do dono): o endereço, com e-mail e token, vai só no botão.
         var href = HtmlEncoder.Default.Encode(link);
+        var logo = HtmlEncoder.Default.Encode(baseUrl.TrimEnd('/') + "/img/brand/icon-512.png");
         return $"""
-            <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1b2431;line-height:1.6;max-width:560px">
-              <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5A7191;margin:0 0 18px">L'okta IA · Cyber Security &amp; AI</p>
+            <div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#1b2431;line-height:1.6;max-width:600px">
+              <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:18px"><tr>
+                <td style="padding-right:12px"><img src="{logo}" width="48" height="48" alt="L'okta IA" style="display:block;border-radius:12px" /></td>
+                <td style="font-size:17px;font-weight:bold;color:#1b2431">L'okta IA <span style="font-weight:normal;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5A7191">· Cyber Security &amp; AI</span></td>
+              </tr></table>
               <p>Olá, {nome}.</p>
               <p>Recebemos um pedido para redefinir a senha da sua conta na plataforma <strong>L'okta IA</strong>.</p>
               <p style="margin:26px 0">
@@ -89,6 +97,17 @@ public class EsqueciSenhaModel : PageModel
               </p>
               <p style="font-size:13px;color:#5A7191">O link vale por 24 horas e só pode ser usado uma vez.</p>
               <p style="font-size:13px;color:#5A7191">Se não foi você que pediu, não precisa fazer nada — sua senha atual continua valendo.</p>
+              <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-top:30px"><tr>
+                <td style="padding:6px 22px 6px 0;border-right:2px solid #cfcfcf;vertical-align:middle"><img src="{logo}" width="96" height="96" alt="L'okta IA" style="display:block;border-radius:18px" /></td>
+                <td style="padding-left:22px;font-size:13px;line-height:1.55;color:#333333;vertical-align:middle">
+                  L'OKTA IA<br />
+                  CNPJ 39.419.459/0001-60<br />
+                  AV PAULISTA,2006 -Cj 1314<br />
+                  Bela vista- SP<br />
+                  CEP 01.310-926<br />
+                  11 3042-9392
+                </td>
+              </tr></table>
             </div>
             """;
     }

@@ -58,12 +58,19 @@ builder.Services.AddScoped<ScanExecutor>();
 builder.Services.AddHostedService<ScanAgendadorService>();
 builder.Services.AddScoped<AdminAuditService>();
 
-// E-mail transacional (hoje: link de "esqueci minha senha"). A caixa info@loktaia.com está na
-// GoDaddy, então é SMTP autenticado — ver o comentário em Services/EnviadorEmail.cs. Sem
-// credencial entra o EnviadorEmailNaoConfigurado, que devolve FALSO em vez de fingir que enviou.
+// E-mail transacional (hoje: link de "esqueci minha senha"). Desde 12/09/2026 sai pelo Microsoft
+// Graph da caixa loktaia@iagrow.com.br (mesmo Microsoft 365 da Lekker); o SMTP da GoDaddy
+// (info@loktaia.com) fica como alternativa se os campos do Graph não existirem. Sem credencial
+// entra o EnviadorEmailNaoConfigurado, que devolve FALSO em vez de fingir que enviou.
 var opcoesEmail = builder.Configuration.GetSection("Email").Get<OpcoesEmail>() ?? new OpcoesEmail();
 builder.Services.AddSingleton(opcoesEmail);
-if (opcoesEmail.Completo)
+builder.Services.AddHttpClient("graph", c => c.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddSingleton<TokenDoGraph>();
+if (opcoesEmail.GraphCompleto)
+{
+    builder.Services.AddSingleton<IEnviadorEmail, EnviadorEmailGraph>();
+}
+else if (opcoesEmail.SmtpCompleto)
 {
     builder.Services.AddSingleton<IEnviadorEmail, EnviadorEmailSmtp>();
 }
