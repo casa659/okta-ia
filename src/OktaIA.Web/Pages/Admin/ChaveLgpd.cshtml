@@ -117,6 +117,14 @@ else
                 </summary>
                 <form method="post" asp-page-handler="Gerar" style="margin-top:12px; padding:14px; border-radius:10px; border:1px solid rgba(120,170,255,.16); background:rgba(5,10,18,.5); max-width:420px;">
                     <input type="hidden" name="empresa" value="@Model.Empresa.Id" />
+                    @* 🔴 DIZ DE QUAL EMPRESA É (02/10/2026 — aconteceu de verdade: chave gerada para
+                       a empresa errada, colada no LinkEscola, e o painel do DPO encheu com os dados
+                       de outro cliente). O seletor fica lá em cima, longe daqui; quem rola a página
+                       para gerar não tem mais o nome à vista. Repetir o nome no ponto da ação custa
+                       uma linha e é o único lugar onde o erro ainda dá para pegar. *@
+                    <p style="margin:0 0 12px; font-size:12.5px; color:#EAF0F8; line-height:1.5;">
+                        Gerando a chave de <strong>@Model.Empresa.Nome</strong> (empresa #@Model.Empresa.Id).
+                    </p>
                     @if (Model.Empresa.ChaveLgpdHash is not null)
                     {
                         <p style="margin:0 0 12px; font-size:12px; color:#FF8A9E; line-height:1.6;">
@@ -143,6 +151,7 @@ else
                     <form method="post" asp-page-handler="Revogar" style="margin-top:12px; padding:14px; border-radius:10px; border:1px solid rgba(255,59,92,.3); background:rgba(255,59,92,.05); max-width:420px;">
                         <input type="hidden" name="empresa" value="@Model.Empresa.Id" />
                         <p style="margin:0 0 12px; font-size:12px; color:#FF8A9E; line-height:1.6;">
+                            Revogando a chave de <strong>@Model.Empresa.Nome</strong> (empresa #@Model.Empresa.Id).
                             O LinkEscola desta escola para de ler o monitoramento. Os alertas continuam
                             sendo coletados aqui — só a vista do DPO é cortada.
                         </p>

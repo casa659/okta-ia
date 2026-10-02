@@ -339,6 +339,11 @@ public static class AdminCatalog
             new NavItem("infoconectores", "/Admin/Informacoes", "25", "Informações"),
             new NavItem("market", "/Admin/Marketplace", "26", "Marketplace"),
             new NavItem("connectors", "/Admin/Conectores", "27", "Conectores"),
+            // ⚠️ Logo depois de "Conectores", e não no fim do grupo: é o espelho dele. Conectores é
+            // o que esta plataforma LÊ de fora; a chave é o que ela ENTREGA para fora. Separados no
+            // menu, ninguém liga uma coisa à outra na hora de investigar por que o cliente não vê
+            // os alertas dele.
+            new NavItem("lgpdkey", "/Admin/ChaveLgpd", "37", "Chave de leitura LGPD"),
             new NavItem("vault", "/Admin/Credenciais", "28", "Credenciais"),
             new NavItem("schema", "/Admin/ModeloUnificado", "29", "Modelo unificado"),
             new NavItem("bus", "/Admin/EventosSync", "30", "Eventos e sync"),
