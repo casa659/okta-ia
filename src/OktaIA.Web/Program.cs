@@ -132,6 +132,20 @@ builder.Services.AddHttpClient<WazuhConnector>(client =>
 });
 // Registrado também pela interface pra que o RegistroDeConectores enxergue todos os adaptadores.
 builder.Services.AddTransient<IConnector>(sp => sp.GetRequiredService<WazuhConnector>());
+
+// ── LinkEscola: a trilha LGPD por API ────────────────────────────────────────────────────────
+//
+// 🔴 SEM `IgnorarCertificado`, ao contrário do Wazuh. Aquele vive na rede interna do cliente com
+// certificado autoassinado; este é um site público em HTTPS válido. Repetir a exceção aqui seria
+// carregar um risco que não existe neste caminho.
+//
+// ⚠️ O endpoint lá devolve AGREGADOS — contagens, nunca linhas da trilha. Nenhum dado pessoal
+// atravessa esta conexão. Ver Services/Integracoes/LinkEscolaConnector.
+builder.Services.AddHttpClient<LinkEscolaConnector>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddTransient<IConnector>(sp => sp.GetRequiredService<LinkEscolaConnector>());
 builder.Services.AddHttpClient<SecurityScanService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
