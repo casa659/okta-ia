@@ -18,14 +18,26 @@ public class ConectoresModel : PageModel
     private readonly MotorDeSync _motor;
     private readonly AdminAuditService _auditoria;
 
+    /// <summary>
+    /// Serve a UMA coisa: conferir a senha de quem clica em remover o conector.
+    ///
+    /// 🔴 REMOVER APAGA EM CASCATA (02/10/2026, pedido do dono). Vai junto a credencial, o cursor
+    /// de sincronização, o histórico de execuções e TODOS os alertas já ingeridos daquele conector.
+    /// O modal já avisava; faltava a trava. Aviso que se fecha com um clique protege contra o
+    /// descuido, não contra o computador deixado aberto.
+    /// </summary>
+    private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> _usuarios;
+
     public ConectoresModel(ApplicationDbContext db, RegistroDeConectores registro,
-        ProtetorDeCredencial protetor, MotorDeSync motor, AdminAuditService auditoria)
+        ProtetorDeCredencial protetor, MotorDeSync motor, AdminAuditService auditoria,
+        Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> usuarios)
     {
         _db = db;
         _registro = registro;
         _protetor = protetor;
         _motor = motor;
         _auditoria = auditoria;
+        _usuarios = usuarios;
     }
 
     public record ConectorView(int Id, string Nome, string Slug, string Categoria, string Fabricante,
@@ -193,7 +205,7 @@ public class ConectoresModel : PageModel
     /// Remove o conector. Admin-only e destrutivo: leva junto credencial, cursor, execuções e
     /// TODOS os alertas já ingeridos por ele (cascade). Mesmo cuidado da exclusão de ativo.
     /// </summary>
-    public async Task<IActionResult> OnPostRemoverAsync(int id, int? empresa)
+    public async Task<IActionResult> OnPostRemoverAsync(int id, int? empresa, string? senha)
     {
         if (!User.IsInRole("Admin"))
         {
@@ -204,6 +216,35 @@ public class ConectoresModel : PageModel
         if (conector is null)
         {
             return await FalharAsync("Conector não encontrado.", empresa);
+        }
+
+        // 🔴 A SENHA, ANTES DE QUALQUER ESCRITA (02/10/2026, pedido do dono). Remover apaga em
+        // cascata: credencial, cursor, execuções e todos os alertas ingeridos. O modal já avisava
+        // disso, e aviso que se fecha com um clique protege contra o descuido — não contra o
+        // computador deixado aberto, onde a sessão é válida e quem está na frente não sabe a senha.
+        //
+        // ⚠️ Pausar NÃO pede senha, de propósito: ele não destrói nada e é o caminho que a tela
+        // recomenda. Pedir senha para o ato reversível ensinaria a digitá-la por reflexo, e aí ela
+        // deixaria de proteger o irreversível.
+        var quem = await _usuarios.GetUserAsync(User);
+        if (quem is null)
+        {
+            return await FalharAsync("Sessão não reconhecida. Entre de novo.", empresa);
+        }
+
+        if (string.IsNullOrWhiteSpace(senha) || !await _usuarios.CheckPasswordAsync(quem, senha))
+        {
+            // A TENTATIVA vai para a trilha. Uma sequência de senhas erradas aqui é exatamente o
+            // sinal que alguém auditando precisa encontrar.
+            await _auditoria.RegistrarAsync("conector.remocao.recusada",
+                $"{conector.Nome} (empresa {conector.CompanyId}) — senha "
+                + (string.IsNullOrWhiteSpace(senha) ? "não informada" : "incorreta"),
+                User.Identity?.Name ?? "—");
+
+            return await FalharAsync(
+                string.IsNullOrWhiteSpace(senha)
+                    ? "Digite a sua senha para confirmar a remoção."
+                    : "Senha incorreta. O conector NÃO foi removido.", empresa);
         }
 
         var alertas = await _db.AlertasUnificados.CountAsync(a => a.ConectorId == id);

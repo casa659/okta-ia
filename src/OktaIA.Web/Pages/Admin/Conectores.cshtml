@@ -199,7 +199,32 @@
                 Some junto a credencial, o cursor, o histórico de execuções e
                 <strong style="color:#D4DFEC;">@c.Alertas alerta(s)</strong> já ingerido(s). Não tem desfazer.
             </p>
+
+            @* 🔴 O CAMINHO REVERSÍVEL VEM PRIMEIRO (02/10/2026, pedido do dono). "Pausar" para o
+               sync e não toca em credencial nem em alerta — é o que quase todo mundo quer quando
+               clica em remover. Oferecê-lo DENTRO da janela da remoção é o único lugar onde a
+               pessoa com certeza vai lê-lo. *@
+            <p style="font-size:12.5px; color:#8FA3BC; margin:0 0 12px; padding:9px 11px;
+                      background:rgba(255,255,255,.04); border-radius:7px;">
+                Se o que você quer é só <strong style="color:#D4DFEC;">parar de sincronizar</strong>,
+                use <strong style="color:#D4DFEC;">Pausar</strong>: ele interrompe o sync e mantém a
+                credencial, o histórico e os alertas. Dá para religar a qualquer momento.
+            </p>
+
             <form method="post" asp-page-handler="Remover" asp-route-id="@c.Id" asp-route-empresa="@Model.EmpresaSelecionadaId">
+                @* 🔴 A SENHA, e não só o clique. Aviso que se fecha com um clique protege contra o
+                   descuido — não contra o computador deixado aberto, onde a sessão é válida e quem
+                   está na frente não sabe a senha. O servidor confere de novo.
+
+                   ⚠️ `new-password` no autocomplete: sem isso o navegador oferece o login DA
+                   PLATAFORMA aqui, e a pessoa confirma com uma credencial que não quis digitar. *@
+                <label style="display:block; font-size:11px; color:#8FA3BC; margin-bottom:5px;">
+                    Digite a sua senha para confirmar
+                </label>
+                <input name="senha" type="password" autocomplete="new-password" required
+                       placeholder="sua senha de acesso"
+                       style="width:100%; box-sizing:border-box; margin-bottom:12px;" />
+
                 <div class="adm-dialog-actions">
                     <button type="button" class="adm-btn-secondary" data-adm-dialog-close>Cancelar</button>
                     <button type="submit" class="adm-btn-primary" style="background:#FF3B5C; border-color:#FF3B5C;">Remover definitivamente</button>
