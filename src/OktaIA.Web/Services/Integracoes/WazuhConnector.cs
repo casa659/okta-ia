@@ -44,7 +44,11 @@ public class WazuhConnector : IConnector
         [
             new CampoCredencial("usuario", "Usuário do Indexer", Segredo: false),
             new CampoCredencial("senha", "Senha", Segredo: true),
-        ]);
+        ],
+        ExemploUrlBase: "https://10.0.0.5:9200",
+        ComoObterCredencial:
+            "Crie no Indexer do cliente um usuário SOMENTE-LEITURA com permissão nos índices "
+            + "`wazuh-alerts-*`. Nunca a conta pessoal de um funcionário, e nunca uma com escrita.");
 
     public async Task<ResultadoTeste> TestarConexaoAsync(ContextoConector ctx, CancellationToken ct)
     {

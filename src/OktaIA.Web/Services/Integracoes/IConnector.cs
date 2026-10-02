@@ -8,6 +8,24 @@ namespace OktaIA.Web.Services.Integracoes;
 public record CampoCredencial(string Chave, string Rotulo, bool Segredo);
 
 /// <summary>O que o adaptador declara saber fazer. O motor de sync só pede o que está aqui.</summary>
+/// <param name="ExemploUrlBase">
+/// O que aparece esmaecido no campo "URL do serviço".
+///
+/// 🔴 POR ADAPTADOR (02/10/2026, visto pelo dono na tela de instalar o LinkEscola). A caixa sugeria
+/// `https://10.0.0.5:9200` para TODO conector — o endereço do Wazuh Indexer, na rede interna do
+/// cliente. Para um serviço público como o LinkEscola, aquilo manda a pessoa digitar um IP privado
+/// numa integração que fala com a internet.
+///
+/// ⚠️ Exemplo errado é pior que campo vazio: o vazio faz perguntar, o errado faz copiar.
+/// </param>
+/// <param name="ComoObterCredencial">
+/// Uma frase dizendo de onde sai a credencial DESTE produto.
+///
+/// 🔴 A caixa dizia "as credenciais são geradas pelo cliente, no console dele… use sempre um usuário
+/// somente-leitura" para todos. Vale para o Wazuh, onde há usuário e senha no Indexer; no LinkEscola
+/// não existe usuário nenhum — é uma CHAVE num App Setting. Instrução genérica manda procurar o que
+/// não existe.
+/// </param>
 public record CapacidadesConector(
     string Slug,
     string Nome,
@@ -16,7 +34,9 @@ public record CapacidadesConector(
     TipoAuthConector TipoAuth,
     IReadOnlyList<EscopoSync> Escopos,
     bool ExigeUrlBase,
-    IReadOnlyList<CampoCredencial> CamposCredencial);
+    IReadOnlyList<CampoCredencial> CamposCredencial,
+    string? ExemploUrlBase = null,
+    string? ComoObterCredencial = null);
 
 /// <summary>Resultado de testar a conexão. Não grava nada — é a checagem da instalação.</summary>
 public record ResultadoTeste(bool Ok, string Mensagem, int? LatenciaMs = null, string? Referencia = null);

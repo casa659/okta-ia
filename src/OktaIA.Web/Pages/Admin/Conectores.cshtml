@@ -130,9 +130,26 @@
 {
     <dialog id="adm-dialog-add-conector-@d.Slug" class="adm-dialog">
         <h2>Instalar @d.Nome</h2>
+        @* 🔴 A INSTRUÇÃO VEM DO ADAPTADOR (02/10/2026). Era uma frase só para todos — "credenciais
+           geradas pelo cliente, use um usuário somente-leitura" —, que descreve o Wazuh. No
+           LinkEscola não existe usuário nenhum: é uma CHAVE num App Setting, e a instrução genérica
+           mandava procurar o que não existe.
+
+           ⚠️ A frase comum (ficam cifradas aqui) FICA, porque vale para todos e é o que responde a
+           pergunta que a pessoa tem ao digitar um segredo numa tela de terceiro. *@
         <p style="font-size:12.5px; color:#8FA3BC; margin:0 0 12px;">
-            As credenciais são geradas <strong>pelo cliente</strong>, no console dele, e ficam cifradas aqui.
-            Use sempre um usuário somente-leitura.
+            @if (d.ComoObterCredencial is { Length: > 0 } comoObter)
+            {
+                @comoObter<text> </text>
+            }
+            else
+            {
+                <text>
+                    As credenciais são geradas <strong>pelo cliente</strong>, no console dele.
+                    Use sempre um usuário somente-leitura.
+                </text>
+            }
+            O que você digitar aqui fica <strong>cifrado</strong> e não é reexibido.
         </p>
         <form method="post" asp-page-handler="Instalar" asp-route-slug="@d.Slug" asp-route-empresaId="@Model.EmpresaSelecionadaId">
             @* O navegador enche estes campos com o login DA PLATAFORMA se achar que é um formulário
@@ -145,7 +162,11 @@
             @if (d.ExigeUrlBase)
             {
                 <label>URL do serviço</label>
-                <input name="urlBase" placeholder="https://10.0.0.5:9200" autocomplete="off" spellcheck="false" />
+                @* ⚠️ O exemplo vem do adaptador. Fixo, ele sugeria um IP da rede interna do cliente
+                   (o Indexer do Wazuh) para integrações que falam com a internet — e exemplo errado
+                   é pior que campo vazio: o vazio faz perguntar, o errado faz copiar. *@
+                <input name="urlBase" placeholder="@(d.ExemploUrlBase ?? "https://servidor.do.cliente")"
+                       autocomplete="off" spellcheck="false" />
             }
             @foreach (var campo in d.CamposCredencial)
             {

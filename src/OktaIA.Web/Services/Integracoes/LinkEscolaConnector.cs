@@ -66,7 +66,12 @@ public class LinkEscolaConnector : IConnector
             // precisa ficar visível para quem configurou conferir que ligou na escola certa.
             new CampoCredencial("controlador", "Id do controlador (instituição)", Segredo: false),
             new CampoCredencial("chave", "Chave da postura (X-Postura-Chave)", Segredo: true),
-        ]);
+        ],
+        ExemploUrlBase: "https://linkescola.suaescola.com.br",
+        ComoObterCredencial:
+            "A chave é a do App Setting `Postura:Segredo` do LinkEscola — não há usuário nem senha "
+            + "neste conector. O id do controlador é o número da instituição lá dentro; errando o "
+            + "número, o teste de conexão não encontra trilha e você ajusta na hora.");
 
     public async Task<ResultadoTeste> TestarConexaoAsync(ContextoConector ctx, CancellationToken ct)
     {
