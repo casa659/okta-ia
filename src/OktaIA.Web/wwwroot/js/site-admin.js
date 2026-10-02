@@ -40,6 +40,16 @@
     });
   });
 
+  // ---------- Campo que se seleciona inteiro ao receber o foco ----------
+  // Para segredo exibido uma única vez (chave de leitura LGPD): clicar e já ter tudo marcado evita
+  // a cópia parcial, que depois aparece do outro lado como "chave inválida" sem ninguém suspeitar
+  // de um caractere perdido na seleção.
+  document.querySelectorAll('[data-selecionar-tudo]').forEach(function (campo) {
+    campo.addEventListener('focus', function () {
+      campo.select();
+    });
+  });
+
   // ---------- Confirmação em ações destrutivas (excluir/desativar) ----------
   document.querySelectorAll('form[data-adm-confirm]').forEach(function (form) {
     form.addEventListener('submit', function (ev) {

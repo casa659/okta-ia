@@ -109,6 +109,11 @@ builder.Services.AddSingleton<RoteiroPdfService>();
 builder.Services.AddSingleton<ProtetorDeCredencial>();
 builder.Services.AddScoped<RegistroDeConectores>();
 builder.Services.AddScoped<MotorDeSync>();
+
+// ── Monitoramento LGPD lido de fora (02/10/2026) ──────────────────────────────────────────────
+// A chave por empresa e o resumo que o LinkEscola consome. Ver /api/lgpd/resumo no fim do arquivo.
+builder.Services.AddScoped<ChaveDeLeituraLgpd>();
+builder.Services.AddScoped<ResumoLgpd>();
 builder.Services.AddHostedService<SyncAgendadorService>();
 
 // Análise do diagnóstico por modelo de linguagem. Sem a chave configurada o serviço recusa operar
@@ -232,6 +237,35 @@ app.UseAuthorization();
 app.MapStaticAssets();
 app.MapRazorPages()
    .WithStaticAssets();
+
+// ── Monitoramento LGPD, para o LinkEscola ler ────────────────────────────────────────────────
+//
+// Quem chama: a plataforma LinkEscola, para mostrar ao DPO da escola o que esta plataforma apurou.
+// É o par do `/postura/trilha` do LinkEscola, na direção contrária — lá nós lemos a trilha dele,
+// aqui ele lê os alertas dele.
+//
+// 🔴 A CHAVE DIZ QUAL EMPRESA É. Não existe `?empresa=` de propósito: um parâmetro assim convida
+// a trocar o número e ler a empresa do vizinho, e nenhuma conferência posterior apaga o fato de
+// que o endereço aceitava a pergunta errada.
+//
+// ⚠️ FORA do pipeline de cookie: quem chama é máquina, não navegador. A autorização é o cabeçalho,
+// e só ele.
+//
+// ⚠️ 401 e nada mais. Não distinguir "chave inexistente" de "chave de outra empresa": a diferença
+// entre as duas respostas é um oráculo para descobrir chave válida por tentativa.
+app.MapGet("/api/lgpd/resumo", async (
+    HttpContext ctx,
+    ChaveDeLeituraLgpd chaves,
+    ResumoLgpd resumo,
+    CancellationToken ct) =>
+{
+    var empresa = await chaves.QuemEAsync(ctx.Request.Headers["X-Lokta-Chave"].ToString(), ct);
+    if (empresa is null) { return Results.Unauthorized(); }
+
+    return Results.Ok(await resumo.MedirAsync(empresa, ct));
+})
+.AllowAnonymous()
+.WithName("ResumoLgpd");
 
 using (var scope = app.Services.CreateScope())
 {

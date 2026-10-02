@@ -1,0 +1,177 @@
+@page
+@model OktaIA.Web.Pages.Admin.ChaveLgpdModel
+@{
+    ViewData["Title"] = "Chave de leitura LGPD";
+}
+
+<div class="adm-page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+    <div>
+        <h1>Chave de leitura LGPD</h1>
+        <p>Autoriza o LinkEscola de uma escola a ler o monitoramento dela · uma chave por empresa</p>
+    </div>
+    <form method="get">
+        <select name="empresa" data-adm-autosubmit style="background:rgba(5,10,18,.7);border:1px solid rgba(120,170,255,.16);border-radius:8px;padding:8px 10px;color:#EAF0F8;font-family:inherit;font-size:12px;">
+            @foreach (var e in Model.EmpresasDisponiveis)
+            {
+                <option value="@e.Id" selected="@(Model.Empresa?.Id == e.Id)">@e.Nome</option>
+            }
+        </select>
+        <noscript><button type="submit" class="adm-btn" style="padding:8px 12px; font-size:11px;">Trocar</button></noscript>
+    </form>
+</div>
+
+@if (Model.Mensagem is { Length: > 0 })
+{
+    <div style="margin:14px 0; padding:12px 14px; border-radius:10px; font-size:12.5px; line-height:1.5;
+                border:1px solid @(Model.Erro ? "rgba(255,59,92,.35)" : "rgba(0,224,164,.3)");
+                background:@(Model.Erro ? "rgba(255,59,92,.08)" : "rgba(0,224,164,.07)");
+                color:@(Model.Erro ? "#FF8A9E" : "#8CF5D6");">
+        @Model.Mensagem
+    </div>
+}
+
+@if (Model.ChaveEmClaro is { Length: > 0 })
+{
+    <div style="margin:14px 0; padding:16px; border-radius:12px; border:1px solid rgba(255,138,61,.4); background:rgba(255,138,61,.07);">
+        <div style="font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#FF8A3D; font-weight:700; margin-bottom:8px;">
+            Copie agora — não será exibida de novo
+        </div>
+        @* Campo de texto e não um <code>: dá para selecionar tudo de uma vez e colar sem pegar
+           espaço em volta. Somente leitura para que ninguém "corrija" o valor antes de copiar. *@
+        @* ⚠️ Sem `onfocus` inline: a CSP desta plataforma é `script-src 'self'` e o atributo seria
+           bloqueado, sobrando só o erro no console. O "selecionar tudo ao focar" vive no
+           site-admin.js, por `data-selecionar-tudo`. *@
+        <input type="text" value="@Model.ChaveEmClaro" readonly data-selecionar-tudo
+               style="width:100%; box-sizing:border-box; font-family:ui-monospace,Menlo,Consolas,monospace;
+                      font-size:13px; padding:11px 12px; border-radius:8px; color:#EAF0F8;
+                      background:rgba(5,10,18,.8); border:1px solid rgba(120,170,255,.2);" />
+        <p style="margin:10px 0 0; font-size:12px; color:#9FB2CC; line-height:1.55;">
+            Entregue ao DPO da escola. Ele a cola em <strong>LexAdm → Monitoramento LGPD</strong>, no
+            LinkEscola. Esta plataforma guarda apenas o resumo da chave — não há como recuperá-la depois.
+        </p>
+    </div>
+}
+
+@if (Model.Empresa is null)
+{
+    <div class="adm-card" style="padding:18px;">
+        <p style="margin:0; font-size:12.5px; color:#9FB2CC;">Nenhuma empresa visível para a sua conta.</p>
+    </div>
+}
+else
+{
+    <div class="adm-card" style="padding:18px; margin-bottom:16px;">
+        <h2 style="margin:0 0 4px; font-size:14px;">@Model.Empresa.Nome</h2>
+        <p style="margin:0 0 16px; font-size:12px; color:#9FB2CC;">Empresa #@Model.Empresa.Id</p>
+
+        @if (Model.Empresa.ChaveLgpdHash is null)
+        {
+            <p style="margin:0 0 14px; font-size:12.5px; color:#9FB2CC; line-height:1.6;">
+                Esta empresa <strong>não expõe leitura</strong>. O LinkEscola dela não consegue mostrar
+                alertas nem relatórios de monitoramento enquanto não houver chave.
+            </p>
+        }
+        else
+        {
+            <table style="width:100%; border-collapse:collapse; font-size:12.5px; margin-bottom:16px;">
+                <tr>
+                    <td style="padding:7px 0; color:#9FB2CC; width:170px;">Chave em uso</td>
+                    <td style="padding:7px 0; font-family:ui-monospace,Menlo,Consolas,monospace; color:#EAF0F8;">
+                        @Model.Empresa.ChaveLgpdPrefixo…
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:7px 0; color:#9FB2CC;">Gerada em</td>
+                    <td style="padding:7px 0; color:#EAF0F8;">
+                        @Model.Empresa.ChaveLgpdEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                        @if (Model.Empresa.ChaveLgpdPor is { Length: > 0 })
+                        {
+                            <span style="color:#9FB2CC;"> · por @Model.Empresa.ChaveLgpdPor</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:7px 0; color:#9FB2CC;">Último uso</td>
+                    <td style="padding:7px 0;">
+                        @if (Model.Empresa.ChaveLgpdUsoEm is null)
+                        {
+                            @* ⚠️ Este caso é o que diferencia "integração de pé" de "chave gerada e
+                               esquecida na mesa". Sem dizê-lo, as duas situações parecem iguais. *@
+                            <span style="color:#FF8A3D;">nunca usada — o DPO ainda não colou a chave no LinkEscola</span>
+                        }
+                        else
+                        {
+                            <span style="color:#00E0A4;">@Model.Empresa.ChaveLgpdUsoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                    </td>
+                </tr>
+            </table>
+        }
+
+        @* Duas ações no mesmo cartão, cada uma com a senha dentro do próprio <details>: um campo de
+           senha compartilhado faria o valor digitado para "revogar" chegar junto no "gerar". *@
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <details>
+                <summary class="adm-btn" style="padding:9px 14px; font-size:11.5px; cursor:pointer; list-style:none;">
+                    @(Model.Empresa.ChaveLgpdHash is null ? "Gerar chave" : "Gerar chave nova")
+                </summary>
+                <form method="post" asp-page-handler="Gerar" style="margin-top:12px; padding:14px; border-radius:10px; border:1px solid rgba(120,170,255,.16); background:rgba(5,10,18,.5); max-width:420px;">
+                    <input type="hidden" name="empresa" value="@Model.Empresa.Id" />
+                    @if (Model.Empresa.ChaveLgpdHash is not null)
+                    {
+                        <p style="margin:0 0 12px; font-size:12px; color:#FF8A9E; line-height:1.6;">
+                            A chave atual <strong>para de funcionar na hora</strong>. O painel de
+                            monitoramento do DPO desta escola fica sem dados até ele colar a nova.
+                        </p>
+                    }
+                    <label style="display:block; font-size:11px; color:#9FB2CC; margin-bottom:6px;">Sua senha, para confirmar</label>
+                    <input type="password" name="senha" autocomplete="current-password" required
+                           style="width:100%; box-sizing:border-box; padding:9px 11px; border-radius:8px; font-size:12.5px;
+                                  color:#EAF0F8; background:rgba(5,10,18,.8); border:1px solid rgba(120,170,255,.2);" />
+                    <button type="submit" class="adm-btn" style="margin-top:12px; padding:9px 16px; font-size:11.5px;">
+                        Confirmar e gerar
+                    </button>
+                </form>
+            </details>
+
+            @if (Model.Empresa.ChaveLgpdHash is not null)
+            {
+                <details>
+                    <summary class="adm-btn" style="padding:9px 14px; font-size:11.5px; cursor:pointer; list-style:none; border-color:rgba(255,59,92,.35); color:#FF8A9E;">
+                        Revogar
+                    </summary>
+                    <form method="post" asp-page-handler="Revogar" style="margin-top:12px; padding:14px; border-radius:10px; border:1px solid rgba(255,59,92,.3); background:rgba(255,59,92,.05); max-width:420px;">
+                        <input type="hidden" name="empresa" value="@Model.Empresa.Id" />
+                        <p style="margin:0 0 12px; font-size:12px; color:#FF8A9E; line-height:1.6;">
+                            O LinkEscola desta escola para de ler o monitoramento. Os alertas continuam
+                            sendo coletados aqui — só a vista do DPO é cortada.
+                        </p>
+                        <label style="display:block; font-size:11px; color:#9FB2CC; margin-bottom:6px;">Sua senha, para confirmar</label>
+                        <input type="password" name="senha" autocomplete="current-password" required
+                               style="width:100%; box-sizing:border-box; padding:9px 11px; border-radius:8px; font-size:12.5px;
+                                      color:#EAF0F8; background:rgba(5,10,18,.8); border:1px solid rgba(255,59,92,.25);" />
+                        <button type="submit" class="adm-btn" style="margin-top:12px; padding:9px 16px; font-size:11.5px; border-color:rgba(255,59,92,.35); color:#FF8A9E;">
+                            Confirmar e revogar
+                        </button>
+                    </form>
+                </details>
+            }
+        </div>
+    </div>
+
+    <div class="adm-card" style="padding:18px;">
+        <h2 style="margin:0 0 10px; font-size:13px;">O que a chave entrega</h2>
+        <p style="margin:0 0 10px; font-size:12.5px; color:#9FB2CC; line-height:1.65;">
+            Um endereço só, <code style="color:#4D9BFF;">GET /api/lgpd/resumo</code>, com a chave no
+            cabeçalho <code style="color:#4D9BFF;">X-Lokta-Chave</code>. A resposta traz
+            <strong>contagens</strong> — total de alertas, quantos em aberto, quantos tratados, críticos
+            e altos pendentes, situação dos conectores — e os dez alertas abertos mais antigos pelo
+            título.
+        </p>
+        <p style="margin:0; font-size:12.5px; color:#9FB2CC; line-height:1.65;">
+            Não entrega IP, nome de máquina, usuário afetado nem o alerta bruto. O DPO precisa
+            demonstrar que monitora e que o que apareceu foi tratado; para isso número basta, e copiar
+            o conteúdo para outra plataforma espalharia dado pessoal em vez de protegê-lo.
+        </p>
+    </div>
+}
