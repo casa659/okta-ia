@@ -266,6 +266,36 @@ public class CalculadoraDeOrcamento
             linhas.Add("Cobertura: horário comercial (referência, sem fator).");
         }
 
+        // ── Frentes da adequação à LGPD (02/10/2026) ────────────────────────────────────────
+        //
+        // ⚠️ DEPOIS do fator de cobertura, de propósito. O fator multiplica o custo de ATENDER
+        // alertas — plantão, madrugada, tempo de resposta. Um projeto de inventário de dados não
+        // fica mais caro porque o cliente contratou plantão noturno; multiplicá-lo junto inflaria
+        // o total por um motivo que não existe.
+        if (p.AdequacaoLgpd)
+        {
+            var frentes = FrentesDe(p);
+            if (frentes.Count > 0)
+            {
+                linhas.Add("");
+                linhas.Add("Adequação à LGPD — frentes contratadas:");
+            }
+
+            foreach (var (frente, valor) in frentes)
+            {
+                var grupo = frente.Cobranca == CobrancaFrente.Mensal ? "Mensalidade" : "Implantação";
+                var rotulo = frente.Artigo.Length > 0
+                    ? $"{frente.Artigo} — {frente.Nome}"
+                    : frente.Nome;
+
+                if (frente.Cobranca == CobrancaFrente.Mensal) { mensal += valor; }
+                else { implantacao += valor; }
+
+                linhas.Add($"+ {rotulo}: R$ {valor:N2} ({grupo.ToLowerInvariant()})");
+                itens.Add(new(grupo, rotulo, valor));
+            }
+        }
+
         return new Resultado(
             maquinas,
             Math.Round(implantacao, 2),
@@ -273,6 +303,40 @@ public class CalculadoraDeOrcamento
             custoDireto,
             string.Join("\n", linhas),
             itens);
+    }
+
+    /// <summary>
+    /// As frentes gravadas no orçamento, já casadas com o catálogo.
+    ///
+    /// ⚠️ Frente cuja chave não existe mais no catálogo é IGNORADA, não estoura. Orçamento antigo
+    /// precisa continuar abrindo depois de o catálogo mudar — e uma exceção aqui derrubaria a tela
+    /// de uma proposta já enviada ao cliente.
+    /// </summary>
+    public static List<(FrenteLgpd Frente, decimal Valor)> FrentesDe(OrcamentoMonitoramento p)
+    {
+        var saida = new List<(FrenteLgpd, decimal)>();
+        if (string.IsNullOrWhiteSpace(p.FrentesLgpdJson)) { return saida; }
+
+        List<FrenteEscolhida>? escolhidas;
+        try
+        {
+            escolhidas = System.Text.Json.JsonSerializer.Deserialize<List<FrenteEscolhida>>(p.FrentesLgpdJson);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return saida;
+        }
+
+        foreach (var e in escolhidas ?? [])
+        {
+            if (CatalogoFrentesLgpd.Achar(e.Chave) is { } f) { saida.Add((f, e.Valor)); }
+        }
+
+        // Na ordem do catálogo, não na de gravação: a lista do PDF precisa sair sempre igual, e a
+        // ordem do catálogo é a ordem do trabalho (inventário primeiro, porque as outras dependem).
+        return saida
+            .OrderBy(x => CatalogoFrentesLgpd.Todas.ToList().FindIndex(f => f.Chave == x.Item1.Chave))
+            .ToList();
     }
 
     public static string Rotulo(CoberturaOrcamento c) => c switch

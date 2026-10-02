@@ -137,6 +137,14 @@ public class OrcamentosModel : PageModel
         alvo.Conformidade = Limpo(Entrada.Conformidade);
         alvo.Observacoes = Limpo(Entrada.Observacoes);
 
+        // ── Frentes da adequação à LGPD (02/10/2026) ────────────────────────────────────────
+        //
+        // ⚠️ As frentes vêm do formulário como dois vetores paralelos (chave marcada + valor de
+        // cada uma), e não ligadas ao `Entrada`: são uma lista de tamanho variável, e amarrá-la ao
+        // binder exigiria índices no `name` — que quebram ao desmarcar uma do meio.
+        alvo.AdequacaoLgpd = Entrada.AdequacaoLgpd;
+        alvo.FrentesLgpdJson = alvo.AdequacaoLgpd ? MontarFrentes() : null;
+
         var conta = _calculadora.Calcular(alvo);
         alvo.MaquinasTotal = conta.MaquinasTotal;
         alvo.CustoDiretoMensal = conta.CustoDiretoMensal;
@@ -270,6 +278,37 @@ public class OrcamentosModel : PageModel
     /// reaproveitar um número que já esteve em cima da mesa de alguém.
     /// </summary>
     private static string? Limpo(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
+    /// <summary>
+    /// As frentes marcadas no formulário, com o valor de cada uma, em JSON.
+    ///
+    /// ⚠️ O VALOR VEM DO CAMPO, não do catálogo: o dono ajusta o preço de cada frente na própria
+    /// tela, caso a caso. Ler do catálogo aqui jogaria fora o que ele acabou de digitar.
+    ///
+    /// ⚠️ Campo vazio cai no valor de tabela, e NÃO em zero. Um orçamento com uma frente de R$ 0
+    /// no meio parece cortesia e é engano de digitação — e o cliente lê como promessa.
+    /// </summary>
+    private string? MontarFrentes()
+    {
+        var marcadas = Request.Form["frente"].ToArray();
+        if (marcadas.Length == 0) { return null; }
+
+        var escolhidas = new List<FrenteEscolhida>();
+        foreach (var chave in marcadas)
+        {
+            if (chave is null || CatalogoFrentesLgpd.Achar(chave) is not { } frente) { continue; }
+
+            var bruto = Request.Form[$"valor_{chave}"].ToString();
+            var valor = decimal.TryParse(bruto, System.Globalization.NumberStyles.Any,
+                            System.Globalization.CultureInfo.CurrentCulture, out var v) && v > 0
+                ? v
+                : frente.ValorPadrao;
+
+            escolhidas.Add(new FrenteEscolhida(frente.Chave, Math.Round(valor, 2)));
+        }
+
+        return escolhidas.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(escolhidas);
+    }
 
     public static string RotuloStatus(StatusOrcamento s) => s switch
     {

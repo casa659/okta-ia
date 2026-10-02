@@ -214,6 +214,75 @@
                     </label>
                 </div>
 
+                @* ── Adequação à LGPD (02/10/2026) ──────────────────────────────────────
+                   🔴 O monitoramento atende QUATRO artigos. "Se enquadrar na lei" é bem mais, e
+                   um orçamento que entrega só o monitoramento com o nome de "adequação à LGPD"
+                   vende ao cliente a impressão de que ele ficou em conformidade — com nota fiscal
+                   em cima. Por isso cada frente aqui carrega o artigo que atende. *@
+                <h2 class="prop-h2">Adequação à LGPD</h2>
+                <div class="prop-campos">
+                    <label class="checkbox larga">
+                        <input asp-for="Entrada.AdequacaoLgpd" type="checkbox" />
+                        <span>Orçar a adequação à LGPD, e não só o monitoramento</span>
+                        <i>Marcado, as frentes escolhidas abaixo entram no total e aparecem no
+                           documento, cada uma com o artigo que atende.</i>
+                    </label>
+                </div>
+
+                @{
+                    var escolhidas = Model.Aberta is null
+                        ? new List<(OktaIA.Web.Models.FrenteLgpd Frente, decimal Valor)>()
+                        : OktaIA.Web.Services.CalculadoraDeOrcamento.FrentesDe(Model.Aberta);
+                }
+
+                @* 🔴 PRODUTO E PROJETO SEPARADOS, e produto primeiro. A diferença não é de preço, é
+                   de promessa: o de cima está no ar e pode ser demonstrado hoje; o de baixo é
+                   trabalho a fazer. Numa lista só, o cliente assina achando que tudo começa a
+                   funcionar na segunda-feira — e a primeira cobrança é sobre o que ele entendeu. *@
+                @foreach (var grupo in new[] { OktaIA.Web.Models.NaturezaFrente.Produto, OktaIA.Web.Models.NaturezaFrente.Projeto })
+                {
+                    var ehProduto = grupo == OktaIA.Web.Models.NaturezaFrente.Produto;
+                    <p class="prop-frentes-titulo">
+                        @(ehProduto ? "Já no ar — software em operação" : "Projeto — consultoria a executar")
+                        <em>
+                            @(ehProduto
+                                ? "pode ser demonstrado antes de assinar; entra na mensalidade"
+                                : "alguém levanta, escreve e entrega; entra na implantação")
+                        </em>
+                    </p>
+                    <div class="prop-frentes">
+                        @foreach (var f in OktaIA.Web.Models.CatalogoFrentesLgpd.De(grupo))
+                        {
+                            var jaEscolhida = escolhidas.FirstOrDefault(x => x.Frente.Chave == f.Chave);
+                            var marcada = jaEscolhida.Frente is not null;
+                            var valor = marcada ? jaEscolhida.Valor : f.ValorPadrao;
+
+                            <div class="prop-frente">
+                                <label class="checkbox">
+                                    <input type="checkbox" name="frente" value="@f.Chave" checked="@marcada" />
+                                    <span>
+                                        @if (f.Artigo.Length > 0)
+                                        {
+                                            <strong>@f.Artigo</strong><text> · </text>
+                                        }
+                                        @f.Nome
+                                        @if (f.Onde is { Length: > 0 } onde)
+                                        {
+                                            <em class="prop-frente-onde">@onde</em>
+                                        }
+                                    </span>
+                                    <i>@f.OQueEntrega</i>
+                                </label>
+                                <label class="prop-frente-valor">
+                                    <span>R$</span>
+                                    <input type="text" name="valor_@f.Chave" value="@valor.ToString("0.00")" inputmode="decimal" />
+                                    <em>@(f.Cobranca == OktaIA.Web.Models.CobrancaFrente.Mensal ? "/mês" : "única")</em>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                }
+
                 @* ── O preço fechado à mão ──────────────────────────────────────────────
                    ⚠️ Fica no FIM do formulário, depois do levantamento, e não no alto: a ordem
                    da tela é a ordem da conversa — primeiro se apura o que o cliente tem, depois
@@ -341,6 +410,54 @@
                         </p>
                     }
                 </div>
+
+                @if (a.AdequacaoLgpd)
+                {
+                    var frentesDoCliente = OktaIA.Web.Services.CalculadoraDeOrcamento.FrentesDe(a);
+                    if (frentesDoCliente.Count > 0)
+                    {
+                        <div class="prop-lgpd">
+                            <h3>Frentes da adequação</h3>
+                            <p>
+                                O monitoramento acima atende os arts. 46, 6º VII e VIII, 48 e 49. As
+                                frentes abaixo cobrem o restante do que a lei exige — cada uma com o
+                                dispositivo que atende.
+                            </p>
+                            <ul>
+                                @foreach (var (f, v) in frentesDoCliente)
+                                {
+                                    <li>
+                                        @if (f.Artigo.Length > 0)
+                                        {
+                                            <strong>@f.Artigo</strong><text> · </text>
+                                        }
+                                        <strong>@f.Nome</strong>
+                                        <text> — R$ @v.ToString("N2")</text>
+                                        @(f.Cobranca == OktaIA.Web.Models.CobrancaFrente.Mensal ? " por mês" : "")
+                                        <br />
+                                        <span style="color:#8A96AB;">@f.OQueEntrega</span>
+                                    </li>
+                                }
+                            </ul>
+                            @* 🔴 DIZ O QUE CONTINUA FALTANDO. Listar só o que foi contratado faz o
+                               cliente ler a lista como "a adequação inteira" — e assinar achando que
+                               terminou. É o mesmo erro do relatório que mostra só o verde. *@
+                            @{
+                                var deFora = OktaIA.Web.Models.CatalogoFrentesLgpd.Todas
+                                    .Where(f => frentesDoCliente.All(x => x.Frente.Chave != f.Chave))
+                                    .ToList();
+                            }
+                            @if (deFora.Count > 0)
+                            {
+                                <p>
+                                    <strong>Não incluído neste orçamento:</strong>
+                                    @string.Join("; ", deFora.Select(f => f.Artigo.Length > 0 ? $"{f.Nome} ({f.Artigo})" : f.Nome)).
+                                    Estas obrigações continuam sendo do controlador.
+                                </p>
+                            }
+                        </div>
+                    }
+                }
 
                 @if (a.Observacoes is { Length: > 0 })
                 {
@@ -532,6 +649,35 @@
     .prop-campos label.checkbox input { width:auto; margin-top:2px; }
     .prop-campos label.checkbox i { flex-basis:100%; }
     .prop-acoes { margin-top:18px; }
+
+    /* ── Frentes da adequação à LGPD ──────────────────────────────────────────────────
+       ⚠️ Uma frente por LINHA, com o valor à direita. Em grade, o texto do "o que entrega"
+       ficaria espremido numa coluna estreita — e é justamente ele que explica por que o
+       cliente precisa daquela frente. */
+    .prop-frentes { display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+    .prop-frente {
+        display:grid; grid-template-columns:1fr auto; align-items:start; gap:14px;
+        background:rgba(5,10,18,.45); border:1px solid rgba(120,170,255,.12);
+        border-radius:10px; padding:11px 13px;
+    }
+    .prop-frente label.checkbox { display:flex; flex-direction:row; align-items:flex-start; gap:8px; flex-wrap:wrap; font-size:12px; }
+    .prop-frente label.checkbox input { width:auto; margin-top:2px; }
+    .prop-frente label.checkbox > span { color:#D7E2F0; font-weight:500; }
+    .prop-frente label.checkbox i { flex-basis:100%; font-style:normal; font-size:10.5px; color:#8A96AB; line-height:1.45; }
+    .prop-frentes-titulo { margin:16px 0 0; font-size:11px; font-weight:600; color:#D7E2F0; letter-spacing:.03em; }
+    .prop-frentes-titulo em { font-style:normal; font-weight:400; color:#8A96AB; }
+    .prop-frentes-titulo em::before { content:" · "; }
+    .prop-frente-onde { font-style:normal; font-size:10px; color:#00C79A; border:1px solid rgba(0,199,154,.3); border-radius:20px; padding:1px 7px; margin-left:6px; }
+    .prop-frente-valor { display:flex; align-items:center; gap:6px; font-size:12px; color:#8A96AB; }
+    .prop-frente-valor em { font-style:normal; font-size:10px; }
+    .prop-frente-valor input {
+        background:rgba(5,10,18,.7); border:1px solid rgba(120,170,255,.16); border-radius:8px;
+        padding:7px 9px; color:#EAF0F8; font-family:inherit; font-size:13px; width:104px; text-align:right;
+    }
+    @@media (max-width:640px) {
+        .prop-frente { grid-template-columns:1fr; }
+        .prop-frente-valor { justify-content:flex-end; }
+    }
 
     .prop-papel { background:rgba(8,14,24,.6); border:1px solid rgba(120,170,255,.16); border-radius:12px; padding:24px; }
     .prop-papel.vazio { color:#8A96AB; }

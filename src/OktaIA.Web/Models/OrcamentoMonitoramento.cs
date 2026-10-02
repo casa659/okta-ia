@@ -183,6 +183,29 @@ public class OrcamentoMonitoramento
     /// </summary>
     public string? ItensDeCustoJson { get; set; }
 
+    // ── Adequação à LGPD (02/10/2026) ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Este orçamento é de ADEQUAÇÃO À LGPD, e não só de monitoramento.
+    ///
+    /// 🔴 É UM CAMPO, e não um tipo de documento à parte, porque os dois convivem: a instituição
+    /// contrata o monitoramento (arts. 46, 6º VII e VIII, 48 e 49) e as frentes que faltam no mesmo
+    /// projeto. Separar em dois orçamentos faria o cliente somar dois papéis para saber quanto custa
+    /// ficar em conformidade — e é essa a pergunta que ele tem.
+    ///
+    /// ⚠️ Desligado, o orçamento continua sendo o de sempre. Ligar não muda o cálculo do
+    /// monitoramento; só ACRESCENTA as frentes escolhidas.
+    /// </summary>
+    public bool AdequacaoLgpd { get; set; }
+
+    /// <summary>
+    /// As frentes escolhidas e o valor de cada uma, em JSON (<see cref="FrenteEscolhida"/>).
+    ///
+    /// ⚠️ Com o VALOR DENTRO, pela mesma razão de <see cref="ItensDeCustoJson"/>: o preço de tabela
+    /// muda, o orçamento entregue não.
+    /// </summary>
+    public string? FrentesLgpdJson { get; set; }
+
     // ── Trilha ──────────────────────────────────────────────────────────────────────────────
     public StatusOrcamento Status { get; set; } = StatusOrcamento.Rascunho;
     public DateTimeOffset CriadaEm { get; set; } = DateTimeOffset.UtcNow;

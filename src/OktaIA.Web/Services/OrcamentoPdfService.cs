@@ -254,6 +254,16 @@ public class OrcamentoPdfService
                     // segunda cópia teria envelhecido sozinha.
                     SecaoLeiLgpd.Desenhar(col, o.TrataDadosDeCriancas, Muted, Azul);
 
+                    // ── Frentes da adequação (02/10/2026) ───────────────────────────────────
+                    //
+                    // ⚠️ DEPOIS da seção da lei, e não antes: quem lê precisa ter visto o que a lei
+                    // exige para entender por que cada frente existe. Invertido, a lista parece
+                    // cardápio de serviços.
+                    if (o.AdequacaoLgpd)
+                    {
+                        Frentes(col, o);
+                    }
+
                     if (!string.IsNullOrWhiteSpace(o.Observacoes))
                     {
                         col.Item().PaddingTop(18).Text("OBSERVAÇÕES").FontSize(9).Bold().FontColor(Muted);
@@ -331,5 +341,85 @@ public class OrcamentoPdfService
         }
 
         return itens;
+    }
+
+    /// <summary>
+    /// As frentes da adequação à LGPD, cada uma com o artigo que atende e o que entrega.
+    ///
+    /// 🔴 SEPARA O QUE JÁ ESTÁ NO AR DO QUE É PROJETO. A diferença não é de preço, é de promessa:
+    /// o primeiro grupo pode ser demonstrado antes de assinar; o segundo é trabalho a fazer. Numa
+    /// lista só, o cliente assina achando que tudo começa a funcionar na segunda-feira — e a
+    /// primeira reunião de cobrança é sobre o que ele entendeu, não sobre o que estava escrito.
+    ///
+    /// 🔴 E DIZ O QUE FICOU DE FORA. Listar só o contratado faz a lista ser lida como "a adequação
+    /// inteira" — o mesmo erro do relatório que mostra só o que está verde, agora com assinatura.
+    /// </summary>
+    private static void Frentes(ColumnDescriptor col, OrcamentoMonitoramento o)
+    {
+        var escolhidas = CalculadoraDeOrcamento.FrentesDe(o);
+        if (escolhidas.Count == 0) { return; }
+
+        col.Item().PaddingTop(22).Text("FRENTES DA ADEQUAÇÃO").FontSize(9).Bold().FontColor(Muted);
+        col.Item().PaddingTop(5).Text(
+            "O monitoramento descrito acima atende os arts. 46, 6º VII e VIII, 48 e 49. As frentes "
+            + "abaixo cobrem o restante do que a Lei nº 13.709/2018 exige.")
+            .FontSize(9.5f).LineHeight(1.45f).FontColor(Muted);
+
+        foreach (var natureza in new[] { NaturezaFrente.Produto, NaturezaFrente.Projeto })
+        {
+            var doGrupo = escolhidas.Where(x => x.Frente.Natureza == natureza).ToList();
+            if (doGrupo.Count == 0) { continue; }
+
+            col.Item().PaddingTop(14).Text(natureza == NaturezaFrente.Produto
+                    ? "Já em operação — sistema no ar, demonstrável antes de assinar"
+                    : "Projeto — trabalho a executar, com prazo e entrega")
+                .FontSize(9.5f).Bold();
+
+            foreach (var (f, valor) in doGrupo)
+            {
+                col.Item().PaddingTop(9).Row(linha =>
+                {
+                    linha.RelativeItem().Column(interno =>
+                    {
+                        interno.Item().Text(t =>
+                        {
+                            if (f.Artigo.Length > 0)
+                            {
+                                t.Span(f.Artigo + " · ").FontSize(10).Bold().FontColor(Azul);
+                            }
+                            t.Span(f.Nome).FontSize(10).Bold();
+                        });
+                        interno.Item().PaddingTop(2).Text(f.OQueEntrega)
+                            .FontSize(9).LineHeight(1.42f).FontColor(Muted);
+                    });
+
+                    linha.ConstantItem(112).AlignRight().Column(interno =>
+                    {
+                        interno.Item().Text($"R$ {valor:N2}").FontSize(10.5f).Bold();
+                        interno.Item().Text(f.Cobranca == CobrancaFrente.Mensal ? "por mês" : "valor único")
+                            .FontSize(8).FontColor(Muted);
+                    });
+                });
+            }
+        }
+
+        var deFora = CatalogoFrentesLgpd.Todas
+            .Where(f => escolhidas.All(x => x.Frente.Chave != f.Chave))
+            .ToList();
+
+        if (deFora.Count > 0)
+        {
+            col.Item().PaddingTop(16).Text("NÃO INCLUÍDO NESTE ORÇAMENTO").FontSize(9).Bold().FontColor(Muted);
+            foreach (var f in deFora)
+            {
+                var rotulo = f.Artigo.Length > 0 ? $"{f.Nome} ({f.Artigo})" : f.Nome;
+                col.Item().PaddingTop(3).Text($"○  {rotulo}").FontSize(9).FontColor(Muted);
+            }
+            col.Item().PaddingTop(7).Text(
+                "Estas obrigações continuam sendo do controlador. Estão listadas aqui de propósito: "
+                + "um orçamento que mostra apenas o que foi contratado induz a erro justamente quem "
+                + "confia nele.")
+                .FontSize(8.5f).LineHeight(1.42f).FontColor(Muted);
+        }
     }
 }
