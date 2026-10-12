@@ -78,7 +78,7 @@ public class PropostaComercialPdfService
             {
                 capa.Size(PageSizes.A4);
                 capa.Margin(0);
-                capa.DefaultTextStyle(x => x.FontFamily(Fonts.Calibri).FontColor(Colors.White));
+                capa.DefaultTextStyle(x => x.FontFamily(FontesDoPdf.Texto).FontColor(Colors.White).ComReserva());
                 capa.PageColor(BrandBg);
 
                 capa.Content().Padding(46).Column(col =>
@@ -135,7 +135,7 @@ public class PropostaComercialPdfService
             {
                 page.Size(PageSizes.A4);
                 page.Margin(38);
-                page.DefaultTextStyle(x => x.FontSize(9.5f).FontFamily(Fonts.Calibri).FontColor("#1C2836"));
+                page.DefaultTextStyle(x => x.FontSize(9.5f).FontFamily(FontesDoPdf.Texto).FontColor("#1C2836").ComReserva());
 
                 page.Header().Row(row =>
                 {
@@ -428,7 +428,7 @@ public class PropostaComercialPdfService
                         row.RelativeItem().Border(1).BorderColor(Colors.Grey.Lighten2).Padding(12).Column(c =>
                         {
                             c.Item().Text("IA CONSULTORA — RESPOSTA TÍPICA").FontSize(7).FontColor(TextMuted2).LetterSpacing(0.08f);
-                            c.Item().PaddingTop(6).Text("CVE-2026-XXXXX").FontSize(9).FontColor(TextMuted).FontFamily(Fonts.CourierNew);
+                            c.Item().PaddingTop(6).Text("CVE-2026-XXXXX").FontSize(9).FontColor(TextMuted).FontFamily(FontesDoPdf.Mono);
                             c.Item().PaddingTop(6).Text(
                                 "“Esta vulnerabilidade permite execução remota de código no servidor financeiro. Caso explorada, poderá causar " +
                                 "indisponibilidade do ERP. Prioridade: Alta. Tempo estimado de correção: 30 minutos.”")

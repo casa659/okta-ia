@@ -298,7 +298,7 @@ public class PropostaLgpdPdfService
             {
                 page.Size(PageSizes.A4);
                 page.Margin(42);
-                page.DefaultTextStyle(x => x.FontSize(10).FontFamily(Fonts.Calibri).FontColor(Text));
+                page.DefaultTextStyle(x => x.FontSize(10).FontFamily(FontesDoPdf.Texto).FontColor(Text).ComReserva());
 
                 page.Header().Column(col =>
                 {

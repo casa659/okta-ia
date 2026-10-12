@@ -75,7 +75,7 @@ public class DiagnosticoPdfService
             {
                 page.Size(PageSizes.A4);
                 page.Margin(38);
-                page.DefaultTextStyle(x => x.FontSize(9.5f).FontFamily(Fonts.Calibri).FontColor(TextDark));
+                page.DefaultTextStyle(x => x.FontSize(9.5f).FontFamily(FontesDoPdf.Texto).FontColor(TextDark).ComReserva());
 
                 page.Header().Row(row =>
                 {
@@ -128,7 +128,7 @@ public class DiagnosticoPdfService
         {
             capa.Size(PageSizes.A4);
             capa.Margin(0);
-            capa.DefaultTextStyle(x => x.FontFamily(Fonts.Calibri).FontColor(Colors.White));
+            capa.DefaultTextStyle(x => x.FontFamily(FontesDoPdf.Texto).FontColor(Colors.White).ComReserva());
             capa.PageColor(BrandBg);
 
             capa.Content().Padding(46).Column(col =>
@@ -394,11 +394,11 @@ public class DiagnosticoPdfService
                     });
 
                 row.ConstantItem(34).AlignRight().Text($"{dom.Cobertura}%")
-                    .FontSize(8.5f).FontColor(TextDark).FontFamily(Fonts.CourierNew);
+                    .FontSize(8.5f).FontColor(TextDark).FontFamily(FontesDoPdf.Mono);
                 row.ConstantItem(58).AlignRight().Text($"mat {dom.Maturidade?.ToString("0.0") ?? "—"}")
                     .FontSize(8).FontColor(TextMuted);
                 row.ConstantItem(40).AlignRight().Text($"{dom.PerguntasRespondidas}/{dom.PerguntasVisiveis}")
-                    .FontSize(7.5f).FontColor(TextMuted2).FontFamily(Fonts.CourierNew);
+                    .FontSize(7.5f).FontColor(TextMuted2).FontFamily(FontesDoPdf.Mono);
             });
         }
     }
@@ -428,7 +428,7 @@ public class DiagnosticoPdfService
             body.Item().ShowEntire().PaddingTop(9).Row(row =>
             {
                 row.ConstantItem(24).PaddingTop(1).Text(risco.Prioridade.ToString("00"))
-                    .FontSize(8).FontColor(TextMuted2).FontFamily(Fonts.CourierNew);
+                    .FontSize(8).FontColor(TextMuted2).FontFamily(FontesDoPdf.Mono);
                 row.ConstantItem(50).PaddingTop(1).Text(risco.Gravidade.ToString().ToUpperInvariant())
                     .FontSize(6.5f).Bold().FontColor(cor).LetterSpacing(0.05f);
 

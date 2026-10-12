@@ -21,4 +21,11 @@
     <PackageReference Include="QuestPDF" Version="2026.7.2" />
   </ItemGroup>
 
+  <!-- 🔴 As fontes dos PDFs vão DENTRO do assembly (ver Services/FontesDoPdf.cs). Calibri e
+       Courier New são da Microsoft e só existem no App Service Windows; no contêiner Linux o
+       PDF sairia com outra fonte, ou nem sairia. Embutir deixa o documento idêntico nos dois. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Fontes\*.ttf" />
+  </ItemGroup>
+
 </Project>

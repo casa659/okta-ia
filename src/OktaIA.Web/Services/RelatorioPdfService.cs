@@ -49,7 +49,7 @@ public class RelatorioPdfService
             {
                 capa.Size(PageSizes.A4);
                 capa.Margin(40);
-                capa.DefaultTextStyle(x => x.FontSize(10).FontFamily(Fonts.Calibri));
+                capa.DefaultTextStyle(x => x.FontSize(10).FontFamily(FontesDoPdf.Texto).ComReserva());
 
                 capa.Content().Column(col =>
                 {
@@ -126,7 +126,7 @@ public class RelatorioPdfService
             {
                 page.Size(PageSizes.A4);
                 page.Margin(36);
-                page.DefaultTextStyle(x => x.FontSize(10).FontFamily(Fonts.Calibri));
+                page.DefaultTextStyle(x => x.FontSize(10).FontFamily(FontesDoPdf.Texto).ComReserva());
 
                 page.Header().Column(col =>
                 {

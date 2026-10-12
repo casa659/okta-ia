@@ -11,6 +11,12 @@ using OktaIA.Web.Services.Integracoes;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ---------- Fontes dos PDFs ----------
+// Registrar ANTES de qualquer geração: o QuestPDF resolve a família no momento de desenhar, e
+// uma fonte ausente vira substituição silenciosa — o PDF sai, com outro desenho. Ver
+// Services/FontesDoPdf.cs para o porquê de serem embutidas.
+OktaIA.Web.Services.FontesDoPdf.Registrar();
+
 // ---------- Azure Key Vault ----------
 // Segredo de verdade (hoje a chave que cifra as credenciais dos conectores) sai do App Setting e
 // passa a vir do cofre: deixa de existir como texto puro em configuração, ganha rotação e log de
