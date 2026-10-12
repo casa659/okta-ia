@@ -668,6 +668,7 @@ public static class DbSeeder
         }
 
         var assetEmpresa = await BuildAssetCompanyMapAsync(db);
+        var semDono = new List<string>();
         var rnd = new Random(20260802);
         var agora = DateTime.UtcNow;
         var eventos = new List<SecurityEvent>();
@@ -679,9 +680,16 @@ public static class DbSeeder
             var alvo = ThreatCatalog.Alvos[rnd.Next(ThreatCatalog.Alvos.Length)];
             var minutosAtras = rnd.Next(0, 48 * 60);
 
+            // Sem dono conhecido o evento não entra — ver BuildAssetCompanyMapAsync.
+            if (!assetEmpresa.TryGetValue(alvo, out var empresaDoAlvo))
+            {
+                semDono.Add(alvo);
+                continue;
+            }
+
             eventos.Add(new SecurityEvent
             {
-                CompanyId = assetEmpresa.GetValueOrDefault(alvo),
+                CompanyId = empresaDoAlvo,
                 TipoPt = tipo.Pt,
                 TipoEn = tipo.En,
                 Severidade = tipo.Sev,
@@ -697,6 +705,8 @@ public static class DbSeeder
             });
         }
 
+        AvisarAtivosSemDono(nameof(SeedSecurityEventsAsync), semDono);
+
         db.SecurityEvents.AddRange(eventos);
         await db.SaveChangesAsync();
     }
@@ -704,8 +714,34 @@ public static class DbSeeder
     // Deriva o dono (tenant) de eventos/CVEs/incidentes casando o nome do ativo citado no texto
     // (Alvo/AssetNome/Asset) com Assets.Nome, que já tem CompanyId real — evita reinventar essa
     // associação em 3 lugares diferentes.
+    //
+    // 🔴 QUEM CHAMA TEM DE TRATAR O ATIVO AUSENTE (12/10/2026). Os três usos faziam
+    // GetValueOrDefault(nome), que devolve **0** quando o nome não está no mapa — e CompanyId 0
+    // não existe em Companies. O INSERT morria com
+    // "23503: violates foreign key constraint FK_Vulnerabilities_Companies_CompanyId", dentro do
+    // RunAsync do startup, derrubando o processo inteiro (exit 134 / SIGABRT no contêiner).
+    //
+    // ⚠️ NUNCA APARECIA EM AMBIENTE EXISTENTE: cada seeder faz early-return quando a tabela já tem
+    // linha, então só um banco VAZIO percorre este caminho. Quebrava exatamente na implantação de
+    // um cliente novo — com um erro que não fala de ativo nem de catálogo.
+    //
+    // ⚠️ O ThreatCatalog e a lista de ativos de SeedAssetsAsync são escritos à mão em lugares
+    // diferentes; renomear em um e esquecer o outro cai aqui. Por isso quem não casa é PULADO e
+    // avisado, em vez de virar empresa zero: atribuir vulnerabilidade à empresa errada, num
+    // produto de segurança, é pior do que não exibi-la.
     private static async Task<Dictionary<string, int>> BuildAssetCompanyMapAsync(ApplicationDbContext db)
         => await db.Assets.ToDictionaryAsync(a => a.Nome, a => a.CompanyId);
+
+    /// <summary>Diz no log quais nomes de ativo o catálogo cita e o banco não tem.</summary>
+    private static void AvisarAtivosSemDono(string seeder, IReadOnlyCollection<string> ausentes)
+    {
+        if (ausentes.Count == 0) { return; }
+
+        Console.WriteLine(
+            $"[Seed] {seeder}: {ausentes.Count} registro(s) ignorado(s) — ativo não encontrado em "
+            + $"Assets.Nome: {string.Join(", ", ausentes.Distinct().Order())}. "
+            + "Verifique se ThreatCatalog e SeedAssetsAsync usam os mesmos nomes.");
+    }
 
     private static async Task SeedInfraHealthAsync(ApplicationDbContext db)
     {
@@ -788,6 +824,7 @@ public static class DbSeeder
         }
 
         var assetEmpresa = await BuildAssetCompanyMapAsync(db);
+        var semDono = new List<string>();
 
         (string Cve, decimal Cvss, string Componente, string TituloPt, string TituloEn, string Cwe, string Asset,
             string ExpPt, string ExpEn, int Prio, string StPt, string StEn, Severidade Sev)[] dados =
@@ -805,9 +842,16 @@ public static class DbSeeder
 
         foreach (var d in dados)
         {
+            // Sem dono conhecido a CVE não entra — ver BuildAssetCompanyMapAsync.
+            if (!assetEmpresa.TryGetValue(d.Asset, out var empresaDaVuln))
+            {
+                semDono.Add(d.Asset);
+                continue;
+            }
+
             db.Vulnerabilities.Add(new Vulnerability
             {
-                CompanyId = assetEmpresa.GetValueOrDefault(d.Asset),
+                CompanyId = empresaDaVuln,
                 Cve = d.Cve,
                 Cvss = d.Cvss,
                 Componente = d.Componente,
@@ -824,6 +868,8 @@ public static class DbSeeder
             });
         }
 
+        AvisarAtivosSemDono(nameof(SeedVulnerabilitiesAsync), semDono);
+
         await db.SaveChangesAsync();
     }
 
@@ -838,6 +884,7 @@ public static class DbSeeder
         }
 
         var assetEmpresa = await BuildAssetCompanyMapAsync(db);
+        var semDono = new List<string>();
         var agora = DateTime.UtcNow;
         var incidentes = new (string Codigo, Severidade Sev, TimeSpan Idade, string Asset, string Mitre, string Analista, int Eventos,
             string TPt, string TEn, string AiPt, string AiEn, string Conf, string SPt, string SEn,
@@ -927,9 +974,16 @@ public static class DbSeeder
 
         foreach (var d in incidentes)
         {
+            // Sem dono conhecido o incidente não entra — ver BuildAssetCompanyMapAsync.
+            if (!assetEmpresa.TryGetValue(d.Asset, out var empresaDoIncidente))
+            {
+                semDono.Add(d.Asset);
+                continue;
+            }
+
             var incident = new Incident
             {
-                CompanyId = assetEmpresa.GetValueOrDefault(d.Asset),
+                CompanyId = empresaDoIncidente,
                 Codigo = d.Codigo,
                 Severidade = d.Sev,
                 Asset = d.Asset,
@@ -971,6 +1025,8 @@ public static class DbSeeder
 
             db.Incidents.Add(incident);
         }
+
+        AvisarAtivosSemDono(nameof(SeedIncidentsAsync), semDono);
 
         await db.SaveChangesAsync();
     }
