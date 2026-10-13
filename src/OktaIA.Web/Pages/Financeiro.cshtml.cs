@@ -31,7 +31,7 @@ public class FinanceiroModel : PageModel
         [
             new("Business", "R$ 1.890/mês", lang == "pt" ? "até 100 ativos · scanner · SIEM básico" : "up to 100 assets · scanner · basic SIEM", 25, $"2 {empresasLabel}", "#4D9BFF"),
             new("Enterprise", "R$ 8.400/mês", lang == "pt" ? "até 1.500 ativos · SOC 24×7 · IA completa" : "up to 1,500 assets · 24×7 SOC · full AI", 50, $"4 {empresasLabel}", accent),
-            new("Enterprise+", "R$ 21.900/mês", lang == "pt" ? "ativos ilimitados · pentest trimestral · SLA 15min" : "unlimited assets · quarterly pentest · 15min SLA", 13, $"1 {empresaLabel}", "#7A6BFF"),
+            new("Enterprise+", "R$ 21.900/mês", lang == "pt" ? "ativos ilimitados · pentest sob demanda · SLA 15min" : "unlimited assets · on-demand pentest · 15min SLA", 13, $"1 {empresaLabel}", "#7A6BFF"),
             new("Gov / MSP", lang == "pt" ? "sob consulta" : "custom", lang == "pt" ? "white label · on-premises · multi-país" : "white label · on-premises · multi-country", 12, $"1 {empresaLabel}", "#FF8A3D"),
         ];
 

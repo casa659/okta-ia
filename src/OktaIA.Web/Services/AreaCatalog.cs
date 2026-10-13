@@ -15,6 +15,9 @@ public static class AreaCatalog
         new Area("soc.ativos", "Ativos", "/Ativos", "Centro de Operações · SOC"),
         new Area("soc.twin", "Digital Twin", "/DigitalTwin", "Centro de Operações · SOC"),
         new Area("soc.vulnerabilidades", "Vulnerabilidades", "/Vulnerabilidades", "Centro de Operações · SOC"),
+        // ⚠️ Área nova (13/10/2026): perfil que já existia NÃO a tem, e quem não é Admin cai em
+        // ForbidResult até alguem marcar na matriz de Perfis. É o padrão seguro, e é de propósito.
+        new Area("soc.pentest", "Pentest", "/Pentests", "Centro de Operações · SOC"),
         new Area("soc.alertas", "Alertas", "/Alertas", "Centro de Operações · SOC"),
         new Area("soc.incidentes", "Incidentes", "/Incidentes", "Centro de Operações · SOC"),
         // ⚠️ Rótulo "LGPD", rota "/Conformidade": `/Lgpd` já é a página institucional do site de

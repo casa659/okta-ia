@@ -67,8 +67,13 @@ public static class MarketingContent
             new PlanMatrixRow("Vulnerability scan contínuo", "T", "T", "T"),
             new PlanMatrixRow("Gestão de vulnerabilidades com SLA", "—", "T", "T"),
             new PlanMatrixRow("Patch management", "—", "T", "T"),
-            new PlanMatrixRow("Pentest", "—", "Trimestral", "Mensal"),
-            new PlanMatrixRow("Red team e simulação de adversário", "—", "—", "T"),
+            // 🔴 13/10/2026: ERA "Trimestral" no Professional e "Mensal" no Enterprise. Pentest é
+            // serviço humano e não estava incluso em mensalidade nenhuma — a matriz criava obrigação
+            // recorrente por cliente que ninguém acompanhava, e a plataforma não tinha nem onde
+            // registrar uma entrega. Agora o registro existe (/Pentests) e a linha diz a verdade:
+            // o que é contínuo e incluso é a varredura externa, a linha acima.
+            new PlanMatrixRow("Pentest", "Sob demanda", "Sob demanda", "Sob demanda"),
+            new PlanMatrixRow("Red team e simulação de adversário", "—", "—", "Sob demanda"),
         }),
         new PlanMatrixGroup("Detecção e resposta", new[]
         {
@@ -200,7 +205,7 @@ public static class MarketingContent
         new ServiceGroup("02", "Prevenção e testes", "#00E0A4", true, new[]
         {
             new ServiceItem("Gestão de vulnerabilidades", "Ciclo completo de descoberta, priorização por exploração real, atribuição de responsável e verificação da correção."),
-            new ServiceItem("Pentest", "Testes de intrusão em aplicações web, APIs, redes internas e engenharia social, com reteste incluído."),
+            new ServiceItem("Pentest", "Testes de intrusão em aplicações web, APIs, redes internas e engenharia social, com reteste incluído. Contratação à parte, com escopo, janela e autorização assinada."),
             new ServiceItem("Scanner de websites e APIs", "Varredura contínua de OWASP Top 10, cabeçalhos, cookies, CORS, JWT, GraphQL e configuração de TLS."),
             new ServiceItem("Análise de riscos", "Avaliação estruturada de ativos, ameaças e impacto ao negócio, com matriz de risco revisada periodicamente."),
             new ServiceItem("Backup e continuidade", "Monitoramento de rotinas, testes de restauração e apoio na construção do plano de continuidade."),

@@ -1389,6 +1389,134 @@ namespace OktaIA.Web.Migrations
                     b.ToTable("Orcamentos");
                 });
 
+            modelBuilder.Entity("OktaIA.Web.Models.Pentest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Altas")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("AtualizadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AtualizadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("AutorizadoEm")
+                        .HasColumnType("date");
+
+                    b.Property<string>("AutorizadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Baixas")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CompanyId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("CriadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CriadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Criticas")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Escopo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Execucao")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Executor")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("JanelaFim")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("JanelaInicio")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Medias")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Observacoes")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("ProximoPrevistoEm")
+                        .HasColumnType("date");
+
+                    b.Property<string>("ResumoExecutivo")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("RetesteEm")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "JanelaInicio");
+
+                    b.ToTable("Pentests");
+                });
+
+            modelBuilder.Entity("OktaIA.Web.Models.PentestDocumento", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<byte[]>("Conteudo")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<DateTimeOffset>("EnviadoEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("EnviadoPor")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NomeArquivo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("PentestId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Tamanho")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PentestId");
+
+                    b.ToTable("PentestDocumentos");
+                });
+
             modelBuilder.Entity("OktaIA.Web.Models.RolePermission", b =>
                 {
                     b.Property<int>("Id")
@@ -1927,6 +2055,28 @@ namespace OktaIA.Web.Migrations
                     b.Navigation("Company");
                 });
 
+            modelBuilder.Entity("OktaIA.Web.Models.Pentest", b =>
+                {
+                    b.HasOne("OktaIA.Web.Models.Company", "Company")
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Company");
+                });
+
+            modelBuilder.Entity("OktaIA.Web.Models.PentestDocumento", b =>
+                {
+                    b.HasOne("OktaIA.Web.Models.Pentest", "Pentest")
+                        .WithMany("Documentos")
+                        .HasForeignKey("PentestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Pentest");
+                });
+
             modelBuilder.Entity("OktaIA.Web.Models.RolePermission", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", "Role")
@@ -1990,6 +2140,11 @@ namespace OktaIA.Web.Migrations
                     b.Navigation("LinhaDoTempo");
 
                     b.Navigation("Passos");
+                });
+
+            modelBuilder.Entity("OktaIA.Web.Models.Pentest", b =>
+                {
+                    b.Navigation("Documentos");
                 });
 #pragma warning restore 612, 618
         }

@@ -40,6 +40,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<DiagnosticoAcao> DiagnosticoAcoes => Set<DiagnosticoAcao>();
     public DbSet<DiagnosticoAnalise> DiagnosticoAnalises => Set<DiagnosticoAnalise>();
 
+    // ---------- Pentest (serviço humano, registrado aqui) ----------
+    public DbSet<Pentest> Pentests => Set<Pentest>();
+    public DbSet<PentestDocumento> PentestDocumentos => Set<PentestDocumento>();
+
     // ---------- Propostas comerciais ----------
     public DbSet<OrcamentoMonitoramento> Orcamentos => Set<OrcamentoMonitoramento>();
 
@@ -197,6 +201,25 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(a => a.Resultado).HasConversion<string>();
             entity.HasIndex(a => new { a.DiagnosticoId, a.GeradaEm });
             entity.HasOne(a => a.Diagnostico).WithMany().HasForeignKey(a => a.DiagnosticoId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Pentest>(entity =>
+        {
+            entity.Property(p => p.Tipo).HasConversion<string>();
+            entity.Property(p => p.Status).HasConversion<string>();
+            entity.Property(p => p.Execucao).HasConversion<string>();
+            // A tela abre sempre por empresa e ordena pela janela; o índice é exatamente isso.
+            entity.HasIndex(p => new { p.CompanyId, p.JanelaInicio });
+            // 🔴 Cascade, e não SetNull como em Vulnerability: engajamento sem empresa apareceria
+            // no filtro de qualquer cliente, e o dado aqui é o mapa de fraquezas de um deles.
+            entity.HasOne(p => p.Company).WithMany().HasForeignKey(p => p.CompanyId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(p => p.Documentos).WithOne(d => d.Pentest!).HasForeignKey(d => d.PentestId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<PentestDocumento>(entity =>
+        {
+            entity.Property(d => d.Tipo).HasConversion<string>();
+            entity.HasIndex(d => d.PentestId);
         });
     }
 }
