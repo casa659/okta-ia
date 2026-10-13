@@ -43,7 +43,7 @@ public static class MarketingContent
         new Plan("professional", "Professional", "#00E0A4", "Até 200 estações", true,
             "Para quem já tem TI estruturada e precisa de gestão de risco, conformidade e teste ofensivo recorrente.",
             "R$ 8.000 a R$ 20.000", "R$ 9.000", "R$ 42", 1.8, new[] { 36, 145, 540 },
-            new[] { "Tudo do Essential", "SIEM com correlação de eventos", "Gestão de vulnerabilidades com SLA", "Pentest trimestral", "Conformidade LGPD", "Conformidade ISO 27001 e NIST", "Gestão de riscos", "Patch management", "Inventário de hardware e software", "Backup monitor", "Tickets e fluxo de aprovação", "Relatórios executivos", "Alertas por WhatsApp, Teams e Slack", "Suporte 12×5 com SLA de 4h" }),
+            new[] { "Tudo do Essential", "SIEM com correlação de eventos", "Gestão de vulnerabilidades com SLA", "Pentest sob demanda", "Conformidade LGPD", "Conformidade ISO 27001 e NIST", "Gestão de riscos", "Patch management", "Inventário de hardware e software", "Backup monitor", "Tickets e fluxo de aprovação", "Relatórios executivos", "Alertas por WhatsApp, Teams e Slack", "Suporte 12×5 com SLA de 4h" }),
         new Plan("enterprise", "Enterprise", "#8A7BFF", "Acima de 500 estações", false,
             "Para operações críticas: SOC as a Service com prioridade máxima, resposta a incidentes em campo e IA investigando o seu ambiente.",
             "R$ 30.000 a R$ 100.000+", "Sob consulta", "Sob consulta", 0, new[] { 0, 0, 0 },
